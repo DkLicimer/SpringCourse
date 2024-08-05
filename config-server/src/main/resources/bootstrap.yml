@@ -9,19 +9,11 @@ spring:
       server:
         native:
           search-locations: classpath:/config
-          #git:
-          #   uri: https://github.com/ihuaylupo/config.git
-          #   searchPaths: licensingservice
+#        git: https://github.com/DkLicimer/config.git
+#        searchPaths:
 
 server:
   port: 8071
 
-encrypt:
-  key: fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
+debug: true

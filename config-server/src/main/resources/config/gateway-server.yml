@@ -13,29 +13,22 @@ eureka:
 
 
 spring:
-  zipkin:
-    baseUrl: http://zipkin:9411
-  sleuth:
-    sampler:
-      percentage: 1
   cloud:
     loadbalancer.ribbon.enabled: false
     gateway:
       routes:
-        - id: organization-service
-          uri: lb://organization-service
+        - id: product-service
+          uri: lb://product-service
           predicates:
-            - Path=/organization/**
-          filters:
-            - RewritePath=/organization/(?<path>.*), /$\{path}
-            - RemoveRequestHeader= Cookie,Set-Cookie
-        - id: licensing-service
-          uri: lb://licensing-service
+            - Path=/api/products/**
+        - id: order-service
+          uri: lb://order-service
           predicates:
-            - Path=/license/**
-          filters:
-            - RewritePath=/license/(?<path>.*), /$\{path}
-            - RemoveRequestHeader= Cookie,Set-Cookie
+            - Path=/api/orders/**
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
 
 management:
   endpoints:
