@@ -9,11 +9,14 @@ spring:
       server:
         native:
           search-locations: classpath:/config
-#        git: https://github.com/DkLicimer/config.git
-#        searchPaths:
 
 server:
   port: 8071
 
-
 debug: true
+#
+#  cloud:
+#    config:
+#      server:
+#        git:
+#          uri: https://github.com/DkLicimer/config.git
