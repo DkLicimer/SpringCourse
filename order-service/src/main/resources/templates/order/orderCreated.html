@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Order Created</title>
+</head>
+<body>
+<th:block th:replace="~{common/layout :: layout(~{::title}, ~{::main})}">
+    <title>Order Created</title>
+    <main>
+        <h1>Order Created Successfully</h1>
+        <p>Order ID: <span th:text="${order.id}"></span></p>
+        <p>User ID: <span th:text="${order.userId}"></span></p>
+        <p>Product ID: <span th:text="${order.productId}"></span></p>
+        <p>Status: <span th:text="${order.status}"></span></p>
+        <a th:href="@{/order/{orderId}(orderId=${order.id})}">View Order Details</a>
+    </main>
+</th:block>
+</body>
+</html>

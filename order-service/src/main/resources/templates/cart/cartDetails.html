@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Cart Details</title>
+</head>
+<body>
+<th:block th:replace="~{common/layout :: layout(~{::title}, ~{::main})}">
+    <title>Cart Details</title>
+    <main>
+        <h1>Cart Details</h1>
+        <div th:if="${cart != null}">
+            <ul>
+                <li th:each="item : ${cart.items}">
+                    <span th:text="${item.productName}"></span>
+                    <span th:text="${item.quantity}"></span>
+                    <form th:action="@{/cart/{userId}/items/{productId}(userId=${cart.userId},productId=${item.productId})}" th:method="delete">
+                        <button type="submit">Remove</button>
+                    </form>
+                </li>
+            </ul>
+            <p>Total: <span th:text="${cart.total}"></span></p>
+        </div>
+        <div th:unless="${cart != null}">
+            <p>Your cart is empty</p>
+        </div>
+    </main>
+</th:block>
+</body>
+</html>

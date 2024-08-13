@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Order Details</title>
+</head>
+<body>
+<th:block th:replace="~{common/layout :: layout(~{::title}, ~{::main})}">
+    <title>Order Details</title>
+    <main>
+        <h1>Order Details</h1>
+        <p>Order ID: <span th:text="${order.id}"></span></p>
+        <p>User ID: <span th:text="${order.userId}"></span></p>
+        <p>Product ID: <span th:text="${order.productId}"></span></p>
+        <p>Status: <span th:text="${order.status}"></span></p>
+
+        <form th:if="${order.status == 'CREATED'}" th:action="@{/order/{orderId}/payment(orderId=${order.id})}" method="post">
+            <button type="submit">Process Payment</button>
+        </form>
+    </main>
+</th:block>
+</body>
+</html>
