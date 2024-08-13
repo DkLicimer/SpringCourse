@@ -1,4 +1,4 @@
-package ru.kurbangaleev.paymentservice;
+package ru.kurbangaleev.productservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,10 +6,10 @@ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 
 @SpringBootApplication
 @EnableEurekaClient
-public class PaymentServiceApplication {
+public class ProductServiceApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(PaymentServiceApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(ProductServiceApplication.class, args);
+	}
 
 }

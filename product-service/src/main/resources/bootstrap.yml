@@ -1,6 +1,6 @@
 spring:
   application:
-    name: payment-service
+    name: product-service
   cloud:
     config:
       uri: http://localhost:8071
