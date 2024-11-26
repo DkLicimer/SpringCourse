@@ -1,0 +1,10 @@
+$color-dark: #121214;
+$color-black: #000;
+$color-white: #fff;
+$color-gray: #a6a8ad;
+$color-blue: #0033ff;
+
+@mixin disp-flex {
+  display: flex;
+  align-items: center;
+}
