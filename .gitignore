@@ -1,24 +1,11 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+backend/venv
+venv
+frontend/node_modules
 .idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+backend/core/static/assets
+/backend/public_html/static/assets/
+
+/backend/public_html/static/
+/backend/public_html/media/
+
+/backend/core/local_settings.py
