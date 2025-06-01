@@ -1,9 +1,0 @@
-{% load static %}
-
-{% block user_profile %}
-    <div class="fon-admin"></div>
-    <div class="card-title">
-        <strong>{% firstof user.get_short_name user.username|default_if_none:'' %}</strong><br>
-        <small>{{ user.email|default_if_none:'' }}</small>
-    </div>
-{% endblock %}
