@@ -8,6 +8,8 @@ urlpatterns = [
     path('api1/report/', include('apps.report_app.urls')),
 
     path('api1/user/', include('apps.user_app.crm_user.urls')),
+    path('api1/reference_table/', include('apps.reference_app.group.urls')),
+    path('api1/reference_table/', include('apps.reference_app.subject.urls')),
 
     path('admin/', admin.site.urls),
 

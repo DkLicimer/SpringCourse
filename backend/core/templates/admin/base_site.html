@@ -1,0 +1,295 @@
+{% extends "admin/base_site.html" %}
+{% block extrahead %}
+    <style>
+        body {
+            --body-quiet-color: #000;
+            --darkened-bg: #fff;
+            --body-fg: #212121;
+            --body-loud-color: #212121;
+            --hairline-color: #9e9e9e;
+            --selected-row: #eeeeef;
+            --body-bg: #fff;
+            --primary: #7d4600 !important;
+            --header-bg: #7d4600 !important;
+            --breadcrumbs-bg: #7d4600 !important;
+            --breadcrumbs-fg: #000;
+            --secondary: #7d4600 !important;
+            --button-bg: #7d4600 !important;
+            --default-button-hover-bg: #7d4600 !important;
+            --default-button-bg: #7d4600;
+        }
+
+        .background{
+            width: 300px;
+            height: 80px;
+            background-color: var(--primary);
+        }
+
+        .login-logo {
+            width: 100px !important;
+            height: 100px !important;
+            left: 32% !important;
+        }
+
+        .active .collapsible-header {
+            background-color: var(--selected-row);
+        }
+
+        #user-tools a:hover {
+            background-color: var(--breadcrumbs-bg);
+        }
+
+        .btn, .btn-large, .btn-small {
+            background-color: var(--button-bg) !important;
+        }
+
+        .collapsible-body span.badge, .inline-group h2, #save-dropdown li label, input, #save-dropdown a, .material-icons.prefix, .app-list .app .card .app-item i, .dropdown-content li > span {
+            color: var(--header-bg) !important;
+        }
+
+        .collapsible-body .active span.badge {
+            color: #fff !important;
+        }
+
+        .inline-group h2 {
+            border-left: 3px solid var(--header-bg);
+        }
+
+        .collapsible-body > div.active, .app-count-badge {
+            background-color: var(--header-bg);
+        }
+
+        .collapsible-header i, .collapsible-header, .active .collapsible-header, a:active, a:focus, a:hover, a:link, a:visited {
+            color: var(--breadcrumbs-fg);
+        }
+
+        .app-list {
+            column-count: 3 !important;
+        }
+
+        .object-tools a:link, .object-tools a:visited {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 2px 2px 0 rgb(0 0 0 / 14%), 0 3px 1px -2px rgb(0 0 0 / 12%), 0 1px 5px 0 rgb(0 0 0 / 20%);
+            border-radius: 7px;
+            font-size: 12px;
+        }
+
+        .fixed-action-btn a {
+            border-radius: 50% !important;
+        }
+
+        .object-tools a:hover {
+            background: #212121;
+            color: #fff;
+        }
+
+        .object-tools li {
+            display: block;
+            text-align: center;
+            margin-right: 10px;
+            height: auto;
+            margin-left: 0;
+        }
+
+        .object-tools {
+            float: none !important;
+        }
+
+        .btn-floating i {
+            color: #fff;
+            width: auto;
+        }
+
+        .btn-floating:hover i {
+            color: #fff;
+        }
+
+        .change-form #content {
+            padding: 40px !important;
+            display: block;
+        }
+
+        tr.selected th a, tr.selected td a {
+            color: #7d4600;
+        }
+
+        .form-row, .submit-row {
+            border: none;
+        }
+
+        [type=checkbox]:checked + span:not(.lever):before {
+            border-right: 2px solid #7d4600;
+            border-bottom: 2px solid #7d4600;
+        }
+
+        .action-checkbox-column [type=checkbox]:checked + span:not(.lever):before {
+            border-right: 2px solid #000;
+            border-bottom: 2px solid #000;
+        }
+
+        fieldset.module, .submit-row {
+            box-shadow: 0 2px 2px 0 rgb(0 0 0 / 14%), 0 3px 1px -2px rgb(0 0 0 / 12%), 0 1px 5px 0 rgb(0 0 0 / 20%);
+        }
+
+        #changelist-filter, #toolbar.actions, .actions {
+            margin-bottom: 10px;
+        }
+
+        .material-icons {
+            color: #fff;
+        }
+
+        .material-icons.green-color {
+            color: #008000;
+        }
+
+        .material-icons.red-color {
+            color: red;
+        }
+
+        .module.indent .material-icons {
+            color: var(--header-bg) !important;
+        }
+
+        .field-is_staff .material-icons {
+            color: green;
+        }
+
+        .material-icons.today, .material-icons.now {
+            border-right: 2px solid var(--header-bg) !important;
+        }
+
+        #result_list td a, #result_list th a {
+            color: #000;
+        }
+
+        #result_list .selected td a, #result_list .selected th a {
+            color: var(--header-bg);
+        }
+
+        input.default {
+            color: #fff !important;
+        }
+
+        .module.aligned h2 {
+            color: var(--header-bg);
+            border-left: 3px solid var(--header-bg);
+        }
+
+        .module.aligned .selector-chosen h2 {
+            color: #fff;
+            border-left: none;
+        }
+
+        .module.aligned .datetime-flex i, .module.aligned .selector-available a, .module.aligned .selector-chosen a, .module.aligned .selector-available i, .module.aligned .selector-chosen i {
+            color: var(--header-bg)
+        }
+
+        #side-bar i.minimize {
+            color: #fff;
+        }
+
+        #side-bar i.minimize:hover {
+            background-color: var(--primary);
+        }
+
+        .side-bar {
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: right;
+        }
+
+        .side-bar img {
+            display: none !important;
+        }
+
+        table.import-preview tr.update {
+            background-color: #fffea9;
+        }
+
+        table.import-preview tr.new {
+            background-color: #ccffc1;
+        }
+
+        table.import-preview td ins {
+            background: #8bf5ff !important;
+        }
+
+        table.import-preview td del {
+            background: #ff8b8b !important;
+        }
+
+        .module.indent .submit-row i.material-icons {
+            color: #fff !important;
+        }
+
+        .module.indent .module.aligned {
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .module.indent input {
+            color: #000 !important;
+        }
+
+        .module.indent .module.aligned h2, fieldset.module h2 {
+        {#margin-top: 10px;#}
+        }
+
+        fieldset.module .form-row {
+            padding: 0px !important;
+        }
+
+        fieldset.module table {
+            margin-top: 30px !important;
+        }
+
+        fieldset.module table th, fieldset.module table td {
+            padding: 15px 10px !important;
+        }
+
+        .module {
+            background: none;
+            box-shadow: none;
+        }
+
+        fieldset.module {
+            border-radius: 20px;
+            padding: 28px;
+        }
+
+        .card.additional-submit-line .card-content .additional-submit-row i.material-icons {
+            color: #fff !important;
+        }
+
+        .card.additional-submit-line .card-content .additional-submit-row i.material-icons.minimize.submit-line {
+            color: var(--header-bg) !important;
+            background: none !important;
+        }
+
+        .card.additional-submit-line .card-content .additional-submit-row i.material-icons.minimize.submit-line:hover {
+            background: var(--hairline-color) !important;
+        }
+
+        .submit-row {
+            background: none !important;
+            box-shadow: none !important;
+        }
+
+        .all-actions a, .open-actions a, .open-actions button, .actions button{
+            border-radius: 20px !important;
+        }
+
+        .tray-additional-submit-row, .card.additional-submit-line{
+            display: none !important;
+        }
+
+        .fon-admin{
+            width: 300px !important;
+            height: 100px !important;
+            background-color: var(--primary) !important;
+        }
+    </style>
+{% endblock %}

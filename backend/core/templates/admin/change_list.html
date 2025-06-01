@@ -1,0 +1,72 @@
+{% extends "admin/change_list.html" %}
+{% load i18n static admin_list %}
+{% load i18n admin_urls %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'material/admin/css/changelists.min.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div id="content-main" class="list-content">
+        {% if cl.formset.errors %}
+            <p class="errornote">
+                {% if cl.formset.total_error_count == 1 %}{% trans "Please correct the error below." %}{% else %}
+                    {% trans "Please correct the errors below." %}{% endif %}
+            </p>
+            {{ cl.formset.non_form_errors }}
+        {% endif %}
+        <div class="module{% if cl.has_filters %} filtered{% endif %} white" id="changelist">
+
+            {% block date_hierarchy %}{% date_hierarchy cl %}{% endblock %}
+
+            <form id="changelist-form" method="post"{% if cl.formset.is_multipart %}
+                  enctype="multipart/form-data"{% endif %} novalidate>{% csrf_token %}
+                {% if cl.formset %}
+                    <div>{{ cl.formset.management_form }}</div>
+                {% endif %}
+
+                {% block result_list %}
+                    {% result_list cl %}
+                    {% if action_form and actions_on_bottom and cl.show_admin_actions %}{% admin_actions %}{% endif %}
+                {% endblock %}
+                {% block pagination %}{% pagination cl %}{% endblock %}
+            </form>
+        </div>
+        <div class="side-wrapper">
+            <div id="changelist-form white" class="card">
+                {% if action_form and actions_on_top and cl.show_admin_actions %}{% admin_actions %}{% endif %}
+            </div>
+            <div class="card">
+                {% block search %}{% search_form cl %}{% endblock %}
+            </div>
+            <div class="card">
+                {% block filters %}
+                    {% if cl.has_filters %}
+                        <div class="card-content" id="changelist-filter">
+                            <label class="label">{% trans 'Filter' %}</label>
+                            {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endblock %}
+            </div>
+            {% block object-tools %}
+                <div class="d-flex margin-top-3">
+                    {% block object-tools-items %}
+                        {% if has_add_permission %}
+                            <div class="block">
+                                {% url cl.opts|admin_urlname:'add' as add_url %}
+                                <div class="fixed-action-btn">
+                                    <a href="{% add_preserved_filters add_url is_popup to_field %}"
+                                       class="btn-floating btn-large waves-effect waves-light">
+                                        <i class="material-icons" aria-hidden="true">add</i>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}

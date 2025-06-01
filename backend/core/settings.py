@@ -33,6 +33,12 @@ INSTALLED_APPS = [
     'sorl.thumbnail',
     'ckeditor',
     'core',
+    'apps.reference_app.subject',
+    'apps.reference_app.group',
+    'apps.reference_app.time',
+
+    'apps.evaluation_app.evaluation',
+    'apps.schedule_app.schedule',
 
     'apps.user_app.crm_user',
 
@@ -120,8 +126,8 @@ CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
 
 MATERIAL_ADMIN_SITE = {
-    'HEADER': ('Коваль Лайт CRM'),  # Admin site header
-    'TITLE': ('Коваль Лайт CRM'),  # Admin site title
+    'HEADER': ('ПАЛЕНО'),  # Admin site header
+    'TITLE': ('ПАЛЕНО'),  # Admin site title
     'FAVICON': 'logo_big.svg',  # Admin site favicon (path to static should be specified)
     'MAIN_BG_COLOR': '',  # Admin site main color, css color should be specified
     'MAIN_HOVER_COLOR': '',  # Admin site main hover color, css color should be specified
