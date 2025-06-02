@@ -1,0 +1,238 @@
+@font-face {
+  font-family: "BebasNeue";
+  src: url("@/assets/fonts/BebasNeue Regular.ttf");
+}
+
+@font-face {
+  font-family: "MyriadPro";
+  src: url("@/assets/fonts/MyriadPro-Regular.otf") format('opentype');
+}
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("@/assets/fonts/Montserrat-Regular.ttf") format('opentype');
+}
+
+$color-primary: #044389;
+$color-primary-opacity: #ebccb7;
+$color-secondary: #484a53;
+$body-font-family: 'MyriadPro';
+$title-font: 'BebasNeue';
+$font-family: 'MyriadPro';
+$btn-font-family: 'Cuprum';
+
+
+#app {
+  font-family: $body-font-family, sans-serif !important;
+}
+
+html, body {
+  min-height: 100% !important;
+  height: 100%;
+  font-family: 'MyriadPro', sans-serif;
+}
+
+h1 {
+  font-family: $title-font, sans-serif !important;
+  font-size: 2.5rem !important;
+  letter-spacing: 1px !important;
+}
+
+.v-btn {
+  font-family: $btn-font-family, sans-serif !important;
+}
+
+[class*='text-'] {
+  font-family: $body-font-family, sans-serif !important;
+}
+
+.text-body-2 {
+  font-family: $body-font-family, sans-serif !important;
+}
+
+
+input, .v-field__input {
+  font-family: $body-font-family, sans-serif !important;
+  font-size: 16px !important;
+}
+
+.v-input.text-center {
+  text-align: center !important;
+
+  .v-field__input {
+    text-align: center !important;
+  }
+}
+
+.bez-label input.v-field__input {
+  padding-top: 0 !important;
+}
+
+.bez-label textarea.v-field__input {
+  padding-top: 15px !important;
+}
+
+.br-20 {
+  border-radius: 20px !important;
+}
+
+
+.br-top-20 {
+  border-radius: 20px 20px 0 0 !important;
+}
+
+.br-15 {
+  border-radius: 15px !important;;
+}
+
+.bg-dark {
+  background-color: #343a40 !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+
+.min-vh-100 {
+  min-height: 100vh !important;
+}
+
+.v-input__details {
+  display: none;
+}
+
+.br-100 {
+  border-radius: 100px !important;
+}
+
+
+.v-pagination__list li {
+  background-color: #eee;
+  border-radius: 20px;
+
+  button {
+    border-radius: 20px !important;
+  }
+
+  span {
+    border-radius: 20px;
+  }
+
+}
+
+.v-progress-linear__indeterminate {
+  background-color: $color-primary;
+}
+
+//.v-container {
+//  @media (min-width: 2560px) {
+//    width: 1800px !important;
+//  }
+//  @media (min-width: 1280px) {
+//    max-width: 100% !important;
+//  }
+//  @media(min-width: 960px) {
+//    max-width: 100% !important;
+//  }
+//}
+
+.app-poisk {
+  .v-field__input {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 35px !important;
+    min-height: 35px !important;
+    font-size: 12pt !important;
+
+  }
+
+
+  .v-input__control {
+    height: 35px !important;
+    min-height: 35px !important;
+
+  }
+
+  .v-field__clearable, .v-field__append-inner {
+    padding-top: 4px !important;
+  }
+
+  .v-input {
+    margin-top: 0 !important;
+
+  }
+
+  .v-field {
+    border-radius: 15px !important;
+  }
+
+}
+
+
+//Анимации
+.shiftx-enter-active, .shiftx-leave-active {
+  transition: all 0.25s ease-in-out;
+}
+
+.shiftx-enter, .shiftx-leave-to /* .fade-leave-active below version 2.1.8 */
+{
+  transform: translateX(100px);
+}
+
+
+.fade2-enter-active, .fade2-leave-active {
+  transition: opacity 0.1s
+}
+
+.fade2-enter, .fade2-leave-to /* .fade-leave-active below version 2.1.8 */
+{
+  opacity: 0
+}
+
+//КОНЕЦ АНИМАЦИЯМ
+
+.v-textarea .v-field {
+  border-radius: 20px !important;
+}
+
+.v-skeleton-loader {
+  height: 400px !important;
+  display: block !important;
+  align-items: start !important;
+
+  .v-skeleton-loader__image {
+    margin-bottom: 30px !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+}
+
+//СКРОЛЛ БАР
+
+body::-webkit-scrollbar {
+  width: 12px; /* ширина scrollbar */
+}
+
+body::-webkit-scrollbar-track {
+  background: #F5F5F5; /* цвет дорожки */
+}
+
+body::-webkit-scrollbar-thumb {
+  background-color: $color-primary; /* цвет плашки */
+  border-radius: 20px; /* закругления плашки */
+  border: 3px solid #F5F5F5; /* padding вокруг плашки */
+}
+.remember-data{
+.v-selection-control__input, .v-selection-control__wrapper {
+  justify-content: flex-start !important;
+}
+
+.v-selection-control__input::before {
+  left: -20% !important;
+}
+
+  .v-ripple__container{
+  left: -20% !important;
+
+  }
+}
