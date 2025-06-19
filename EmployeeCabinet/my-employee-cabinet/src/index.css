@@ -1,0 +1,139 @@
+/* src/index.css */
+
+/* Базовые стили из шаблона Vite/React (можно оставить или удалить по желанию) */
+/* :root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+} */ /* Эту часть можно закомментировать или удалить, если она мешает Bootstrap */
+
+
+/* --- Наши новые стили --- */
+
+/* 1. Гарантируем, что html, body и корневой элемент #root занимают всю высоту */
+html, body, #root {
+  height: 100%;
+  margin: 0; /* Убираем стандартные отступы у body */
+}
+
+/* Добавляем отступ сверху для body, чтобы контент не скрывался под фиксированным Navbar */
+body {
+    padding-top: 56px; /* Высота стандартного Navbar Bootstrap ~56px. Можете подкорректировать. */
+     background-color: #f8f9fa; /* Светлый фон для контраста с красным */
+}
+
+
+/* 2. Центрирование содержимого на страницах (кроме Login, который центрируется по-другому) */
+/* Этот класс будет применен к обертке вокруг содержимого страниц кабинета */
+.authenticated-page-content {
+     display: flex; /* Используем Flexbox */
+     flex-direction: column; /* Элементы внутри будут располагаться вертикально */
+     align-items: center; /* Горизонтальное центрирование содержимого */
+     padding: 1rem; /* Добавим небольшой внутренний отступ */
+     box-sizing: border-box; /* Учитываем padding в размере элемента */
+     min-height: calc(100vh - 56px); /* Минимальная высота: весь экран минус Navbar */
+}
+
+/* Убираем стандартный верхний отступ у контейнеров внутри наших центрирующих оберток */
+.container.mt-5 {
+    margin-top: 0 !important; /* !important для переопределения Bootstrap */
+}
+ /* Просто контейнер внутри центрирующей обертки */
+.authenticated-page-content .container {
+    flex-grow: 1; /* Позволяем контейнеру занимать доступное вертикальное пространство */
+    /* Контейнер сам по себе уже центрирует содержимое горизонтально благодаря max-width и auto margins */
+}
+
+
+/* Отдельный стиль для центрирования на странице Login */
+.login-wrapper {
+    min-height: 100vh; /* Полная высота вьюпорта */
+    display: flex;
+    justify-content: center; /* Горизонтальное центрирование */
+    align-items: center; /* Вертикальное центрирование */
+    padding: 1rem;
+    box-sizing: border-box;
+    background-color: #f8f9fa; /* Светлый фон */
+}
+/* На странице логина убираем верхний padding, который добавили для body */
+ .login-wrapper {
+    padding-top: 0;
+ }
+
+
+/* 3. Красно-белая стилистика - переопределение переменных Bootstrap */
+/* Определяем основные цвета */
+:root {
+  --bs-primary: #C00000; /* Основной красный для кнопок, ссылок и т.п. */
+  --bs-primary-rgb: 192, 0, 0; /* RGB-версия для теней и других эффектов */
+
+  /* Цвета для навигационной панели (если фон темный или красный) */
+  --bs-navbar-color: rgba(255, 255, 255, 0.85); /* Цвет текста ссылок */
+  --bs-navbar-hover-color: #fff; /* Цвет текста ссылок при наведении */
+  --bs-navbar-active-color: #fff; /* Цвет текста активной ссылки */
+  --bs-navbar-brand-color: #fff; /* Цвет бренда/названия */
+  --bs-navbar-brand-hover-color: #fff;
+  --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.2); /* Цвет рамки тогглера */
+   /* Используем стандартный Bootstrap цвет danger (#dc3545) для кнопок удаления и ошибок */
+   /* Или можем переопределить его тоже, например: */
+   /* --bs-danger: #FF3333; */
+   /* --bs-danger-rgb: 255, 51, 51; */
+}
+
+/* Пример: делаем заголовки красными (опционально) */
+ /* h1, h2, h3, h4, h5, h6 {
+     color: var(--bs-primary);
+ } */
+
+ /* Убедимся, что карточки имеют белый фон */
+ .card {
+     background-color: #fff;
+     border-color: rgba(0, 0, 0, 0.125); /* Стандартная рамка Bootstrap */
+ }
+
+ /* Стили для кнопки "Выйти" в Navbar */
+ .navbar .btn-outline-danger {
+     --bs-btn-color: var(--bs-danger); /* Цвет текста */
+     --bs-btn-border-color: var(--bs-danger); /* Цвет рамки */
+     --bs-btn-hover-color: #fff; /* Цвет текста при наведении */
+     --bs-btn-hover-bg: var(--bs-danger); /* Цвет фона при наведении */
+     --bs-btn-hover-border-color: var(--bs-danger); /* Цвет рамки при наведении */
+      --bs-btn-active-color: #fff;
+     --bs-btn-active-bg: var(--bs-danger);
+      --bs-btn-active-border-color: var(--bs-danger);
+      --bs-btn-disabled-color: var(--bs-danger);
+      --bs-btn-disabled-border-color: var(--bs-danger);
+ }
+ /* Делаем кнопку выхода белой с красным контуром в темном/красном Navbar */
+ .navbar .btn-outline-light {
+      --bs-btn-color: #fff; /* Белый текст */
+      --bs-btn-border-color: #fff; /* Белая рамка */
+      --bs-btn-hover-color: var(--bs-danger); /* Красный текст при наведении */
+      --bs-btn-hover-bg: #fff; /* Белый фон при наведении */
+      --bs-btn-hover-border-color: #fff; /* Белая рамка при наведении */
+       --bs-btn-active-color: var(--bs-danger);
+       --bs-btn-active-bg: #fff;
+       --bs-btn-active-border-color: #fff;
+ }
+
+
+/* --- Конец наших новых стилей --- */
+
