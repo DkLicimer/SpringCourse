@@ -1,0 +1,319 @@
+/* --- ОБЩИЕ СТИЛИ (скопированы с ваших других страниц) --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: 'Montserrat Alternates', sans-serif;
+  color: white;
+  background-image: url('images/backgrd.jpg'); 
+  background-color: rgb(54, 55, 60);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center; 
+  background-attachment: fixed; 
+}
+
+a { text-decoration: none; }
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 30px 38px;
+  padding-bottom: 70px;
+}
+
+/* --- ХЕДЕР (без изменений) --- */
+.header-container { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  flex-wrap: wrap; 
+  gap: 20px; 
+  width: 100%; 
+  margin-bottom: 18px; 
+}
+
+.zabguSpace { 
+  max-width: 620px; 
+  width: 100%; 
+}
+
+.zabguSpace svg { 
+  width: 95%; 
+  height: auto; 
+}
+
+.socialMedia { 
+  display: flex; 
+  align-items: center; 
+  gap: 60px; 
+}
+
+.link img { 
+  width: 80px; 
+  height: 100%; 
+  transition: transform 0.2s; 
+}
+
+.link img:hover { 
+  transform: scale(1.1); 
+}
+
+/* --- ОСНОВНОЙ КОНТЕНТ --- */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    flex-grow: 1;
+    gap: 18px; /* Отступ между заголовком и формой */
+}
+
+.title-block {
+    width: 100%;
+    max-width: 1080px;
+}
+.mainText {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  text-align: left; 
+}
+.subText {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: left;
+}
+
+/* --- СТИЛИ ДЛЯ ФОРМЫ --- */
+.form-wrapper {
+    background-color: white;
+    border-radius: 30px; /* Более скругленные углы, как на макете */
+    padding: 25px 70px;
+    width: 100%;
+    max-width: 1080px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.application-form {
+    display: grid;
+    /* Две колонки: левая для полей, правая для кнопки */
+    grid-template-columns: 1fr auto; 
+    gap: 20px 50px; /* Отступы: вертикальный и горизонтальный */
+    align-items: end; /* Выравниваем элементы по низу ячеек */
+}
+
+.form-field {
+    position: relative;
+}
+
+.form-field input {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid #8fcc29; /* Зеленая линия */
+    background: transparent;
+    padding: 10px 0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-family: 'Montserrat Alternates', sans-serif;
+    color: #333; /* Темный цвет текста */
+    outline: none;
+    position: relative;
+    z-index: 2; /* Инпут должен быть над лейблом */
+}
+
+.form-field label {
+    position: absolute;
+    bottom: 10px; /* Лейбл находится на уровне инпута */
+    left: 0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: #999;
+    pointer-events: none; /* Лейбл не мешает кликать на инпут */
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+/* 
+  МАГИЯ АНИМАЦИИ ЛЕЙБЛА:
+  Когда инпут в фокусе ИЛИ когда в нем есть текст (благодаря :placeholder-shown)
+*/
+.form-field input:focus + label,
+.form-field input:not(:placeholder-shown) + label {
+    transform: translateY(-28px); /* Смещаем вверх */
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.form-field-checkbox {
+    display: flex;
+    align-items: center; /* Вертикально выравниваем текст и галочку по центру */
+    margin-top: 10px; /* Небольшой отступ сверху от поля "Телефон" */
+    gap: 15px; /* Расстояние между текстом и галочкой */
+}
+
+.checkbox-label {
+    color: #555; /* Цвет текста, чтобы он был читаемым */
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer; /* Меняем курсор, чтобы показать, что на текст можно нажать */
+    user-select: none; /* Запрещаем выделение текста при клике */
+}
+
+.checkbox-input {
+    width: 20px;   /* Делаем саму галочку крупнее */
+    height: 20px;
+    cursor: pointer; /* Также меняем курсор при наведении на саму галочку */
+}
+
+.submit-button {
+    background-color: #8fcc29;
+    color: white;
+    border: none;
+    padding: 18px 45px;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-weight: 600;
+    font-family: 'Montserrat Alternates', sans-serif;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    grid-column: 2; /* Явно указываем, что кнопка во второй колонке */
+    grid-row: 1 / span 6; /* Кнопка растягивается на 4 строки */
+    align-self: center; /* Центрируем кнопку по вертикали */
+}
+
+.submit-button:hover {
+    background-color: #7db520;
+    transform: scale(1.05);
+}
+
+/* --- Убираем синий фон автозаполнения (ОБНОВЛЕННАЯ ВЕРСИЯ) --- */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: #333;
+    
+    /* 
+     * Теперь вместо сплошного белого фона (#ffffff)
+     * мы используем прозрачный, чтобы не перекрывать эффект стекла.
+     * Это уберет синий фон, сохранив прозрачность поля.
+    */
+    box-shadow: 0 0 0px 1000px transparent inset;
+    
+    transition: background-color 5000s ease-in-out 0s;
+    font-family: 'Montserrat Alternates', sans-serif;
+    font-size: 1.1rem;
+}
+
+
+/* --- ФУТЕР (без изменений) --- */
+.footer { 
+  position: fixed; 
+  height: 100px; 
+  bottom: -65px; 
+  left: 50%; 
+  transform: 
+  translateX(-50%); 
+  padding-left: 40px; 
+  padding-right: 40px; 
+  background-color: #FFFFFF; 
+  border-radius: 35px 35px 0 0; 
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1); 
+  display: flex; 
+  justify-content: center; 
+  align-items: flex-start; 
+  padding-top: 5px; }
+
+.footer p { 
+  font-size: clamp(0.75rem, 2vw, 1.2rem); 
+  color: #3B9551; 
+  font-weight: 300; 
+  white-space: nowrap; 
+}
+
+
+.modal-overlay {
+    position: fixed; /* Позиционируем относительно окна браузера */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный черный фон */
+    display: none; /* Изначально скрыто */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Поверх всех остальных элементов */
+}
+
+.modal-content {
+    background-color: white;
+    color: #333; /* Темный цвет для текста */
+    padding: 30px 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    max-width: 400px;
+    width: 90%;
+    font-family: 'Montserrat Alternates', sans-serif;
+}
+
+.modal-content p {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 25px;
+}
+
+.modal-close-button {
+    background-color: #3B9551;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 10px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.modal-close-button:hover {
+    background-color: #2e7540;
+}
+
+
+/* --- МЕДИА-ЗАПРОСЫ ДЛЯ АДАПТИВНОСТИ --- */
+@media (max-width: 992px) {
+    .application-form {
+        /* На средних экранах все в одну колонку */
+        grid-template-columns: 1fr;
+    }
+    .submit-button {
+        grid-row: auto; /* Сбрасываем растягивание */
+        justify-self: end; /* Кнопка прижимается вправо */
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wrapper { padding: 20px; }
+    .header-container { flex-direction: column; justify-content: center; }
+    .socialMedia { justify-content: center; }
+    .link img { width: 60px; }
+    .mainText, .subText { text-align: left; }
+
+    .form-wrapper {
+        padding: 30px 25px;
+    }
+
+    .submit-button {
+        justify-self: stretch; /* Растягиваем кнопку на всю ширину */
+    }
+}
