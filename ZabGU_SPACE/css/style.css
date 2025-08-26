@@ -1,0 +1,776 @@
+/* =================================================================== */
+/*                  ЕДИНЫЙ ФАЙЛ СТИЛЕЙ - STYLE.CSS                   */
+/* =================================================================== */
+/*                                                                   */
+/*  ВАЖНО: Для корректной работы этого файла необходимо добавить     */
+/*  класс к тегу <body> на каждой вашей HTML-странице, как описано   */
+/*  в инструкции выше (например, <body class="page-main">).          */
+/*                                                                   */
+/* =================================================================== */
+
+
+/* =================================================================== */
+/*                      ОБЩИЕ СТИЛИ (COMMON STYLES)                   */
+/* =================================================================== */
+
+/* --- Сброс стилей и базовые настройки --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: 'Montserrat Alternates', sans-serif;
+  color: white;
+  background-color: rgb(54, 55, 60);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* --- Фоны для конкретных страниц --- */
+.page-main {
+  background-image: url('images/backgroundMainPage.png'); 
+  background-position: center 20%;
+}
+.page-rooms, .page-datetime, .page-application, .page-employee {
+  background-image: url('images/backgrd.jpg'); 
+  background-position: center center; 
+}
+
+
+a {
+  text-decoration: none;
+  color: #FFFFFF;
+}
+
+a:hover, a:visited {
+  color: #FFFFFF;
+}
+
+/* --- Общая структура: обертка, хедер, футер --- */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 30px 38px;
+  padding-bottom: 70px;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.zabguSpace {
+  max-width: 620px;
+  width: 100%;
+}
+
+.zabguSpace svg {
+    width: 95%;
+    height: auto;
+}
+
+.socialMedia {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+}
+
+.link img {
+  width: 80px;
+  height: 100%;
+  transition: transform 0.2s;
+}
+
+.link img:hover {
+  transform: scale(1.1);
+}
+
+.footer {
+  position: fixed;
+  height: 100px; 
+  bottom: -65px; 
+  left: 50%;
+  transform: translateX(-50%);
+  padding-left: 40px;
+  padding-right: 40px;
+  background-color: #FFFFFF;
+  border-radius: 35px 35px 0 0;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 5px;
+}
+
+.footer p {
+    font-size: clamp(0.75rem, 2vw, 1.2rem);
+    color: #3B9551;
+    font-weight: 300;
+    white-space: nowrap; 
+}
+
+/* --- Общие текстовые блоки --- */
+.mainText {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  text-align: left; 
+}
+.subText {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: left;
+}
+
+
+/* =================================================================== */
+/*                      СТИЛИ СТРАНИЦ (PAGE-SPECIFIC STYLES)         */
+/* =================================================================== */
+
+/* --- Стили для Главной страницы (mainPage.css) --- */
+.page-main .main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1; 
+    text-align: center;
+    margin-top: 100px;
+}
+.page-main .mainText {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+  margin-bottom: 80px;
+  max-width: 1150px;
+}
+.bookingButton {
+  max-width: 806px;
+  width: 80%;
+  transition: transform 0.2s;
+}
+.bookingButton:hover {
+    transform: scale(1.05);
+}
+.bookingButton svg {
+    width: 80%;
+    height: auto;
+}
+.popup {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0.5s;
+    position: fixed;
+    bottom: 45px;
+    right: 20px; 
+    background-color: #f9f9f9;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 500px;
+    border-radius: 10px;
+}
+.popup.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.popup-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.popup-text {
+    margin-right: 15px;
+    font-family: 'Montserrat Alternates', sans-serif;
+    font-size: 14px;
+}
+.close-btn {
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    color: #aaa;
+}
+.close-btn:hover { color: #000; }
+
+/* --- Стили для страницы комнат (roomsPage.css) --- */
+.page-rooms .main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; 
+    flex-grow: 1;
+    gap: 50px;
+}
+.title-block {
+    width: 100%;
+    max-width: 1080px;
+}
+.main-layout-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1080px;
+    gap: 80px;
+    flex-wrap: wrap;
+}
+.left-column, .right-column {
+    flex: 1;
+    min-width: 300px;
+}
+.room-slider {
+  position: relative;
+  max-width: 500px;
+  width: 100%;
+  margin: 0 auto;
+}
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.2);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.slider-arrow:hover { background-color: rgba(0, 0, 0, 0.30); }
+#prev-arrow { left: 15px; }
+#next-arrow { right: 15px; }
+#room-image { transition: opacity 0.4s ease-in-out; }
+.right-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 40px;
+}
+.imageRooms {
+    max-width: 500px;
+    width: 100%;
+}
+.imageRooms img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 20px;
+}
+.descriptionRoom {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  text-align: left;
+  width: 100%;
+  max-width: 500px;
+}
+.descriptionTitle {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 600;
+  margin-bottom: -5px;
+}
+.descriptionSubtitle {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 400;
+}
+.choose-time-button {
+  transition: transform 0.2s;
+  align-self: center;
+  margin-right: 150px;
+}
+.choose-time-button svg { width: 130%; height: auto; }
+.choose-time-button:hover { transform: scale(1.05); }
+
+
+/* --- Стили для страницы выбора даты (dateTimePage.css) --- */
+.page-datetime .controls-container .title-block {
+    flex-grow: 1;
+}
+.page-datetime .main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  flex-grow: 1;
+  gap: 20px;
+}
+.controls-container {
+    width: 100%;
+    max-width: 1280px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+}
+.actions-block { 
+  display: flex; 
+  align-items: center; 
+  gap: 30px; 
+}
+.week-navigator { 
+  display: flex; 
+  align-items: center; 
+  gap: 15px; 
+  font-size: clamp(1rem, 2.5vw, 1.5rem); 
+  font-weight: 500; 
+}
+.week-arrow { 
+  background: none; 
+  border: none; 
+  color: white; 
+  font-size: 2rem; 
+  cursor: pointer; 
+  transition: transform 0.2s; 
+}
+.week-arrow:disabled { opacity: 0.5; cursor: not-allowed; }
+.week-arrow:disabled:hover { transform: none; }
+.week-arrow:hover { transform: scale(1.2); }
+#week-display {
+  min-width: 225px;
+  text-align: center;
+  display: inline-block;
+}
+.confirm-button { 
+  background-color: #6DBE00; 
+  color: white; 
+  border: none; 
+  border-radius: 25px; 
+  padding: 12px 28px; 
+  font-family: 'Montserrat Alternates', sans-serif; 
+  font-size: clamp(1rem, 2vw, 1.2rem); 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: transform 0.2s, background-color 0.2s; 
+}
+.confirm-button:hover { transform: scale(1.05); background-color: #83E000; }
+.schedule-container {
+    width: 100%;
+    max-width: 1280px;
+    background-color: white;
+    border-radius: 25px;
+    padding: 25px 30px;
+    position: relative;
+    color: #333;
+    display: grid;
+    grid-template-columns: auto repeat(7, 1fr) auto; 
+    gap: 5px 10px;
+    max-height: 54vh; 
+    overflow-y: auto; 
+}
+.schedule-container::-webkit-scrollbar { display: none; }
+.grid-header {
+    font-weight: 600;
+    padding-bottom: 10px;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.grid-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    z-index: -1;
+}
+.time-label {
+    font-weight: 500;
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
+    color: #888;
+    position: sticky;
+    background-color: white;
+    z-index: 10; 
+}
+.schedule-container .time-label:first-of-type { left: 0; }
+.schedule-container .time-label:last-of-type { right: 0; }
+.time-slot {
+    height: 25px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.7rem;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.time-slot:not(.booked):not(.selected):hover { background-color: #e0f2d4; }
+.time-slot.selected { background-color: #28a745; border-color: #28a745; }
+.time-slot.booked { background-color: #343a40; border-color: #343a40; cursor: not-allowed; }
+
+/* --- Стили для страницы заявки (application.css) --- */
+.page-application .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    flex-grow: 1;
+    gap: 18px;
+}
+.page-application .header-container { margin-bottom: 18px; }
+.form-wrapper {
+    background-color: white;
+    border-radius: 30px;
+    padding: 25px 70px;
+    width: 100%;
+    max-width: 1080px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+.application-form {
+    display: grid;
+    grid-template-columns: 1fr auto; 
+    gap: 20px 50px;
+    align-items: end;
+}
+.form-field { position: relative; }
+.form-field input {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid #8fcc29;
+    background: transparent;
+    padding: 10px 0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-family: 'Montserrat Alternates', sans-serif;
+    color: #333;
+    outline: none;
+    position: relative;
+    z-index: 2;
+}
+.form-field label {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: #999;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+.form-field input:focus + label,
+.form-field input:not(:placeholder-shown) + label {
+    transform: translateY(-28px);
+    font-size: 0.9rem;
+    color: #555;
+}
+.form-field-checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    gap: 15px;
+}
+.checkbox-label {
+    color: #555;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+}
+.checkbox-input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.submit-button {
+    background-color: #8fcc29;
+    color: white;
+    border: none;
+    padding: 18px 45px;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-weight: 600;
+    font-family: 'Montserrat Alternates', sans-serif;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    align-self: center;
+}
+.submit-button:hover {
+    background-color: #7db520;
+    transform: scale(1.05);
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: #333;
+    box-shadow: 0 0 0px 1000px transparent inset;
+    transition: background-color 5000s ease-in-out 0s;
+    font-family: 'Montserrat Alternates', sans-serif;
+    font-size: 1.1rem;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background-color: white;
+    color: #333;
+    padding: 30px 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    max-width: 400px;
+    width: 90%;
+}
+.modal-content p {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 25px;
+}
+.modal-close-button {
+    background-color: #3B9551;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 10px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.modal-close-button:hover { background-color: #2e7540; }
+
+/* --- Стили для страницы сотрудника (employeePage.css) --- */
+.page-employee .wrapper { overflow: hidden; }
+.page-employee .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 20px;
+}
+.logoutButton svg { transition: transform 0.2s; }
+.logoutButton svg:hover { transform: scale(1.1); }
+.filter-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+.filter-btn {
+    font-family: 'Montserrat Alternates', sans-serif;
+    border: 1px solid white;
+    background-color: transparent;
+    color: white;
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+.filter-btn:hover { background-color: rgba(255, 255, 255, 0.2); }
+.filter-btn.active { background-color: white; color: #333; }
+.application-list {
+    background-color: white;
+    color: #333;
+    width: 100%;
+    border-radius: 25px;
+    padding: 20px 10px 20px 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+.application-list::-webkit-scrollbar { display: none; }
+.list-header {
+    display: grid;
+    grid-template-columns: 100px 1.5fr 1fr 150px;
+    gap: 20px;
+    padding: 0 15px;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 15px;
+}
+.list-header span:first-child { padding-left: 30px; }
+.application-item { border-bottom: 1px solid #eee; }
+.application-item:last-child { border-bottom: none; }
+.item-summary {
+    display: grid;
+    grid-template-columns: 30px 70px 1.5fr 1fr 150px;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.item-summary:hover { background-color: #f9f9f9; }
+.toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+    justify-self: center;
+}
+.status-badge {
+    padding: 8px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-align: center;
+    color: white;
+}
+.status-approved { background: linear-gradient(to top, #6DBE00, #a9d465); }
+.status-pending { background-color: #ccc; color: #555; }
+.status-rejected { background-color: #e74c3c; }
+.item-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 0 45px;
+}
+.details-content p { margin: 0 0 8px; line-height: 1.5; color: #555; }
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.btn-approve, .btn-reject {
+    font-family: 'Montserrat Alternates', sans-serif;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 25px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-approve { background: linear-gradient(to top, #6DBE00, #a9d465); }
+.btn-reject { background-color: #444; }
+.btn-approve:hover, .btn-reject:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.application-item.expanded .toggle-icon { transform: rotate(180deg); }
+.application-item.expanded .item-details {
+    max-height: 500px;
+    padding: 0 45px 20px 45px;
+}
+
+/* =================================================================== */
+/*                      АДАПТИВНЫЕ СТИЛИ (MEDIA QUERIES)             */
+/* =================================================================== */
+
+@media (max-width: 992px) {
+    /* --- dateTimePage.css --- */
+    .page-datetime .controls-container { 
+      flex-direction: column; 
+      align-items: flex-start;
+      max-width: none; 
+    }
+    .page-datetime .schedule-container { 
+      overflow-x: auto; 
+      padding: 20px; 
+    }
+    
+    /* --- application.css --- */
+    .page-application .application-form {
+        grid-template-columns: 1fr;
+    }
+    .page-application .submit-button {
+        grid-row: auto;
+        justify-self: end;
+        margin-top: 20px;
+    }
+
+    /* --- employeePage.css --- */
+    .page-employee .list-header { display: none; }
+    .page-employee .item-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        position: relative;
+    }
+    .page-employee .item-summary > span { width: 100%; }
+    .page-employee .toggle-icon { position: absolute; top: 20px; right: 15px; }
+    .page-employee .status-badge { align-self: flex-start; }
+    .page-employee .item-details {
+        grid-template-columns: 1fr;
+        padding: 0 15px;
+    }
+    .page-employee .application-item.expanded .item-details { padding: 0 15px 20px 15px; }
+    .page-employee .action-buttons { justify-content: flex-start; margin-top: 15px; }
+}
+
+@media (max-width: 768px) {
+    /* --- Общие стили для всех страниц --- */
+    .wrapper {
+        padding: 20px;
+    }
+    .header-container {
+        flex-direction: column; 
+        justify-content: center;
+    }
+    .socialMedia {
+        justify-content: center;
+    }
+    .link img {
+        width: 60px;
+    }
+    .mainText, .subText { 
+      text-align: left; 
+    }
+
+    /* --- mainPage.css --- */
+    .page-main .mainText {
+        font-size: clamp(1.5rem, 6vw, 2.5rem);
+    }
+    .page-main .bookingButton {
+        width: 100%;
+    }
+
+    /* --- roomsPage.css --- */
+    .page-rooms .choose-time-button svg {
+        width: 100%;
+    }
+
+    /* --- application.css --- */
+    .page-application .form-wrapper {
+        padding: 30px 25px;
+    }
+    .page-application .submit-button {
+        justify-self: stretch;
+    }
+}

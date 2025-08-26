@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createHeaders(monday);
         
         // 2. Создаем строки для каждого временного слота
-        for (let time = TIME_START; time < TIME_END; time += TIME_STEP) {
+        for (let time = TIME_START; time <= TIME_END; time += TIME_STEP) {
             // Метка времени слева
             scheduleContainer.appendChild(createTimeLabel(time));
 
@@ -147,8 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('--- ДАННЫЕ ДЛЯ ОТПРАВКИ НА СЕРВЕР ---');
         console.log(bookingData);
 
-        alert(`Вы успешно забронировали ${selectedSlots.size} слотов для помещения "${selectedRoom}"!`);
-        
         // Очищаем выбор и обновляем сетку
         bookingData.slots.forEach(slot => bookedSlots.add(slot));
         selectedSlots.clear();
