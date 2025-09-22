@@ -149,10 +149,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><b>Должность, подразделение:</b> ${app.applicantPosition}</p>
                         <p><b>Email:</b> ${app.applicantEmail}</p>
                         <p><b>Телефон:</b> ${app.applicantPhone}</p>
+                        <p><b>Звукорежиссёр:</b> ${app.soundEngineerRequired ? 'Да, нужен' : 'Нет, не нужен'}</p>
                         <p><b>Дата:</b> ${new Date(app.startTime).toLocaleDateString()}</p>
                         <p><b>Время:</b> ${new Date(app.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(app.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                         ${app.rejectionReason ? `<p><b>Причина отклонения:</b> ${app.rejectionReason}</p>` : ''}
-                    </div>
+                               </div>
                     <div class="action-buttons">
                         <button class="btn-approve" data-id="${app.id}">Одобрить</button>
                         <button class="btn-reject" data-id="${app.id}">Отклонить</button>
@@ -199,5 +200,30 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndRenderApplications();
     } else {
         showLoginForm();
+    }
+
+    // --- 5. ЛОГИКА ВЫХОДА ИЗ СИСТЕМЫ ---
+
+    // Находим кнопку выхода по ID, который мы добавили в HTML
+    const logoutButton = document.getElementById('logout-button');
+
+    // Проверяем, существует ли кнопка (на всякий случай)
+    if (logoutButton) {
+        // Добавляем обработчик клика
+        logoutButton.addEventListener('click', (event) => {
+            // event.preventDefault() предотвращает стандартное поведение ссылки,
+            // то есть не дает браузеру сразу перейти на главную страницу.
+            event.preventDefault();
+
+            // 1. Удаляем токен из локального хранилища браузера.
+            //    Это и есть "выход из системы".
+            localStorage.removeItem('jwtToken');
+
+            // 2. (Опционально) Можно показать пользователю сообщение об успешном выходе.
+            alert('Вы успешно вышли из системы.');
+
+            // 3. Перенаправляем пользователя на главную страницу.
+            window.location.href = '/ZabGU_WebSiteFrontend/mainPage.html';
+        });
     }
 });

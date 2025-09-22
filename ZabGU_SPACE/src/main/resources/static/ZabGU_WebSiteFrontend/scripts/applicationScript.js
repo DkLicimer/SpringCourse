@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeModalBtn.addEventListener('click', function() {
         // Теперь просто перенаправляем на главную, т.к. данные уже отправлены
-        window.location.href = '/mainPage.html';
+        window.location.href = '/ZabGU_WebSiteFrontend/mainPage.html';
     });
 
     modal.addEventListener('click', function(event) {

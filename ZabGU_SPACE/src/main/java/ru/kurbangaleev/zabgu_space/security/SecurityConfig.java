@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/**", "/api/rooms/**", "/api/applications/**").permitAll()
-                        .requestMatchers("/", "/*.html", "/css/**", "/scripts/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/ZabGU_WebSiteFrontend/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

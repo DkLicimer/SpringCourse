@@ -1,5 +1,3 @@
--- Создаем перечисляемый тип (ENUM) для статусов заявок
-CREATE TYPE application_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- Таблица для помещений
 CREATE TABLE rooms (
@@ -23,7 +21,7 @@ CREATE TABLE applications (
                               room_id BIGINT NOT NULL REFERENCES rooms(id), -- ИЗМЕНЕНО
                               start_time TIMESTAMPTZ NOT NULL,
                               end_time TIMESTAMPTZ NOT NULL,
-                              status application_status NOT NULL DEFAULT 'PENDING',
+                              status VARCHAR(255) NOT NULL DEFAULT 'PENDING',
                               event_name VARCHAR(255) NOT NULL,
                               sound_engineer_required BOOLEAN NOT NULL DEFAULT FALSE,
                               applicant_full_name VARCHAR(255) NOT NULL,

@@ -16,9 +16,13 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
      * Находит все ОДОБРЕННЫЕ заявки для конкретного помещения в заданном временном диапазоне.
      * Используется для отображения расписания в календаре.
      */
-    List<Application> findByRoomIdAndStatusAndStartTimeBeforeAndEndTimeAfter(
-            Long roomId, ApplicationStatus status, OffsetDateTime endTime, OffsetDateTime startTime);
-
+    @Query("SELECT a FROM Application a WHERE a.room.id = :roomId AND a.status = :status AND a.startTime < :endDate AND a.endTime > :startDate")
+    List<Application> findApprovedApplicationsInDateRange(
+            Long roomId,
+            ApplicationStatus status,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate
+    );
     /**
      * Находит все заявки со статусом PENDING, которые конфликтуют с заданным временным интервалом.
      * Используется для автоматического отклонения конфликтующих заявок при одобрении одной из них.
