@@ -1,0 +1,2480 @@
+.frame {
+  width: 100%;
+  min-width: 2433px;
+  min-height: 5729px;
+  position: relative;
+}
+
+.frame .rectangle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 5729px;
+  background-color: #d9d9d9;
+}
+
+.frame .div {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 5729px;
+  background-color: #fffdfd;
+}
+
+.frame .view {
+  position: absolute;
+  top: 38px;
+  left: 531px;
+  width: 1233px;
+  height: 143px;
+}
+
+.frame .text-wrapper {
+  top: 55px;
+  left: 0;
+  width: 150px;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: normal;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-2 {
+  top: 55px;
+  left: 459px;
+  width: 232px;
+  font-weight: 400;
+  font-size: 28px;
+  text-align: center;
+  line-height: normal;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-3 {
+  position: absolute;
+  top: 55px;
+  left: 227px;
+  width: 150px;
+  font-weight: 700;
+  color: #000000;
+  font-size: 28px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .whatsapp {
+  top: 8px;
+  left: 935px;
+  position: absolute;
+  width: 68px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .icons {
+  top: 8px;
+  left: 1041px;
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .vk {
+  top: 0;
+  left: 1138px;
+  width: 87px;
+  height: 87px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.frame .p {
+  position: absolute;
+  top: 101px;
+  left: 920px;
+  width: 300px;
+  font-family: "Jost", Helvetica;
+  font-weight: 600;
+  color: #000000;
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 0;
+  line-height: normal;
+}
+
+.frame .view-2 {
+  position: absolute;
+  top: 207px;
+  left: 0;
+  width: 1926px;
+  height: 873px;
+}
+
+.frame .mask-group {
+  left: 0;
+  width: 1920px;
+  height: 873px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-4 {
+  position: absolute;
+  top: 604px;
+  left: 154px;
+  width: 1412px;
+  font-weight: 600;
+  color: #fffdfd;
+  font-size: 48px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-5 {
+  position: absolute;
+  top: 678px;
+  left: 154px;
+  width: 1330px;
+  font-weight: 500;
+  font-style: italic;
+  color: #fffdfd;
+  font-size: 30px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-2 {
+  position: absolute;
+  top: 754px;
+  left: 154px;
+  width: 498px;
+  height: 78px;
+  background-color: #fffdfd;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-6 {
+  position: absolute;
+  top: 760px;
+  left: 164px;
+  width: 478px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-3 {
+  position: absolute;
+  top: 1080px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .rectangle-4 {
+  position: absolute;
+  top: 2160px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .rectangle-5 {
+  position: absolute;
+  top: 3240px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .rectangle-6 {
+  position: absolute;
+  top: 4320px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .text-wrapper-7 {
+  position: absolute;
+  top: 1123px;
+  left: 794px;
+  width: 332px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element {
+  position: absolute;
+  top: 1222px;
+  left: 142px;
+  width: 504px;
+  height: 900px;
+}
+
+.frame .img {
+  position: absolute;
+  top: -25px;
+  left: -25px;
+  width: 548px;
+  height: 950px;
+}
+
+.frame .mask-group-2 {
+  position: absolute;
+  top: 30px;
+  left: 112px;
+  width: 274px;
+  height: 231px;
+}
+
+.frame .text-wrapper-8 {
+  position: absolute;
+  top: 269px;
+  left: 64px;
+  width: 370px;
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 30px;
+  text-align: center;
+  line-height: 30px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .flexcontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  position: absolute;
+  width: 400px;
+  height: 350px;
+  top: 379px;
+  left: 64px;
+}
+
+.frame .text {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  font-family: "Jost", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: 0;
+  line-height: 24px;
+}
+
+.frame .span {
+  font-style: italic;
+}
+
+.frame .rectangle-7 {
+  position: absolute;
+  top: 783px;
+  left: 64px;
+  width: 379px;
+  height: 70px;
+  background-color: #0b0b0b;
+  border-radius: 20px;
+  box-shadow: 0px 0px 15px #0000004c;
+}
+
+.frame .text-wrapper-9 {
+  position: absolute;
+  top: 783px;
+  left: 124px;
+  width: 250px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fffdfd;
+  font-size: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element-2 {
+  position: absolute;
+  top: 1222px;
+  left: 711px;
+  width: 504px;
+  height: 900px;
+}
+
+.frame .text-wrapper-10 {
+  top: 269px;
+  left: 83px;
+  width: 332px;
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 30px;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.frame .element-3 {
+  position: absolute;
+  top: 1222px;
+  left: 1280px;
+  width: 504px;
+  height: 900px;
+  box-shadow: 0px 4px 30px #000000bf;
+}
+
+.frame .span-wrapper {
+  position: relative;
+  align-self: stretch;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-8 {
+  position: absolute;
+  top: 783px;
+  left: 64px;
+  width: 379px;
+  height: 70px;
+  background-color: #0b0b0b;
+  border-radius: 20px;
+  box-shadow: 0px 0px 15px #00000080;
+}
+
+.frame .text-wrapper-11 {
+  position: absolute;
+  top: 783px;
+  left: 64px;
+  width: 379px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fffdfd;
+  font-size: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .view-3 {
+  position: absolute;
+  top: 2165px;
+  left: 5px;
+  width: 1926px;
+  height: 449px;
+}
+
+.frame .mask-group-3 {
+  left: -4px;
+  width: 1928px;
+  height: 457px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-12 {
+  position: absolute;
+  top: 51px;
+  left: 153px;
+  width: 802px;
+  font-weight: 600;
+  color: #fffdfd;
+  font-size: 48px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-13 {
+  position: absolute;
+  top: 143px;
+  left: 154px;
+  width: 1602px;
+  font-weight: 500;
+  font-style: italic;
+  color: #fffefe;
+  font-size: 30px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-9 {
+  position: absolute;
+  top: 317px;
+  left: 147px;
+  width: 498px;
+  height: 78px;
+  background-color: #fffdfd;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-14 {
+  position: absolute;
+  top: 323px;
+  left: 157px;
+  width: 478px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-15 {
+  position: absolute;
+  top: 2658px;
+  left: 780px;
+  width: 360px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-16 {
+  position: absolute;
+  top: 2736px;
+  left: 2073px;
+  width: 360px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-17 {
+  position: absolute;
+  top: 2658px;
+  left: 2073px;
+  width: 360px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element-4 {
+  position: absolute;
+  top: 2764px;
+  left: 78px;
+  width: 429px;
+  height: 416px;
+}
+
+.frame .rectangle-10 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 423px;
+  height: 416px;
+  background-color: #ffffff;
+  border-radius: 22px;
+  border: 1px solid;
+  border-color: #000000;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-18 {
+  top: 161px;
+  left: 40px;
+  width: 308px;
+  height: 102px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 25px;
+  line-height: 26px;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-19 {
+  top: 270px;
+  left: 40px;
+  width: 324px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 26px;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.frame .ellipse {
+  position: absolute;
+  top: 55px;
+  left: 40px;
+  width: 84px;
+  height: 84px;
+  background-color: #000000;
+  border-radius: 42px;
+}
+
+.frame .text-wrapper-20 {
+  position: absolute;
+  top: 84px;
+  left: 72px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Jost", Helvetica;
+  font-weight: 700;
+  color: #fffdfd;
+  font-size: 38px;
+  letter-spacing: 0;
+  line-height: 26px;
+  white-space: nowrap;
+}
+
+.frame .element-5 {
+  position: absolute;
+  top: 2764px;
+  left: 524px;
+  width: 429px;
+  height: 416px;
+  box-shadow: 0px 4px 30px #00000080;
+}
+
+.frame .element-6 {
+  position: absolute;
+  top: 2764px;
+  left: 973px;
+  width: 429px;
+  height: 416px;
+}
+
+.frame .element-7 {
+  position: absolute;
+  top: 2764px;
+  left: 1419px;
+  width: 429px;
+  height: 416px;
+}
+
+.frame .div-2 {
+  position: absolute;
+  top: 3240px;
+  left: 142px;
+  width: 1790px;
+  height: 1080px;
+}
+
+.frame .text-wrapper-21 {
+  position: absolute;
+  top: 287px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-22 {
+  position: absolute;
+  top: 419px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-23 {
+  position: absolute;
+  top: 547px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-24 {
+  position: absolute;
+  top: 677px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element-checked {
+  position: absolute;
+  top: 295px;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .element-checked-2 {
+  top: 685px;
+  position: absolute;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .element-checked-3 {
+  top: 555px;
+  position: absolute;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .element-checked-4 {
+  top: 425px;
+  position: absolute;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .mask-group-4 {
+  left: 576px;
+  width: 1202px;
+  height: 1080px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-25 {
+  position: absolute;
+  top: 134px;
+  left: 11px;
+  width: 500px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-11 {
+  position: absolute;
+  top: 876px;
+  left: 0;
+  width: 498px;
+  height: 78px;
+  background-color: #000000;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-26 {
+  position: absolute;
+  top: 882px;
+  left: 10px;
+  width: 478px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fffefe;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .view-4 {
+  position: absolute;
+  top: 4441px;
+  left: 209px;
+  width: 1510px;
+  height: 810px;
+}
+
+.frame .rectangle-12 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1502px;
+  height: 810px;
+  background-color: #fffdfd;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .mask-group-5 {
+  left: 0;
+  width: 677px;
+  height: 810px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-27 {
+  position: absolute;
+  top: 108px;
+  left: 756px;
+  width: 696px;
+  height: 156px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-13 {
+  position: absolute;
+  top: 288px;
+  left: 756px;
+  width: 372px;
+  height: 70px;
+  background-color: #fffdfd;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.frame .rectangle-14 {
+  position: absolute;
+  top: 487px;
+  left: 756px;
+  width: 372px;
+  height: 70px;
+  background-color: #000000;
+  border: 0px none;
+  box-shadow: 0px 0px 24px #00000033;
+}
+
+.frame .rectangle-15 {
+  position: absolute;
+  top: 388px;
+  left: 756px;
+  width: 372px;
+  height: 70px;
+  background-color: #fffdfd;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.frame .text-wrapper-28 {
+  position: absolute;
+  top: 293px;
+  left: 781px;
+  width: 161px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #bfb3b2;
+  font-size: 32px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-29 {
+  position: absolute;
+  top: 395px;
+  left: 781px;
+  width: 161px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #bfb3b2;
+  font-size: 32px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-16 {
+  position: absolute;
+  top: 634px;
+  left: 756px;
+  width: 50px;
+  height: 50px;
+  background-color: #fffdfd;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.frame .div-3 {
+  position: absolute;
+  top: 614px;
+  left: 844px;
+  width: 400px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-30 {
+  font-style: italic;
+  text-decoration: underline;
+}
+
+.frame .view-5 {
+  position: absolute;
+  top: 5404px;
+  left: 484px;
+  width: 1131px;
+  height: 242px;
+}
+
+.frame .text-wrapper-31 {
+  position: absolute;
+  top: 2px;
+  left: 354px;
+  width: 304px;
+  height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Jost", Helvetica;
+  font-weight: 600;
+  color: #000000;
+  font-size: 28px;
+  letter-spacing: 0;
+  line-height: normal;
+}
+
+.frame .text-wrapper-32 {
+  position: absolute;
+  top: 0;
+  left: 716px;
+  width: 407px;
+  height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 28px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-33 {
+  position: absolute;
+  top: 159px;
+  left: 0;
+  width: 412px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #000000;
+  font-size: 28px;
+  line-height: 34px;
+  white-space: nowrap;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-34 {
+  position: absolute;
+  top: 207px;
+  left: 0;
+  width: 412px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #000000;
+  font-size: 28px;
+  line-height: 34px;
+  text-decoration: underline;
+  white-space: nowrap;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .icons-whatsapp {
+  top: 162px;
+  left: 506px;
+  position: absolute;
+  width: 68px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .icons-2 {
+  top: 162px;
+  left: 612px;
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .icons-vk {
+  top: 162px;
+  left: 716px;
+  width: 72px;
+  height: 72px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.frame .div-4 {
+  position: absolute;
+  top: 74px;
+  left: 164px;
+  width: 318px;
+  font-weight: 400;
+  color: #21304e;
+  font-size: 46px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-35 {
+  font-weight: 700;
+}
+
+.frame .text-wrapper-36 {
+  font-family: "Jost", Helvetica;
+  font-weight: 400;
+  color: #21304e;
+  font-size: 46px;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-37 {
+  position: absolute;
+  top: 4938px;
+  left: 1002px;
+  width: 298px;
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .div-5 {
+  position: absolute;
+  top: 5423px;
+  left: 421px;
+  width: 318px;
+  font-weight: 400;
+  color: #21304e;
+  font-size: 46px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+/* Original CSS code should be injected here */
+
+/* Additional styles for semantic improvements and accessibility */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.social-contacts {
+  display: contents;
+}
+
+.social-link {
+  display: inline-block;
+}
+
+.cta-button {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.cta-button:hover {
+  opacity: 0.8;
+}
+
+.cta-button:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.contact-form {
+  position: relative;
+}
+
+.form-group {
+  position: relative;
+}
+
+.form-input {
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  outline: none;
+}
+
+.form-input:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.form-input::placeholder {
+  color: #bfb3b2;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+}
+
+.form-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.form-checkbox:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.form-checkbox:checked {
+  background-color: #000000;
+}
+
+.form-checkbox:checked::after {
+  content: "✓";
+  color: white;
+  font-size: 30px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.checkbox-group label {
+  cursor: pointer;
+}
+
+.submit-button {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.submit-button:hover {
+  opacity: 0.8;
+}
+
+.submit-button:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.advantages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.advantage-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.footer-links {
+  display: contents;
+}
+
+.footer-social {
+  display: contents;
+}
+
+.company-info {
+  display: contents;
+}
+
+/* Ensure all interactive elements are keyboard accessible */
+button,
+input,
+a {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+/* Improve text contrast for better accessibility */
+.text-wrapper-28,
+.text-wrapper-29 {
+  color: #666666;
+}
+
+/* Ensure proper heading hierarchy */
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+/* List styles for service features */
+.flexcontainer {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.flexcontainer li {
+  margin: 0;
+  padding: 0;
+}
+
+/* Form validation styles */
+.form-input:invalid {
+  border-color: #e74c3c;
+}
+
+.form-input:valid {
+  border-color: #27ae60;
+}
+
+/* Loading state for form submission */
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .frame {
+    min-width: 100%;
+  }
+
+  .view,
+  .view-2,
+  .view-3,
+  .view-4,
+  .view-5 {
+    width: 100%;
+    left: 0;
+  }
+
+  .element,
+  .element-2,
+  .element-3 {
+    width: 100%;
+    left: 0;
+    margin-bottom: 2rem;
+  }
+
+  .element-4,
+  .element-5,
+  .element-6,
+  .element-7 {
+    width: 100%;
+    left: 0;
+    margin-bottom: 2rem;
+  }
+}
+
+.frame {
+  width: 100%;
+  min-width: 2433px;
+  min-height: 5729px;
+  position: relative;
+}
+
+.frame .rectangle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 5729px;
+  background-color: #d9d9d9;
+}
+
+.frame .div {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 5729px;
+  background-color: #fffdfd;
+}
+
+.frame .view {
+  position: absolute;
+  top: 38px;
+  left: 531px;
+  width: 1233px;
+  height: 143px;
+}
+
+.frame .text-wrapper {
+  top: 55px;
+  left: 0;
+  width: 150px;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: normal;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-2 {
+  top: 55px;
+  left: 459px;
+  width: 232px;
+  font-weight: 400;
+  font-size: 28px;
+  text-align: center;
+  line-height: normal;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-3 {
+  position: absolute;
+  top: 55px;
+  left: 227px;
+  width: 150px;
+  font-weight: 700;
+  color: #000000;
+  font-size: 28px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .whatsapp {
+  top: 8px;
+  left: 935px;
+  position: absolute;
+  width: 68px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .icons {
+  top: 8px;
+  left: 1041px;
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .vk {
+  top: 0;
+  left: 1138px;
+  width: 87px;
+  height: 87px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.frame .p {
+  position: absolute;
+  top: 101px;
+  left: 920px;
+  width: 300px;
+  font-family: "Jost", Helvetica;
+  font-weight: 600;
+  color: #000000;
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 0;
+  line-height: normal;
+}
+
+.frame .view-2 {
+  position: absolute;
+  top: 207px;
+  left: 0;
+  width: 1926px;
+  height: 873px;
+}
+
+.frame .mask-group {
+  left: 0;
+  width: 1920px;
+  height: 873px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-4 {
+  position: absolute;
+  top: 604px;
+  left: 154px;
+  width: 1412px;
+  font-weight: 600;
+  color: #fffdfd;
+  font-size: 48px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-5 {
+  position: absolute;
+  top: 678px;
+  left: 154px;
+  width: 1330px;
+  font-weight: 500;
+  font-style: italic;
+  color: #fffdfd;
+  font-size: 30px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-2 {
+  position: absolute;
+  top: 754px;
+  left: 154px;
+  width: 498px;
+  height: 78px;
+  background-color: #fffdfd;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-6 {
+  position: absolute;
+  top: 760px;
+  left: 164px;
+  width: 478px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-3 {
+  position: absolute;
+  top: 1080px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .rectangle-4 {
+  position: absolute;
+  top: 2160px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .rectangle-5 {
+  position: absolute;
+  top: 3240px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .rectangle-6 {
+  position: absolute;
+  top: 4320px;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-color: #fffdfd;
+}
+
+.frame .text-wrapper-7 {
+  position: absolute;
+  top: 1123px;
+  left: 794px;
+  width: 332px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element {
+  position: absolute;
+  top: 1222px;
+  left: 142px;
+  width: 504px;
+  height: 900px;
+}
+
+.frame .img {
+  position: absolute;
+  top: -25px;
+  left: -25px;
+  width: 548px;
+  height: 950px;
+}
+
+.frame .mask-group-2 {
+  position: absolute;
+  top: 30px;
+  left: 112px;
+  width: 274px;
+  height: 231px;
+}
+
+.frame .text-wrapper-8 {
+  position: absolute;
+  top: 269px;
+  left: 64px;
+  width: 370px;
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 30px;
+  text-align: center;
+  line-height: 30px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .flexcontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  position: absolute;
+  width: 400px;
+  height: 350px;
+  top: 379px;
+  left: 64px;
+}
+
+.frame .text {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  font-family: "Jost", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: 0;
+  line-height: 24px;
+}
+
+.frame .span {
+  font-style: italic;
+}
+
+.frame .rectangle-7 {
+  position: absolute;
+  top: 783px;
+  left: 64px;
+  width: 379px;
+  height: 70px;
+  background-color: #0b0b0b;
+  border-radius: 20px;
+  box-shadow: 0px 0px 15px #0000004c;
+}
+
+.frame .text-wrapper-9 {
+  position: absolute;
+  top: 783px;
+  left: 124px;
+  width: 250px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fffdfd;
+  font-size: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element-2 {
+  position: absolute;
+  top: 1222px;
+  left: 711px;
+  width: 504px;
+  height: 900px;
+}
+
+.frame .text-wrapper-10 {
+  top: 269px;
+  left: 83px;
+  width: 332px;
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 30px;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.frame .element-3 {
+  position: absolute;
+  top: 1222px;
+  left: 1280px;
+  width: 504px;
+  height: 900px;
+  box-shadow: 0px 4px 30px #000000bf;
+}
+
+.frame .span-wrapper {
+  position: relative;
+  align-self: stretch;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-8 {
+  position: absolute;
+  top: 783px;
+  left: 64px;
+  width: 379px;
+  height: 70px;
+  background-color: #0b0b0b;
+  border-radius: 20px;
+  box-shadow: 0px 0px 15px #00000080;
+}
+
+.frame .text-wrapper-11 {
+  position: absolute;
+  top: 783px;
+  left: 64px;
+  width: 379px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fffdfd;
+  font-size: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .view-3 {
+  position: absolute;
+  top: 2165px;
+  left: 5px;
+  width: 1926px;
+  height: 449px;
+}
+
+.frame .mask-group-3 {
+  left: -4px;
+  width: 1928px;
+  height: 457px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-12 {
+  position: absolute;
+  top: 51px;
+  left: 153px;
+  width: 802px;
+  font-weight: 600;
+  color: #fffdfd;
+  font-size: 48px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-13 {
+  position: absolute;
+  top: 143px;
+  left: 154px;
+  width: 1602px;
+  font-weight: 500;
+  font-style: italic;
+  color: #fffefe;
+  font-size: 30px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-9 {
+  position: absolute;
+  top: 317px;
+  left: 147px;
+  width: 498px;
+  height: 78px;
+  background-color: #fffdfd;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-14 {
+  position: absolute;
+  top: 323px;
+  left: 157px;
+  width: 478px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-15 {
+  position: absolute;
+  top: 2658px;
+  left: 780px;
+  width: 360px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-16 {
+  position: absolute;
+  top: 2736px;
+  left: 2073px;
+  width: 360px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-17 {
+  position: absolute;
+  top: 2658px;
+  left: 2073px;
+  width: 360px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element-4 {
+  position: absolute;
+  top: 2764px;
+  left: 78px;
+  width: 429px;
+  height: 416px;
+}
+
+.frame .rectangle-10 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 423px;
+  height: 416px;
+  background-color: #ffffff;
+  border-radius: 22px;
+  border: 1px solid;
+  border-color: #000000;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-18 {
+  top: 161px;
+  left: 40px;
+  width: 308px;
+  height: 102px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 25px;
+  line-height: 26px;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-19 {
+  top: 270px;
+  left: 40px;
+  width: 324px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 26px;
+  position: absolute;
+  font-family: "Jost", Helvetica;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.frame .ellipse {
+  position: absolute;
+  top: 55px;
+  left: 40px;
+  width: 84px;
+  height: 84px;
+  background-color: #000000;
+  border-radius: 42px;
+}
+
+.frame .text-wrapper-20 {
+  position: absolute;
+  top: 84px;
+  left: 72px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Jost", Helvetica;
+  font-weight: 700;
+  color: #fffdfd;
+  font-size: 38px;
+  letter-spacing: 0;
+  line-height: 26px;
+  white-space: nowrap;
+}
+
+.frame .element-5 {
+  position: absolute;
+  top: 2764px;
+  left: 524px;
+  width: 429px;
+  height: 416px;
+  box-shadow: 0px 4px 30px #00000080;
+}
+
+.frame .element-6 {
+  position: absolute;
+  top: 2764px;
+  left: 973px;
+  width: 429px;
+  height: 416px;
+}
+
+.frame .element-7 {
+  position: absolute;
+  top: 2764px;
+  left: 1419px;
+  width: 429px;
+  height: 416px;
+}
+
+.frame .div-2 {
+  position: absolute;
+  top: 3240px;
+  left: 142px;
+  width: 1790px;
+  height: 1080px;
+}
+
+.frame .text-wrapper-21 {
+  position: absolute;
+  top: 287px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-22 {
+  position: absolute;
+  top: 419px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-23 {
+  position: absolute;
+  top: 547px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-24 {
+  position: absolute;
+  top: 677px;
+  left: 148px;
+  width: 350px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-style: italic;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .element-checked {
+  position: absolute;
+  top: 295px;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .element-checked-2 {
+  top: 685px;
+  position: absolute;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .element-checked-3 {
+  top: 555px;
+  position: absolute;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .element-checked-4 {
+  top: 425px;
+  position: absolute;
+  left: 11px;
+  width: 70px;
+  height: 63px;
+  object-fit: cover;
+}
+
+.frame .mask-group-4 {
+  left: 576px;
+  width: 1202px;
+  height: 1080px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-25 {
+  position: absolute;
+  top: 134px;
+  left: 11px;
+  width: 500px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 40px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-11 {
+  position: absolute;
+  top: 876px;
+  left: 0;
+  width: 498px;
+  height: 78px;
+  background-color: #000000;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .text-wrapper-26 {
+  position: absolute;
+  top: 882px;
+  left: 10px;
+  width: 478px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fffefe;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .view-4 {
+  position: absolute;
+  top: 4441px;
+  left: 209px;
+  width: 1510px;
+  height: 810px;
+}
+
+.frame .rectangle-12 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1502px;
+  height: 810px;
+  background-color: #fffdfd;
+  box-shadow: 0px 0px 24px #00000066;
+}
+
+.frame .mask-group-5 {
+  left: 0;
+  width: 677px;
+  height: 810px;
+  position: absolute;
+  top: 0;
+}
+
+.frame .text-wrapper-27 {
+  position: absolute;
+  top: 108px;
+  left: 756px;
+  width: 696px;
+  height: 156px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 34px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-13 {
+  position: absolute;
+  top: 288px;
+  left: 756px;
+  width: 372px;
+  height: 70px;
+  background-color: #fffdfd;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.frame .rectangle-14 {
+  position: absolute;
+  top: 487px;
+  left: 756px;
+  width: 372px;
+  height: 70px;
+  background-color: #000000;
+  border: 0px none;
+  box-shadow: 0px 0px 24px #00000033;
+}
+
+.frame .rectangle-15 {
+  position: absolute;
+  top: 388px;
+  left: 756px;
+  width: 372px;
+  height: 70px;
+  background-color: #fffdfd;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.frame .text-wrapper-28 {
+  position: absolute;
+  top: 293px;
+  left: 781px;
+  width: 161px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #bfb3b2;
+  font-size: 32px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-29 {
+  position: absolute;
+  top: 395px;
+  left: 781px;
+  width: 161px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #bfb3b2;
+  font-size: 32px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .rectangle-16 {
+  position: absolute;
+  top: 634px;
+  left: 756px;
+  width: 50px;
+  height: 50px;
+  background-color: #fffdfd;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.frame .div-3 {
+  position: absolute;
+  top: 614px;
+  left: 844px;
+  width: 400px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  line-height: 24px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-30 {
+  font-style: italic;
+  text-decoration: underline;
+}
+
+.frame .view-5 {
+  position: absolute;
+  top: 5404px;
+  left: 484px;
+  width: 1131px;
+  height: 242px;
+}
+
+.frame .text-wrapper-31 {
+  position: absolute;
+  top: 2px;
+  left: 354px;
+  width: 304px;
+  height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Jost", Helvetica;
+  font-weight: 600;
+  color: #000000;
+  font-size: 28px;
+  letter-spacing: 0;
+  line-height: normal;
+}
+
+.frame .text-wrapper-32 {
+  position: absolute;
+  top: 0;
+  left: 716px;
+  width: 407px;
+  height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 28px;
+  line-height: 34px;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-33 {
+  position: absolute;
+  top: 159px;
+  left: 0;
+  width: 412px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #000000;
+  font-size: 28px;
+  line-height: 34px;
+  white-space: nowrap;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-34 {
+  position: absolute;
+  top: 207px;
+  left: 0;
+  width: 412px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400;
+  color: #000000;
+  font-size: 28px;
+  line-height: 34px;
+  text-decoration: underline;
+  white-space: nowrap;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .icons-whatsapp {
+  top: 162px;
+  left: 506px;
+  position: absolute;
+  width: 68px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .icons-2 {
+  top: 162px;
+  left: 612px;
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.frame .icons-vk {
+  top: 162px;
+  left: 716px;
+  width: 72px;
+  height: 72px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.frame .div-4 {
+  position: absolute;
+  top: 74px;
+  left: 164px;
+  width: 318px;
+  font-weight: 400;
+  color: #21304e;
+  font-size: 46px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-35 {
+  font-weight: 700;
+}
+
+.frame .text-wrapper-36 {
+  font-family: "Jost", Helvetica;
+  font-weight: 400;
+  color: #21304e;
+  font-size: 46px;
+  letter-spacing: 0;
+}
+
+.frame .text-wrapper-37 {
+  position: absolute;
+  top: 4938px;
+  left: 1002px;
+  width: 298px;
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 30px;
+  text-align: center;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
+
+.frame .div-5 {
+  position: absolute;
+  top: 5423px;
+  left: 421px;
+  width: 318px;
+  font-weight: 400;
+  color: #21304e;
+  font-size: 46px;
+  line-height: normal;
+  font-family: "Jost", Helvetica;
+  letter-spacing: 0;
+}
