@@ -1,9 +1,3 @@
-/* ОБЩИЕ СТИЛИ И СТИЛИ-ПОМОЩНИКИ */
-
-/* 
-  Класс-контейнер. Ограничивает ширину контента и центрирует его.
-  Мы будем использовать его во всех секциях.
-*/
 .container {
   max-width: 1280px; /* Стандартная ширина для больших экранов */
   margin: 0 auto;    /* Центрирует по горизонтали */
@@ -13,12 +7,11 @@
 
 /* Общий стиль для всех кнопок */
 .btn {
-  position: relative; /* Необходимо для позиционирования псевдоэлемента */
+  position: relative; 
   display: inline-block;
   padding: 18px 35px;
   font-family: 'Jost', sans-serif;
   font-size: 24px;
-  /* Изначальная толщина текста */
   font-weight: 600;
   color: #000;
   background-color: #fff;
@@ -28,43 +21,34 @@
   text-align: center;
   text-decoration: none;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease;
+  /* Плавный переход для всех анимируемых свойств */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, text-shadow 0.25s ease-in-out;
 }
 
 /* Эффект при наведении на кнопку */
 .btn:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  /* Делаем видимый текст жирным */
-  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  transform: translateY(-3px);
+  text-shadow: 0 0 0.6px #000;
 }
 
-/* 
-  САМЫЙ ГЛАВНЫЙ ТРЮК:
-  Создаем невидимый псевдоэлемент, который растягивает кнопку до нужной ширины.
-*/
 .btn::before {
-  /* Берем текст из нашего data-text атрибута в HTML */
   content: attr(data-text);
   display: block;
-  /* Делаем его ЖИРНЫМ (700), как в состоянии при наведении */
   font-weight: 700;
-  height: 0; /* Убираем высоту, чтобы он не занимал места по вертикали */
-  overflow: hidden; /* Прячем его содержимое */
-  /* Делаем его полностью невидимым для глаз и скринридеров */
+  height: 0; 
+  overflow: hidden; 
   visibility: hidden;
 }
 
-/* ---------------------------------- */
 /*          СТИЛИ ШАПКИ (HEADER)      */
-/* ---------------------------------- */
 
 .header {
   background-color: #fff;
   padding: 20px 0;
-  border-bottom: 1px solid #eee; /* Тонкая линия-разделитель как в макетах */
+  border-bottom: 1px solid #eee; 
 }
 
-/* Используем Flexbox для выравнивания элементов в контейнере шапки */
 .header .container {
   display: flex;
   justify-content: space-between;
@@ -87,11 +71,10 @@
   font-weight: 400;
 }
 
-/* Стили для навигации */
 .main-nav {
   display: flex;
   align-items: center;
-  gap: 50px; /* Расстояние между ссылками */
+  gap: 50px; 
 }
 
 .main-nav a {
@@ -99,16 +82,13 @@
   font-size: 24px;
   color: #000;
   text-decoration: none;
-  /* Изначально все ссылки НЕ жирные */
   font-weight: 400; 
-  /* Добавляем плавный переход для всех изменений */
-  transition: all 0.1s ease-in-out;
+  transition: color 0.25s ease-in-out, text-shadow 0.25s ease-in-out;
 }
 
-/* При наведении на ЛЮБУЮ ссылку... */
 .main-nav a:hover {
-  color: #555; /* ...немного меняем цвет */
-  font-weight: 700; /* ...и ДЕЛАЕМ ЕЕ ЖИРНОЙ */
+  color: #000; 
+  text-shadow: 0 0 0.6px #000; 
 }
 
 
@@ -119,18 +99,17 @@
   75% { transform: rotate(-8deg) scale(1.1); }
 }
 
-/* Блок с контактами в шапке */
 .header-contacts {
   display: flex;
-  flex-direction: column; /* Элементы друг под другом */
-  align-items: flex-end;  /* Выравнивание по правому краю */
+  flex-direction: column; 
+  align-items: flex-end;  
   gap: 10px;
 }
 
 .social-links {
   display: flex;
   align-items: center;
-  gap: 30px; /* Расстояние между иконками */
+  gap: 30px; 
 }
 
 .social-links .social-link {
@@ -139,26 +118,17 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  /* background-color: #000; */
-  /* border-radius: 50%; */
-  /* ДОБАВЛЯЕМ ПЛАВНЫЙ ПЕРЕХОД:
-     Он сработает, когда мы уберем курсор с иконки. */
   transition: transform 0.2s ease-out;
 }
 
-/* ЭФФЕКТ ПРИ НАВЕДЕНИИ */
 .social-links .social-link:hover {
-  /* Запускаем нашу анимацию 'shake' */
   animation: shake 0.4s ease-in-out;
-  /* Увеличиваем иконку сразу, чтобы не было скачка */
   transform: scale(1.1);
 }
 
 .social-links .social-link img {
   width: 48px;
   height: 48px;
-  /* Эта строка делает SVG иконку белой */
-  /* filter: brightness(0) invert(1);  */
 }
 
 .header-contacts .phone-number {
@@ -167,30 +137,26 @@
   font-size: 22px;
   color: #000;
   text-decoration: none;
-  white-space: nowrap; /* Чтобы номер не переносился */
+  white-space: nowrap; 
 }
 
 
-/* ---------------------------------- */
 /*     СТИЛИ ГЛАВНОГО ЭКРАНА (HERO)    */
-/* ---------------------------------- */
 
 .hero {
-  /* Задаем фоновое изображение и темный градиент-наложение */
   background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('../images/main_background.jpg');
   background-size: cover;
   background-position: center;
   color: #fff;
   
-  /* Задаем высоту блока и выравниваем контент */
-  min-height: 800px; /* Можете подобрать высоту по вкусу */
+  min-height: 800px; 
   display: flex;
-  align-items: flex-end; /* Прижимаем контент к низу */
-  padding-bottom: 100px; /* Даем отступ снизу */
+  align-items: flex-end; 
+  padding-bottom: 100px; 
 }
 
 .hero-content {
-  max-width: 1100px; /* Ограничиваем ширину текстового блока */
+  max-width: 1100px; 
 }
 
 .hero-content h1 {
@@ -205,7 +171,7 @@
   font-weight: 500;
   font-style: italic;
   margin: 0 0 40px 0;
-  max-width: 950px; /* Ограничиваем ширину подзаголовка */
+  max-width: 950px; 
 }
 
 .hero .btn {
@@ -213,64 +179,53 @@
   padding: 20px 50px;
 }
 
-/* ---------------------------------- */
 /*        СТИЛИ СЕКЦИИ УСЛУГ          */
-/* ---------------------------------- */
 
 .services {
-  /* Отступы сверху и снизу секции */
   padding: 100px 0;
-  /* Фон можно сделать чуть-чуть серым, чтобы карточки выделялись */
   background-color: #f8f8f8; 
 }
 
-/* 
-  Общий стиль для заголовков секций. 
-  Мы будем переиспользовать его для "Как мы работаем" и т.д.
-*/
 .section-title {
   font-family: 'Jost', sans-serif;
   font-size: 40px;
   font-weight: 600;
   text-align: center;
   color: #000;
-  margin: 0 0 60px 0; /* Отступ снизу до контента */
+  margin: 0 0 60px 0; 
 }
 
-/* 
-  Создаем сетку для карточек.
-  3 колонки одинаковой ширины (1fr) и отступ между ними.
-*/
 .services-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 40px; /* Расстояние между карточками */
+  gap: 40px; 
 }
 
-/* Стили для каждой карточки услуги */
 .service-card {
   background-color: #fff;
   border-radius: 20px;
   padding: 40px 30px;
   text-align: center;
-  /* Красивая, едва заметная тень, как на макете */
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
   
-  /* Делаем карточку flex-контейнером, чтобы прижать кнопку к низу */
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease;
 }
 
-/* Изображение в карточке (делаем его круглым) */
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+}
+
 .service-card-img {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  object-fit: cover; /* Гарантирует, что фото заполнит круг без искажений */
-  margin: 0 auto 30px auto; /* Центрируем и добавляем отступ снизу */
+  object-fit: cover; 
+  margin: 0 auto 30px auto; 
 }
 
-/* Заголовок в карточке */
 .service-card-title {
   font-size: 28px;
   font-weight: 600;
@@ -279,9 +234,8 @@
   margin: 0 0 30px 0;
 }
 
-/* Список услуг в карточке */
 .service-card-list {
-  list-style: none; /* Убираем стандартные маркеры */
+  list-style: none; 
   padding: 0;
   margin: 0 0 40px 0;
   text-align: left;
@@ -293,11 +247,10 @@
 
 .service-card-list li {
   position: relative;
-  padding-left: 20px; /* Место для кастомного маркера */
+  padding-left: 20px; 
   margin-bottom: 10px;
 }
 
-/* Рисуем кастомные маркеры (точки), как на макете */
 .service-card-list li::before {
   content: '•';
   position: absolute;
@@ -306,46 +259,36 @@
   color: #555;
 }
 
-/*
-  Вариация для темной кнопки. Добавляем к основному классу .btn
-  HTML: <button class="btn btn-dark">
-*/
 .btn.btn-dark {
   background-color: #0b0b0b;
   color: #fff;
-  border-radius: 50px; /* Делаем кнопку скругленной */
+  border-radius: 50px; 
   padding-top: 20px;
   padding-bottom: 20px;
 }
 
-/* Этот трюк прижимает кнопку к самому низу карточки */
+.btn.btn-dark:hover {
+  text-shadow: 0 0 0.6px #fff;
+}
+
 .service-card .btn {
   margin-top: auto;
 }
 
-/* ---------------------------------- */
 /*          СТИЛИ СЕКЦИИ АКЦИИ        */
-/* ---------------------------------- */
 
 .promo {
-  /* Задаем фоновое изображение и градиент */
   background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('../images/background_for_sale.jpg');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* Создает красивый эффект параллакса при скролле */
+  background-attachment: fixed; 
   color: #fff;
-  
-  /* Отступы и выравнивание контента по центру */
   padding: 120px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  text-align: left;
 }
 
-/* Ограничиваем ширину контента, чтобы он не растягивался на всю страницу */
 .promo-content {
-  max-width: 900px;
+  max-width: auto;
 }
 
 .promo-content h2 {
@@ -361,61 +304,21 @@
   font-style: italic;
   line-height: 1.5;
   margin: 0 0 45px 0;
-  opacity: 0.9; /* Делаем текст чуть менее ярким для лучшей читаемости */
+  opacity: 0.9; 
 }
 
-/* Используем наш общий класс для кнопки */
 .promo .btn {
   font-size: 30px;
   padding: 20px 50px;
 }
 
-/* ---------------------------------- */
-/*          СТИЛИ СЕКЦИИ АКЦИЯ         */
-/* ---------------------------------- */
-
-.promo {
-  /* Задаем фоновое изображение и градиент-наложение */
-  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('../images/background_for_sale.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed; /* Эффект параллакса: фон зафиксирован при скролле */
-  color: #fff;
-  padding: 100px 0;
-  text-align: left;
-}
-
-.promo-content {
-  max-width: 900px; /* Ограничиваем ширину контента */
-}
-
-.promo-content h2 {
-  font-size: 48px;
-  font-weight: 600;
-  margin: 0 0 20px 0;
-}
-
-.promo-content p {
-  font-size: 24px;
-  font-style: italic;
-  line-height: 1.6;
-  margin: 0 0 40px 0;
-}
-
-
-/* ---------------------------------- */
 /*     СТИЛИ СЕКЦИИ "КАК МЫ РАБОТАЕМ"   */
-/* ---------------------------------- */
 
 .work-process {
   padding: 100px 0;
-  background-color: #fff; /* Белый фон для контраста */
+  background-color: #fff; 
 }
 
-/* 
-  Создаем сетку из 4-х колонок.
-  На мобильных устройствах она будет перестраиваться (это мы сделаем позже).
-*/
 .process-steps {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -427,10 +330,9 @@
   padding: 30px;
   border: 1px solid #e0e0e0;
   border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
-/* Круглый номер шага */
 .step-card-number {
   width: 70px;
   height: 70px;
@@ -438,7 +340,6 @@
   color: #fff;
   border-radius: 50%;
   
-  /* Выравниваем цифру по центру круга */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -448,17 +349,15 @@
   margin-bottom: 30px;
 }
 
-/* Заголовок в карточке шага */
 .step-card-title {
   font-size: 20px;
   font-weight: 700;
   line-height: 1.4;
   color: #000;
   margin: 0 0 15px 0;
-  min-height: 84px; /* Задаем минимальную высоту, чтобы карточки были одинаковыми */
+  min-height: 84px; 
 }
 
-/* Описание в карточке шага */
 .step-card-description {
   font-family: 'Jost', sans-serif;
   font-style: italic;
@@ -468,57 +367,41 @@
   margin: 0;
 }
 
-/* ---------------------------------- */
 /*      СТИЛИ СЕКЦИИ "ПОЧЕМУ МЫ"       */
-/* ---------------------------------- */
 
 .advantages {
   padding: 100px 0;
   background-color: #fff;
 }
 
-/* 
-  Создаем двухколоночный макет с помощью Flexbox.
-  align-items: center - выравнивает контент и картинку по вертикали.
-*/
 .advantages-wrapper {
   display: flex;
   align-items: center;
-  gap: 60px; /* Расстояние между текстовым блоком и картинкой */
+  gap: 60px; 
 }
 
-/* 
-  Задаем размеры для левой и правой колонок.
-  flex: 1; - означает, что каждая колонка будет занимать равное пространство.
-  В данном случае мы можем задать левой колонке чуть меньшую ширину.
-*/
 .advantages-content {
-  flex: 0 0 45%; /* Колонка с текстом займет 45% ширины */
+  flex: 0 0 45%; 
 }
 
 .advantages-image {
-  flex: 0 0 55%; /* Колонка с картинкой займет 55% */
+  flex: 0 0 55%; 
 }
 
-/* 
-  Делаем, чтобы заголовок в этой секции был выровнен по левому краю,
-  а не по центру, как остальные .section-title.
-*/
 .advantages .section-title {
   text-align: left;
 }
 
-/* Стили для списка преимуществ */
 .advantages-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 50px 0; /* Отступ до кнопки */
+  margin: 0 0 50px 0; 
 }
 
 .advantages-list li {
   display: flex;
   align-items: center;
-  gap: 20px; /* Отступ между иконкой и текстом */
+  gap: 20px; 
   font-family: 'Jost', sans-serif;
   font-style: italic;
   font-size: 22px;
@@ -526,57 +409,40 @@
   color: #333;
 }
 
-/* Добавляем отступ между пунктами списка */
 .advantages-list li:not(:last-child) {
   margin-bottom: 25px;
 }
 
-/* 
-  Создаем иконку-галочку с помощью псевдоэлемента.
-  Это более гибкий способ, чем использование <img>.
-  Но если вам проще с <img>, можно вернуть его и задать размеры.
-*/
 .advantages-list li::before {
-  content: ''; /* Пустое содержимое */
+  content: ''; 
   display: block;
   width: 40px;
   height: 40px;
-  flex-shrink: 0; /* Запрещаем иконке сжиматься */
+  flex-shrink: 0; 
   background-image: url('../images/accept_galochka.svg');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
 
-/* Стили для картинки в правой колонке */
 .advantages-image img {
-  width: 100%; /* Картинка будет занимать всю ширину своей колонки */
+  width: 100%; 
   height: auto;
   display: block;
-  border-radius: 15px; /* Немного скруглим углы */
+  border-radius: 15px; 
 }
 
-/* 
-  Выравниваем кнопку влево.
-  max-width задает ей конкретную ширину, чтобы она не растягивалась.
-*/
 .advantages .btn {
   max-width: 400px;
 }
 
-/* ---------------------------------- */
 /*      СТИЛИ СЕКЦИИ С ФОРМОЙ         */
-/* ---------------------------------- */
 
 .contact-form-section {
   padding: 100px 0;
   background-color: #f8f8f8;
 }
 
-/* 
-  Создаем красивую рамку с тенью вокруг всего блока, как на макете.
-  overflow: hidden; нужен, чтобы скругленные углы картинки не вылезали за рамку.
-*/
 .contact-form-wrapper {
   display: flex;
   background-color: #fff;
@@ -586,18 +452,18 @@
 }
 
 .contact-form-image {
-  flex: 0 0 50%; /* Картинка занимает 50% ширины */
+  flex: 0 0 50%; 
 }
 
 .contact-form-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Картинка полностью заполняет свою колонку без искажений */
+  object-fit: cover; 
   display: block;
 }
 
 .contact-form-content {
-  flex: 0 0 50%; /* Форма занимает 50% ширины */
+  flex: 0 0 50%; 
   padding: 60px;
 }
 
@@ -647,7 +513,6 @@
   text-decoration: underline;
 }
 
-/* Кнопка в форме: делаем ее черной и на всю ширину */
 .contact-form-content .btn {
   background-color: #0b0b0b;
   color: #fff;
@@ -656,9 +521,11 @@
   padding-bottom: 20px;
 }
 
-/* ---------------------------------- */
+.contact-form-content .btn:hover {
+  text-shadow: 0 0 0.6px #fff;
+}
+
 /*          СТИЛИ ПОДВАЛА (FOOTER)      */
-/* ---------------------------------- */
 
 .footer {
   padding: 60px 0;
@@ -666,14 +533,41 @@
   border-top: 1px solid #eee;
 }
 
-/* 
-  Создаем трехколоночную сетку для подвала
-*/
+/* Контейнер в футере выстраивает ряды вертикально и центрирует их */
 .footer .container {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr; /* Задаем пропорции колонок */
-  align-items: start;
-  gap: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px; /* Расстояние между верхним и нижним рядом */
+}
+
+/* Стили для верхнего ряда: убираем растягивание и задаем отступы */
+.footer-top {
+  display: flex;
+  align-items: center;
+  gap: 100px; /* Отступ между элементами в верхнем ряду */
+}
+
+.footer p{
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 700; /* Эта строка сделает текст жирным */
+}
+
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Центрируем оба блока */
+  gap: 100px; /* Задаем расстояние между блоком ссылок и блоком иконок */
+  width: 100%;
+}
+
+/* Ссылки в футере теперь в ряд */
+.footer-links {
+  display: flex;
+  flex-direction: column; /* Располагаем ссылки одна под другой */
+  gap: 10px; /* Расстояние между ссылками */
 }
 
 .footer-col {
@@ -683,7 +577,7 @@
 }
 
 .footer-col .logo {
-  margin-bottom: 10px; /* Доп. отступ после лого */
+  margin-bottom: 10px; 
 }
 
 .footer-col a {
@@ -706,11 +600,11 @@
   font-size: 18px;
 }
 
-.footer-col .phone-number {
+.footer .phone-number {
   font-weight: 600;
   font-size: 18px;
 }
 
 .footer .social-links {
-  justify-content: flex-start; /* Выравниваем иконки по левому краю в колонке */
+  justify-content: flex-start; 
 }
