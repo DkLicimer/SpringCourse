@@ -140,6 +140,11 @@
   white-space: nowrap; 
 }
 
+/* Кнопка бургера */
+.burger-menu {
+      display: none;
+  }
+
 
 /*     СТИЛИ ГЛАВНОГО ЭКРАНА (HERO)    */
 
@@ -309,6 +314,53 @@
 .promo .btn {
   font-size: 30px;
   padding: 20px 50px;
+}
+
+/*
+==============================================
+====   7. Секция "Наши работы" (Portfolio)   ====
+==============================================
+*/
+.portfolio {
+  padding: 80px 0;
+  background-color: #f9f9f9; /* Слегка отличим фон от соседних блоков */
+}
+
+/* Стили самой карусели (очень похожи на карусель услуг) */
+.portfolio-carousel {
+  display: flex;
+  overflow-x: auto; /* Включаем горизонтальную прокрутку */
+  scroll-snap-type: x mandatory; /* Плавная доводка при скролле */
+  padding-bottom: 20px; /* Место для тени и скроллбара */
+  
+  /* Скрываем стандартный скроллбар */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.portfolio-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Стили для каждого элемента (фотографии) в карусели */
+.portfolio-item {
+  flex: 0 0 60%; /* Каждая карточка занимает 80% ширины */
+  margin-right: 20px;
+  scroll-snap-align: center; /* Карточка будет примагничиваться к центру */
+  border-radius: 15px;
+  overflow: hidden; /* Скрываем все, что выходит за рамки скругленных углов */
+}
+
+.portfolio-item img {
+  display: block;
+  width: 100%;
+  height: 450px; /* Задаем фиксированную высоту для единообразия */
+  object-fit: cover; /* Изображение заполнит блок, сохранив пропорции (может обрезаться) */
+  transition: transform 0.4s ease;
+}
+
+/* Эффект при наведении мыши на компьютерах */
+.portfolio-item:hover img {
+  transform: scale(1.05);
 }
 
 /*     СТИЛИ СЕКЦИИ "КАК МЫ РАБОТАЕМ"   */
@@ -640,3 +692,291 @@
   justify-content: flex-start; 
 }
 
+/*
+==============================================
+====   СТИЛИ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ   ====
+==============================================
+*/
+
+.mobile-nav-contacts {
+  display: none;
+}
+
+/* Применяем стили, если ширина экрана 768px или меньше */
+@media (max-width: 768px) {
+
+  /* 0. Общие изменения */
+  .container {
+    padding: 0 15px; /* Уменьшаем боковые отступы на мобильных */
+  }
+
+  .section-title {
+    font-size: 28px; /* Уменьшаем заголовки секций */
+    margin-bottom: 40px;
+  }
+  
+  /* Класс для блокировки прокрутки при открытом меню */
+  .no-scroll {
+    overflow: hidden;
+  }
+
+  /* 1. Шапка сайта (Header) */
+  .header .container {
+      justify-content: space-between;
+      flex-wrap: nowrap; /* Запрещаем перенос, чтобы лого и бургер были на одной линии */
+  }
+
+  .logo {
+      font-size: 28px; /* Уменьшаем логотип */
+  }
+
+  /* Скрываем оригинальный блок контактов на мобильных */
+  .header-contacts {
+      display: none;
+  }
+
+  /* Стилизация бургер-меню (остается почти без изменений) */
+  .burger-menu {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      width: 30px;
+      height: 25px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      z-index: 1001;
+  }
+  .burger-menu span {
+      width: 100%; height: 3px; background-color: #000;
+      border-radius: 3px; transition: all 0.3s ease-in-out;
+  }
+  .burger-menu.is-active span:nth-child(1) { transform: translateY(8.5px) rotate(45deg); }
+  .burger-menu.is-active span:nth-child(2) { opacity: 0; }
+  .burger-menu.is-active span:nth-child(3) { transform: translateY(-8.5px) rotate(-45deg); }
+
+  /* Стилизация навигации и ее содержимого */
+  .main-nav {
+      display: flex;
+      flex-direction: column; /* Элементы в колонку */
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      position: fixed; top: 0; left: 100%; width: 100%;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      transition: left 0.4s ease-in-out;
+      z-index: 1000;
+      padding: 20px;
+  }
+  .main-nav.is-active {
+      left: 0;
+  }
+  .main-nav a {
+      font-size: 24px;
+      font-weight: 600;
+  }
+
+  .mobile-nav-contacts {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px; /* Расстояние между соц. сетями и телефоном */
+        width: 100%;
+    }
+
+    /* Располагаем элементы в нужном порядке */
+    .mobile-nav-contacts .social-links {
+        order: 1; /* Соц. сети - первые */
+        gap: 25px;
+    }
+    .main-nav > a { /* Ссылки на услуги/акции и т.д. */
+        order: 2;
+    }
+    .mobile-nav-contacts .phone-number {
+        order: 3; /* Телефон - последний */
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+    .mobile-nav-contacts .social-link img {
+        width: 40px;
+        height: 40px;
+    }
+
+
+  /* 2. Главный экран (Hero) */
+  .hero {
+    min-height: 600px;
+    padding-bottom: 60px;
+    background-position: 70% 50%; /* Смещаем фон, чтобы было видно главное */
+  }
+
+  .hero-content h1 {
+    font-size: 32px; /* Уменьшаем заголовок */
+  }
+
+  .hero-content .hero-subtitle {
+    font-size: 20px; /* Уменьшаем подзаголовок */
+  }
+
+  .hero .btn {
+    font-size: 18px; /* Уменьшаем кнопку */
+    padding: 15px 30px;
+  }
+
+
+  /* 3. Секция "Наши услуги" (Services) */
+.services-grid {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0 30px; 
+  box-sizing: border-box; 
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 20px, black 95%, transparent);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.services-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.service-card {
+  flex: 0 0 85%;
+  margin-right: 15px;
+  scroll-snap-align: center; 
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08); 
+}
+
+.service-card-title {
+  font-size: 20px;
+}
+
+.service-card-list li {
+  font-size: 14px;
+}
+
+.service-card:last-child {
+  margin-right: 0;
+}
+
+
+  /* 4. Секция "Как мы работаем?" (Work Process) */
+  .process-steps {
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 15px;
+  }
+  
+  .step-card-title {
+    font-size: 16px;
+    min-height: 0; 
+    margin-bottom: 10px;
+  }
+  
+  .step-card-description {
+    font-size: 14px;
+  }
+
+  .step-card-number {
+    width: 45px;
+    height: 45px;
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+
+  /* 5. Секция "Почему выбирают нас?" (Advantages) */
+  .advantages-wrapper {
+    flex-direction: column; /* Ставим блоки друг под друга */
+  }
+
+  .advantages-image {
+    order: 1; /* Картинка первая */
+  }
+
+  .advantages-content {
+    order: 2; /* Текст второй */
+  }
+  
+  .advantages .section-title {
+    text-align: center; /* Центрируем заголовок */
+  }
+
+  .advantages-list li {
+    font-size: 18px;
+  }
+
+
+  /* 6. Форма обратной связи (Contact Form) */
+  .contact-form-wrapper {
+    flex-direction: column; /* Ставим блоки друг под друга */
+  }
+  .contact-form-image {
+    order: 1; /* Картинка первая */
+    /* Убираем max-height, чтобы не обрезать контейнер */
+  }
+  .contact-form-image img {
+    /* Позволяем картинке самой определять свою высоту */
+    height: 150px;
+  }
+  .contact-form-content {
+    order: 2; /* Форма вторая */
+    padding: 30px 20px;
+  }
+
+  .contact-form-content h2 {
+    font-size: 24px;
+    text-align: center;
+  }
+
+
+  /* 7. Секция "АКЦИЯ" (Promo) */
+  .promo-content h2 {
+    font-size: 30px;
+  }
+
+  .promo-content p {
+    font-size: 20px;
+  }
+
+  .promo .btn {
+    font-size: 18px;
+    padding: 15px 30px;
+  }
+
+  /* Стили для секции "Наши работы" на мобильных */
+.portfolio-item {
+  flex-basis: 90%; /* На мобильных карточка будет занимать почти весь экран */
+  margin-right: 15px;
+}
+
+.portfolio-item img {
+  height: 280px; /* Уменьшаем высоту картинки для мобильных */
+}
+
+/* Центрируем первую и последнюю карточку с помощью отступов у контейнера */
+.portfolio-carousel {
+    padding-left: 15px;
+    padding-right: 15px;
+    /* Это свойство не дает padding'у сломать ширину блока */
+    box-sizing: border-box; 
+}
+  
+
+  /* 8. Подвал (Footer) */
+  .footer .container,
+  .footer-top,
+  .footer-bottom {
+    flex-direction: column; /* Все в одну колонку */
+    align-items: center; /* Центрируем все */
+    gap: 25px;
+    text-align: center;
+  }
+  
+  .footer-links {
+    align-items: center;
+  }
+}

@@ -25,6 +25,21 @@
             <a href="#services">УСЛУГИ</a>
             <a href="#promotions">АКЦИИ</a>
             <a href="#portfolio">НАШИ РАБОТЫ</a>
+
+            <div class="mobile-nav-contacts">
+              <div class="social-links">
+                <a href="https://wa.me/79245057111" aria-label="WhatsApp" class="social-link">
+                  <img src="images/icon_whatsapp.svg" alt="WhatsApp" />
+                </a>
+                <a href="https://t.me/manager_pragmatstroi" aria-label="Telegram" class="social-link">
+                  <img src="images/icon_telegram.svg" alt="Telegram" />
+                </a>
+                <a href="https://vk.com/pragmat_stroi" aria-label="VK" class="social-link">
+                  <img src="images/icon_vk.svg" alt="VK" />
+                </a>
+              </div>
+              <a href="tel:+79245057111" class="phone-number">+7 (924) 505 71 11</a>
+            </div>
           </nav>
           <div class="header-contacts">
             <div class="social-links">
@@ -116,6 +131,44 @@
         </div>
       </section>
 
+      <!-- СЕКЦИЯ "НАШИ РАБОТЫ" -->
+      <section id="portfolio" class="portfolio" aria-labelledby="portfolio-title">
+        <div class="container">
+          <h2 id="portfolio-title" class="section-title">Наши работы</h2>
+          
+          <!-- Обертка для карусели -->
+          <div class="portfolio-carousel">
+            
+            <!-- Карточка 1 -->
+            <div class="portfolio-item">
+              <img src="images/portfolio_1.jpg" alt="Пример нашей работы 1" loading="lazy">
+            </div>
+
+            <!-- Карточка 2 -->
+            <div class="portfolio-item">
+              <img src="images/portfolio_2.jpg" alt="Пример нашей работы 2" loading="lazy">
+            </div>
+            
+            <!-- Карточка 3 -->
+            <div class="portfolio-item">
+              <img src="images/portfolio_3.jpg" alt="Пример нашей работы 3" loading="lazy">
+            </div>
+            
+            <!-- Карточка 4 -->
+            <div class="portfolio-item">
+              <img src="images/portfolio_4.jpg" alt="Пример нашей работы 4" loading="lazy">
+            </div>
+            
+            <!-- Карточка 5 -->
+            <div class="portfolio-item">
+              <img src="images/portfolio_5.jpg" alt="Пример нашей работы 5" loading="lazy">
+            </div>
+
+            <!-- Вы можете добавить больше карточек, просто копируя блок <div class="portfolio-item">...</div> -->
+            
+          </div>
+        </div>
+      </section>
 
       <!-- Секция КАК МЫ РАБОТАЕМ -->
       <section class="work-process" aria-labelledby="process-title">
@@ -190,7 +243,7 @@
                 <div class="form-group checkbox-group">
                   <input type="checkbox" id="privacy-consent" name="privacy-consent" class="form-checkbox" required aria-describedby="privacy-text" />
                   <label for="privacy-consent" id="privacy-text">
-                    Я согласен с <a href="#privacy-policy">политикой конфиденциальности</a> и <a href="#data-processing">обработкой персональных данных</a>
+                    Я согласен с <a href="privacy-policy.html">политикой конфиденциальности</a> и <a href="user-agreement.html">обработкой персональных данных</a>
                   </label>
                 </div>
                 <button type="submit" class="btn">ОТПРАВИТЬ</button>
@@ -208,14 +261,16 @@
               <span class="logo-bold">Прагмат</span>
               <span class="logo-regular">Строй</span>
             </a>
-            <a href="tel:+79245057111" class="phone-number">+7 (924) 505 71 11</a>
             <p>10.00 - 20.00 ежедневно</p>
+            <a href="tel:+79245057111" class="phone-number">+7 (924) 505 71 11</a>
           </div>
           <!-- Нижний ряд -->
           <div class="footer-bottom">
             <div class="footer-links">
-              <a href="#user-agreement">Пользовательское соглашение</a>
-              <a href="#privacy-policy">Политика конфиденциальности</a>
+              <div class="footer-links">
+                <a href="user-agreement.html">Пользовательское соглашение</a>
+                <a href="privacy-policy.html">Политика конфиденциальности</a>
+              </div>
             </div>
             <div class="social-links">
               <a href="https://wa.me/79245057111" aria-label="WhatsApp" class="social-link">
