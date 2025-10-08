@@ -128,3 +128,4 @@ async function loadPromotion() {
     if (promoSection) promoSection.style.display = 'none';
   }
 }
+
