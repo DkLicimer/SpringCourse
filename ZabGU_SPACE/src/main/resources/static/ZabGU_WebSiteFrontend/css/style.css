@@ -1,80 +1,92 @@
 /* =================================================================== */
-/*                  ЕДИНЫЙ ФАЙЛ СТИЛЕЙ - STYLE.CSS                   */
+/*            ЕДИНЫЙ ФАЙЛ СТИЛЕЙ - РЕСТРУКТУРИРОВАННАЯ ВЕРСИЯ           */
 /* =================================================================== */
 /*                                                                   */
-/*  ВАЖНО: Для корректной работы этого файла необходимо добавить     */
-/*  класс к тегу <body> на каждой вашей HTML-странице, как описано   */
-/*  в инструкции выше (например, <body class="page-main">).          */
+/*  Структура файла:                                                 */
+/*  1. ОБЩИЕ СТИЛИ (применяются ко всему сайту)                       */
+/*  2. ОБЩИЕ КОМПОНЕНТЫ (переиспользуемые блоки: хедер, футер, модалки) */
+/*  3. СТИЛИ ДЛЯ КОНКРЕТНЫХ СТРАНИЦ (уникальные для каждой страницы)  */
+/*  4. АДАПТИВНЫЕ СТИЛИ (все @media запросы)                           */
 /*                                                                   */
 /* =================================================================== */
 
 
 /* =================================================================== */
-/*                      ОБЩИЕ СТИЛИ (COMMON STYLES)                   */
+/*                      1. ОБЩИЕ СТИЛИ (COMMON STYLES)                 */
 /* =================================================================== */
 
 /* --- Сброс стилей и базовые настройки --- */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 html, body {
-  height: 100%;
-  width: 100%;
-  font-family: 'Montserrat Alternates', sans-serif;
-  color: white;
-  background-color: rgb(54, 55, 60);
-  background-attachment: fixed;
+    height: 100%;
+    width: 100%;
+    font-family: 'Montserrat Alternates', sans-serif;
+    color: white;
+    background-color: rgb(54, 55, 60);
+    background-attachment: fixed; /* Фон зафиксирован при прокрутке */
 }
-
-/* --- Фоны для конкретных страниц --- */
-.page-main {
-  background-image: url('images/backgroundMainPage.png');
-  background-position: center 20%;
-}
-.page-rooms, .page-datetime, .page-application, .page-employee {
-  background-image: url('images/backgrd.jpg');
-  background-position: center center;
-  background-repeat: repeat;
-}
-
 
 a {
-  text-decoration: none;
-  color: #FFFFFF;
+    text-decoration: none;
+    color: #FFFFFF;
 }
 
 a:hover, a:visited {
-  color: #FFFFFF;
+    color: #FFFFFF;
 }
 
-/* --- Общая структура: обертка, хедер, футер --- */
+/* --- Общая обертка для контента --- */
 .wrapper {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 30px 38px;
-  padding-bottom: 70px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 30px 38px;
+    padding-bottom: 70px; /* Оставляем место для футера */
 }
 
+/* --- Общие текстовые блоки --- */
+.mainText {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.subText {
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    font-weight: 400;
+    line-height: 1.2;
+    text-align: left;
+}
+
+
+/* =================================================================== */
+/*                  2. ОБЩИЕ КОМПОНЕНТЫ (SHARED COMPONENTS)            */
+/* =================================================================== */
+
+/* --- Компонент: Хедер --- */
 .header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
-  width: 100%;
-  margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+    margin-bottom: 30px;
 }
 
 .zabguSpace {
-  max-width: 620px;
-  width: 100%;
+    max-width: 620px;
+    width: 100%;
 }
 
 .zabguSpace svg {
@@ -83,36 +95,38 @@ a:hover, a:visited {
 }
 
 .socialMedia {
-  display: flex;
-  align-items: center;
-  gap: 60px;
+    display: flex;
+    align-items: center;
+    gap: 60px;
 }
 
 .link img {
-  width: 80px;
-  height: 100%;
-  transition: transform 0.2s;
+    width: 80px;
+    height: 100%;
+    transition: transform 0.2s;
 }
 
 .link img:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
+/* --- Компонент: Футер --- */
 .footer {
-  position: fixed;
-  height: 100px;
-  bottom: -65px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding-left: 40px;
-  padding-right: 40px;
-  background-color: #FFFFFF;
-  border-radius: 35px 35px 0 0;
-  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 5px;
+    position: fixed;
+    height: 100px;
+    bottom: -65px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding-left: 40px;
+    padding-right: 40px;
+    background-color: #FFFFFF;
+    border-radius: 35px 35px 0 0;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 5px;
+    z-index: 100;
 }
 
 .footer p {
@@ -122,589 +136,66 @@ a:hover, a:visited {
     white-space: nowrap;
 }
 
-/* --- Общие текстовые блоки --- */
-.mainText {
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: 10px;
-  text-align: left;
-}
-.subText {
-  font-size: clamp(1rem, 2.5vw, 1.5rem);
-  font-weight: 400;
-  line-height: 1.2;
-  text-align: left;
-}
-
-
-/* =================================================================== */
-/*                      СТИЛИ СТРАНИЦ (PAGE-SPECIFIC STYLES)         */
-/* =================================================================== */
-
-/* --- Стили для Главной страницы (mainPage.css) --- */
-.page-main .main-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 1;
-    text-align: center;
-    margin-top: 100px;
-}
-.page-main .mainText {
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 400;
-  margin-bottom: 80px;
-  max-width: 1150px;
-  text-align: center;
-}
-.bookingButton {
-  max-width: 806px;
-  width: 80%;
-  transition: transform 0.2s;
-}
-.bookingButton:hover {
-    transform: scale(1.05);
-}
-.bookingButton svg {
-    width: 80%;
-    height: auto;
-}
-.popup {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0.5s;
-    position: fixed;
-    bottom: 45px;
-    right: 20px;
-    background-color: #f9f9f9;
-    color: #333;
-    border: 1px solid #ccc;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    z-index: 1000;
-    max-width: 500px;
-    border-radius: 10px;
-}
-.popup.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-.popup-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-.popup-text {
-    margin-right: 15px;
-    font-family: 'Montserrat Alternates', sans-serif;
-    font-size: 14px;
-}
-.close-btn {
-    cursor: pointer;
-    font-size: 20px;
-    font-weight: bold;
-    color: #aaa;
-}
-.close-btn:hover { color: #000; }
-
-/* --- Стили для страницы комнат (roomsPage.css) --- */
-.page-rooms .main-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 1;
-    gap: 30px;
-}
+/* --- Компонент: Заголовок страницы --- */
 .title-block {
     width: 100%;
     max-width: 1080px;
 }
 
-/* --- Стили для карточек-превью --- */
-.room-cards-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 30px;
-    width: 100%;
-    max-width: 1200px;
-    padding: 20px 0;
-}
-
-.room-card {
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    cursor: pointer;
-    overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
-    position: relative;
-    height: 220px;
-}
-
-.room-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-}
-
-.card-main-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.card-title-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 40px 20px 20px;
-    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-    color: white;
-}
-
-.card-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-}
-
-.imageRooms {
-    max-width: 500px;
-    width: 100%;
-}
-.imageRooms img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 20px;
-}
-.descriptionRoom {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  text-align: left;
-  width: 100%;
-  max-width: 500px;
-}
-.descriptionTitle {
-  font-size: clamp(1.6rem, 4vw, 2rem);
-  font-weight: 600;
-  margin-bottom: -5px;
-}
-.descriptionSubtitle {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
-  font-weight: 400;
-}
-
-
-
-/* --- Стили для страницы выбора даты (dateTimePage.css) --- */
 .title-block.with-back-button {
     display: flex;
     align-items: center;
     gap: 20px;
 }
-.page-datetime .main-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-grow: 1;
-  gap: 20px;
-}
-.controls-container {
-    width: 100%;
-    max-width: 1280px;
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-    flex-wrap: wrap; /* Добавим перенос на всякий случай */
+
+/* --- Компонент: Кнопка "Назад" --- */
+.nav-link-back-icon {
+    display: block;
 }
 
-.actions-block {
-  display: flex;
-  align-items: center;
-  gap: 30px;
-}
-.week-navigator {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  font-size: clamp(1rem, 2.5vw, 1.5rem);
-  font-weight: 500;
-}
-.week-arrow {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-.week-arrow:disabled { opacity: 0.5; cursor: not-allowed; }
-.week-arrow:disabled:hover { transform: none; }
-.week-arrow:hover { transform: scale(1.2); }
-#week-display {
-  min-width: 225px;
-  text-align: center;
-  display: inline-block;
-}
-.confirm-button {
-  background-color: #6DBE00;
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 12px 28px;
-  font-family: 'Montserrat Alternates', sans-serif;
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, background-color 0.2s;
-}
-.confirm-button:hover { transform: scale(1.05); background-color: #83E000; }
-.schedule-container {
-    width: 100%;
-    max-width: 1280px;
-    background-color: white;
-    border-radius: 25px;
-    padding: 25px 30px;
-    position: relative;
-    color: #333;
-    display: grid;
-    grid-template-columns: auto repeat(7, 1fr) auto;
-    gap: 5px 10px;
-    max-height: 54vh;
-    overflow-y: auto;
-}
-.schedule-container::-webkit-scrollbar { display: none; }
-.grid-header {
-    font-weight: 600;
-    padding-bottom: 10px;
-    font-size: clamp(0.9rem, 2vw, 1.1rem);
-    position: sticky;
-    top: 0;
-    z-index: 20;
+.nav-button.back-button {
     background-color: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
-    text-align: center;
-}
-.grid-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: white;
-    z-index: -1;
-}
-.time-label {
-    font-weight: 500;
-    font-size: clamp(0.8rem, 1.5vw, 1rem);
-    color: #888;
-    position: sticky;
-    background-color: white;
-    z-index: 10;
-}
-.schedule-container .time-label:first-of-type { left: 0; }
-.schedule-container .time-label:last-of-type { right: 0; }
-.time-slot {
-    height: 25px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    font-size: 0.7rem;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-.time-slot:not(.booked):not(.selected):hover { background-color: #e0f2d4; }
-.time-slot.selected { background-color: #28a745; border-color: #28a745; }
-.time-slot.booked { background-color: #343a40; border-color: #343a40; cursor: not-allowed; }
-
-/* --- Стили для страницы заявки (application.css) --- */
-.page-application .main-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex-grow: 1;
-    gap: 18px;
-}
-.page-application .header-container { margin-bottom: 18px; }
-.form-wrapper {
-    background-color: white;
-    border-radius: 30px;
-    padding: 25px 70px;
-    width: 100%;
-    max-width: 1080px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
-.application-form {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px 50px;
-    align-items: end;
-}
-.form-field { position: relative; }
-.form-field input {
-    width: 100%;
-    border: none;
-    border-bottom: 2px solid #8fcc29;
-    background: transparent;
-    padding: 10px 0;
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-    font-family: 'Montserrat Alternates', sans-serif;
-    color: #333;
-    outline: none;
-    position: relative;
-    z-index: 2;
+    transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
 }
 
-.form-field label {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-    color: #999;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    z-index: 1;
+.nav-button.back-button img {
+    width: 45px;
+    height: 45px;
 }
-.form-field input:focus + label,
-.form-field input:not(:placeholder-shown) + label {
-    transform: translateY(-28px);
-    font-size: 0.9rem;
-    color: #555;
-}
-.form-field-checkbox {
-    display: flex;
-    align-items: center;
-    margin-top: 10px;
-    gap: 15px;
-}
-.checkbox-label {
-    color: #555;
-    font-size: 1rem;
-    font-weight: 400;
-    cursor: pointer;
-    user-select: none;
-}
-.checkbox-input {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-.submit-button {
-    background-color: #8fcc29;
-    color: white;
-    border: none;
-    padding: 18px 45px;
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-    font-weight: 600;
-    font-family: 'Montserrat Alternates', sans-serif;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    grid-column: 2;
-    grid-row: 1 / span 6;
-    align-self: center;
-}
-.submit-button:hover {
-    background-color: #7db520;
+
+.nav-button.back-button:hover {
     transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
 }
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-text-fill-color: #333;
-    box-shadow: 0 0 0px 1000px transparent inset;
-    transition: background-color 5000s ease-in-out 0s;
-    font-family: 'Montserrat Alternates', sans-serif;
-    font-size: 1.1rem;
-}
+
+
+/* --- Компонент: Модальное окно (Общее) --- */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-.modal-content {
-    background-color: white;
-    color: #333;
-    padding: 30px 40px;
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    max-width: 400px;
-    width: 90%;
-}
-.modal-content p {
-    font-size: 1.2rem;
-    font-weight: 500;
-    margin-bottom: 25px;
-}
-.modal-close-button {
-    color: white;
-    border: none;
-    border-radius: 25px;
-    padding: 10px 40px;
-    font-size: 1.1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-/* --- Стили для страницы сотрудника (employeePage.css) --- */
-.page-employee .wrapper { overflow: hidden; }
-.page-employee .main-content {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    gap: 20px;
-}
-.logoutButton svg { transition: transform 0.2s; }
-.logoutButton svg:hover { transform: scale(1.1); }
-.filter-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-}
-.filter-btn {
-    font-family: 'Montserrat Alternates', sans-serif;
-    border: 1px solid white;
-    background-color: transparent;
-    color: white;
-    padding: 10px 25px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
-}
-.filter-btn:hover { background-color: rgba(255, 255, 255, 0.2); }
-.filter-btn.active { background-color: white; color: #333; }
-.application-list {
-    background-color: white;
-    color: #333;
-    width: 100%;
-    border-radius: 25px;
-    padding: 20px 10px 20px 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    max-height: 60vh;
-    overflow-y: auto;
-}
-.application-list::-webkit-scrollbar { display: none; }
-.list-header {
-    display: grid;
-    grid-template-columns: 100px 1.5fr 1fr 150px;
-    gap: 20px;
-    padding: 0 15px;
-    font-weight: 600;
-    color: #888;
-    margin-bottom: 15px;
-}
-.list-header span:first-child { padding-left: 30px; }
-.application-item { border-bottom: 1px solid #eee; }
-.application-item:last-child { border-bottom: none; }
-.item-summary {
-    display: grid;
-    grid-template-columns: 30px 70px 1.5fr 1fr 150px;
-    align-items: center;
-    gap: 20px;
-    padding: 20px 15px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.item-summary:hover { background-color: #f9f9f9; }
-.toggle-icon {
-    font-size: 1.2rem;
-    transition: transform 0.3s ease;
-    justify-self: center;
-}
-.status-badge {
-    padding: 8px 10px;
-    border-radius: 20px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    text-align: center;
-    color: white;
-}
-.status-approved { background: linear-gradient(to top, #6DBE00, #a9d465); }
-.status-pending { background-color: #ccc; color: #555; }
-.status-rejected { background-color: #e74c3c; }
-.item-details {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: flex-end;
-    gap: 20px;
-    padding: 0 45px;
-}
-.details-content p { margin: 0 0 8px; line-height: 1.5; color: #555; }
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-.btn-approve, .btn-reject {
-    font-family: 'Montserrat Alternates', sans-serif;
-    border: none;
-    border-radius: 20px;
-    padding: 10px 25px;
-    font-size: 1rem;
-    font-weight: 500;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.btn-approve { background: linear-gradient(to top, #6DBE00, #a9d465); }
-.btn-reject { background-color: #444; }
-.btn-approve:hover, .btn-reject:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.application-item.expanded .toggle-icon { transform: rotate(180deg); }
-.application-item.expanded .item-details {
-    max-height: 500px;
-    padding: 0 45px 20px 45px;
-}
-
-
-/* --- Стили для модального окна --- */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
+    display: none; /* По умолчанию скрыто, управляется JS */
     justify-content: center;
     align-items: center;
     z-index: 1000;
-
-    /* Управляем видимостью */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
 }
 
 .modal-overlay.visible {
+    display: flex;
     opacity: 1;
     visibility: visible;
 }
@@ -715,13 +206,7 @@ input:-webkit-autofill:active {
     border-radius: 20px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.2);
     width: 90%;
-    max-width: 800px; /* Ширина модального окна */
-    max-height: 90vh; /* Максимальная высота */
-    display: flex;
-    overflow: hidden; /* Важно для дочерних элементов */
-    position: relative;
-
-    /* Анимация появления */
+    max-width: 800px;
     transform: scale(0.9);
     transition: transform 0.3s;
 }
@@ -742,74 +227,198 @@ input:-webkit-autofill:active {
     line-height: 1;
     z-index: 10;
     transition: color 0.2s;
-    outline: none; /* Убираем обводку при фокусе */
+    outline: none;
 }
 .modal-close-button:hover {
     color: #333;
 }
 
-#modal-image-container {
-    flex-basis: 60%; /* Картинка занимает 55% ширины */
-    min-width: 60%;
+
+/* =================================================================== */
+/*           3. СТИЛИ ДЛЯ КОНКРЕТНЫХ СТРАНИЦ (PAGE-SPECIFIC)           */
+/* =================================================================== */
+
+/* --- Фон для Главной страницы --- */
+.page-main {
+    background-image: url('images/backgroundMainPage.png');
+    background-position: center 20%;
 }
 
-#modal-image-container img {
+/* --- Фоны для всех остальных страниц --- */
+.page-rooms, .page-datetime, .page-application, .page-employee {
+    background-image: url('images/backgrd.jpg');
+    background-position: center center;
+    background-repeat: repeat;
+}
+
+/* ----------- 3.1 Стили для Главной страницы (`mainPage.html`) ----------- */
+.page-main .main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    text-align: center;
+    margin-top: 100px;
+}
+.page-main .mainText {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    margin-bottom: 80px;
+    max-width: 1150px;
+    text-align: center;
+}
+.page-main .bookingButton {
+    max-width: 806px;
+    width: 80%;
+    transition: transform 0.2s;
+}
+.page-main .bookingButton:hover {
+    transform: scale(1.05);
+}
+.page-main .bookingButton svg {
+    width: 80%;
+    height: auto;
+}
+/* Всплывающее окно на главной */
+.page-main .popup {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0.5s;
+    position: fixed;
+    bottom: 45px;
+    right: 20px;
+    background-color: #f9f9f9;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 500px;
+    border-radius: 10px;
+}
+.page-main .popup.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.page-main .popup-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.page-main .popup-text {
+    margin-right: 15px;
+    font-family: 'Montserrat Alternates', sans-serif;
+    font-size: 14px;
+}
+.page-main .close-btn {
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    color: #aaa;
+}
+.page-main .close-btn:hover { color: #000; }
+
+/* ----------- 3.2 Стили для страницы Помещений (`roomsPage.html`) ----------- */
+.page-rooms .main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    gap: 30px;
+}
+/* Карточки-превью помещений */
+.page-rooms .room-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 30px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px 0;
+}
+.page-rooms .room-card {
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    height: 220px;
+}
+.page-rooms .room-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+.page-rooms .card-main-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.page-rooms .card-title-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 40px 20px 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    color: white;
+}
+.page-rooms .card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+/* Модальное окно для деталей помещения */
+.page-rooms .modal-content {
+    max-height: 90vh;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+.page-rooms #modal-image-container {
+    flex-basis: 60%;
+    min-width: 60%;
+}
+.page-rooms #modal-image-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
 }
-
-#modal-details-container {
+.page-rooms #modal-details-container {
     flex-basis: 45%;
     padding: 30px;
-    display: flex; /* Используем flexbox для управления дочерними элементами */
-    flex-direction: column; /* Располагаем элементы в колонку */
-    overflow-y: auto; /* Добавляем вертикальный скролл, ТОЛЬКО если контент не помещается */
-    /* === Стили для скрытия скроллбара === */
-    /* Для Chrome, Safari, Opera, Edge */
-    &::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Для IE и старых версий Edge */
-    -ms-overflow-style: none;
-
-    /* Для Firefox */
-    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 }
-
-.modal-title {
+.page-rooms .modal-title {
     font-size: 2rem;
     font-weight: 600;
     margin-bottom: 5px;
 }
-
-.modal-address {
+.page-rooms .modal-address {
     font-size: 1rem;
     color: #777;
     margin-bottom: 25px;
 }
-
-.modal-capacity {
+.page-rooms .modal-capacity {
     margin-bottom: 30px;
     flex-grow: 1;
 }
-
-.modal-capacity-title {
+.page-rooms .modal-capacity-title {
     font-weight: 600;
     font-size: 1.1rem;
     margin-bottom: 5px;
 }
-
-.modal-capacity-details {
+.page-rooms .modal-capacity-details {
     font-size: 1rem;
     line-height: 1.6;
     color: #555;
 }
-
-/* --- ВОТ ЭТОТ БЛОК НУЖНО ДОБАВИТЬ --- */
-#modal-details-container .card-button {
+.page-rooms #modal-details-container .card-button {
     display: block;
     background-color: #6DBE00;
     color: white !important;
@@ -820,180 +429,528 @@ input:-webkit-autofill:active {
     text-decoration: none;
     transition: background-color 0.2s, transform 0.2s;
     cursor: pointer;
-    margin-top: auto; /* Очень важное свойство, прижимает кнопку к низу */
+    margin-top: auto;
 }
-
-#modal-details-container .card-button:hover {
+.page-rooms #modal-details-container .card-button:hover {
     background-color: #5aa000;
     transform: scale(1.03);
 }
 
-/* Адаптация для мобильных устройств */
-@media (max-width: 768px) {
-    .modal-content {
-        flex-direction: column;
-        max-height: 85vh;
-    }
-    #modal-image-container {
-        height: 250px;
-        min-height: 250px;
-    }
-    #modal-details-container {
-        padding: 20px;
-    }
-    .modal-title {
-        font-size: 1.5rem;
-    }
+/* ----------- 3.3 Стили для страницы Даты и времени (`dateTimePage.html`) ----------- */
+/* Этот блок был полностью переработан для корректного выравнивания */
+
+.page-datetime .main-content {
+    flex-grow: 1;
+    width: 100%;
 }
 
-/* --- Стили для новой админ-панели --- */
-.admin-nav {
+/* КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Этот контейнер теперь управляет всеми тремя элементами */
+.page-datetime .page-header-container {
     display: flex;
-    border-bottom: 2px solid rgba(109, 190, 0, 0.5); /* Полупрозрачная граница */
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1280px;
+    gap: 20px;
+    margin-left: auto;     /* <-- ДОБАВЛЕНО */
+    margin-right: auto;    /* <-- ДОБАВЛЕНО */
     margin-bottom: 25px;
 }
 
-.admin-nav-btn {
+/* Для контейнера с заголовком и кнопками теперь ничего не нужно,
+   поэтому мы убираем его стили, чтобы он не мешал.
+   Но мы оставим его для совместимости с HTML-разметкой. */
+.page-datetime .controls-container {
+    display: contents; /* Этот трюк заставляет браузер "игнорировать" этот div-контейнер,
+                          как будто его дочерние элементы (.title-block и .actions-block)
+                          лежат напрямую внутри .page-header-container */
+}
+
+/* Блок с кнопками ("< >" и "Подтвердить") */
+.page-datetime .actions-block {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    flex-shrink: 0; /* Запрещаем этому блоку сжиматься */
+    margin-bottom: -8px;
+}
+
+.page-datetime .week-navigator {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    font-weight: 500;
+}
+
+.page-datetime .week-arrow {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.page-datetime .week-arrow:disabled { opacity: 0.5; cursor: not-allowed; }
+.page-datetime .week-arrow:disabled:hover { transform: none; }
+.page-datetime .week-arrow:hover { transform: scale(1.2); }
+
+.page-datetime #week-display {
+    min-width: 225px;
+    text-align: center;
+    display: inline-block;
+}
+
+.page-datetime .confirm-button {
+    background-color: #6DBE00;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 28px;
+    font-family: 'Montserrat Alternates', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+.page-datetime .confirm-button:hover { transform: scale(1.05); background-color: #83E000; }
+
+/* --- Стили для сетки расписания (ИСПРАВЛЕННАЯ ВЕРСИЯ) --- */
+.page-datetime .schedule-container {
+    width: 100%;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: white;
+    border-radius: 25px;
+    padding: 0 30px 25px;
+    color: #333;
+    display: grid;
+    grid-template-columns: auto repeat(7, 1fr) auto;
+    gap: 0 10px; /* Убираем вертикальный gap */
+    max-height: 54vh;
+    overflow-y: auto;
+}
+.page-datetime .schedule-container::-webkit-scrollbar { display: none; }
+
+.page-datetime .grid-header {
+    font-weight: 600;
+    padding-bottom: 10px;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    position: sticky;
+    top: 0px;
+    padding-top: 25px;
+    z-index: 20;
+    text-align: center;
+    background-color: white;
+    /* Добавляем нижнюю границу, чтобы отделить от сетки */
+    /*border-bottom: 2px solid #eee;*/
+    margin-bottom: 15px;
+}
+
+/* Общий стиль для всех меток времени, отвечающий за ВЕРТИКАЛЬНОЕ выравнивание */
+.page-datetime .time-label {
+    font-weight: 500;
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
+    color: #888;
+    /* Этот трюк центрирует текст точно по линии сетки */
+    align-self: start;
+    transform: translateY(-50%);
+    /* Для "липкости" при скролле */
+    position: sticky;
+    background-color: white;
+    z-index: 10;
+    height: 30px; /* Задаем ту же высоту, что и у слота */
+    line-height: 30px; /* Выравниваем текст по центру высоты элемента */
+}
+
+/* Надежный способ выбрать ПЕРВЫЙ элемент в каждой строке (левые метки) */
+.page-datetime .schedule-container > *:nth-child(9n+1) {
+    padding-right: 10px;
+    text-align: center;
+}
+
+/* Надежный способ выбрать ПОСЛЕДНИЙ элемент в каждой строке (правые метки) */
+.page-datetime .schedule-container > *:nth-child(9n) {
+    padding-left: 10px;
+    text-align: center;
+}
+
+.page-datetime .time-slot {
+    height: 30px;
+    border-bottom: 2px solid #eee; /* Возвращаем нижнюю границу для линий */
+    cursor: pointer;
+    transition: background-color 0.2s;
+    /* Убираем верхнюю границу, чтобы не было двойных линий */
+    border-top: none;
+}
+
+.page-datetime .time-slot:not(.booked):not(.selected):hover {
+    background-color: #e0f2d4;
+}
+
+.page-datetime .time-slot.selected {
+    background-color: #28a745;
+    /* Скрываем границу у выбранных ячеек, чтобы они сливались */
+    border-bottom-color: transparent;
+}
+
+/* Убираем и верхнюю границу у следующего выбранного слота для полного слияния */
+.page-datetime .time-slot.selected + .time-slot.selected {
+    border-top: none;
+}
+
+./* --- Стили для забронированных и выбранных ячеек --- */
+.page-datetime .time-slot.booked {
+    background-color: #3B9551; /* Более темный, насыщенный зеленый */
+    border-color: #2E7D32;
+    color: white; /* Белый цвет текста для контраста */
+    font-weight: 500;
+    cursor: not-allowed;
+    /* Выравниваем текст по левому краю для длинных названий */
+    justify-content: flex-start;
+    text-align: left;
+    padding: 0 8px; /* Небольшой отступ от края */
+
+    /* Важно: для управления длинным текстом */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Добавляет "..." если текст не помещается */
+}
+
+/* Динамический размер шрифта в зависимости от длительности брони */
+.page-datetime .time-slot.booked[data-slot-count="1"] {
+    font-size: 0.7rem; /* 30 мин - маленький шрифт */
+}
+.page-datetime .time-slot.booked[data-slot-count="2"] {
+    font-size: 0.8rem; /* 1 час - шрифт чуть больше */
+}
+.page-datetime .time-slot.booked[data-slot-count="3"] {
+    font-size: 0.85rem; /* 1.5 часа */
+}
+/* Для всех событий от 2 часов и дольше - одинаковый большой шрифт */
+.page-datetime .time-slot.booked[data-slot-count]:not([data-slot-count="1"]):not([data-slot-count="2"]):not([data-slot-count="3"]) {
+    font-size: 0.9rem;
+}
+
+/* Стиль для неактивных (прошедших) ячеек */
+.page-datetime .time-slot.disabled {
+    background-color: #f8f9fa; /* Очень светлый серый фон */
+    cursor: not-allowed; /* Курсор "запрещено" */
+    /* Легкая штриховка для наглядности */
+    background-image: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 4px,
+            #e9ecef 4px,
+            #e9ecef 8px
+    );
+}
+
+/* Стиль для финальной нижней границы сетки */
+.page-datetime .grid-bottom-border {
+    border-top: 1px solid #eee;
+}
+
+/* ----------- 3.4 Стили для страницы Заявки (`applicationPage.html`) ----------- */
+.page-application .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+    gap: 18px;
+}
+.page-application .header-container { margin-bottom: 18px; }
+.page-application .form-wrapper {
+    background-color: white;
+    border-radius: 30px;
+    padding: 25px 70px;
+    width: 100%;
+    max-width: 1080px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+.page-application .application-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px 50px;
+    align-items: end;
+}
+.page-application .form-field { position: relative; }
+.page-application .form-field input {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid #8fcc29;
+    background: transparent;
+    padding: 10px 0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-family: 'Montserrat Alternates', sans-serif;
+    color: #333;
+    outline: none;
+}
+.page-application .form-field label {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: #999;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+.page-application .form-field input:focus + label,
+.page-application .form-field input:not(:placeholder-shown) + label {
+    transform: translateY(-28px);
+    font-size: 0.9rem;
+    color: #555;
+}
+.page-application .form-field-checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    gap: 15px;
+}
+.page-application .checkbox-label {
+    color: #555;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+}
+.page-application .checkbox-input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.page-application .submit-button {
+    background-color: #8fcc29;
+    color: white;
+    border: none;
+    padding: 18px 45px;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-weight: 600;
+    font-family: 'Montserrat Alternates', sans-serif;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    align-self: center;
+}
+.page-application .submit-button:hover {
+    background-color: #7db520;
+    transform: scale(1.05);
+}
+/* Модальное окно для подтверждения заявки */
+.page-application .modal-overlay.visible {
+    display: flex;
+}
+.page-application .modal-content {
+    padding: 30px 40px;
+    text-align: center;
+    max-width: 400px;
+}
+.page-application .modal-content p {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 25px;
+}
+.page-application .modal-close-button {
+    color: white;
+    background-color: #6DBE00;
+    border: none;
+    border-radius: 25px;
+    padding: 10px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: static; /* Переопределяем absolute */
+    transform: none; /* Переопределяем transform */
+}
+.page-application .modal-close-button:hover {
+    background-color: #5aa000;
+}
+
+/* ----------- 3.5 Стили для страницы Сотрудника (`employeePage.html`) ----------- */
+.page-employee .wrapper { overflow: hidden; }
+.page-employee .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 20px;
+}
+.page-employee .logoutButton svg { transition: transform 0.2s; }
+.page-employee .logoutButton svg:hover { transform: scale(1.1); }
+
+/* Навигация админ-панели */
+.page-employee .admin-nav {
+    display: flex;
+    border-bottom: 2px solid rgba(109, 190, 0, 0.5);
+    margin-bottom: 25px;
+}
+.page-employee .admin-nav-btn {
     font-family: 'Montserrat Alternates', sans-serif;
     border: none;
     background-color: transparent;
-    color: rgba(255, 255, 255, 0.7); /* Слегка приглушенный цвет неактивной кнопки */
+    color: rgba(255, 255, 255, 0.7);
     padding: 15px 30px;
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: 500;
     transition: background-color 0.3s, color 0.3s;
     position: relative;
-    bottom: -2px; /* Смещаем вниз, чтобы активная кнопка "наезжала" на границу */
+    bottom: -2px;
 }
-
-.admin-nav-btn:hover {
-    color: white;
-}
-
-.admin-nav-btn.active {
-    color: #333; /* Темный цвет для текста активной кнопки */
-    background-color: white; /* Белый фон для активной кнопки */
+.page-employee .admin-nav-btn:hover { color: white; }
+.page-employee .admin-nav-btn.active {
+    color: #333;
+    background-color: white;
     border-radius: 10px 10px 0 0;
     border: 2px solid rgba(109, 190, 0, 0.5);
-    border-bottom: 2px solid white; /* Перекрываем общую границу */
+    border-bottom: 2px solid white;
 }
-
-.admin-section {
-    display: none; /* Скрываем все разделы по умолчанию */
-}
-
-.admin-section.active {
-    display: block; /* Показываем только активный раздел */
-}
-
-/* Стили для заглушек */
-.section-title {
+.page-employee .admin-section { display: none; }
+.page-employee .admin-section.active { display: block; }
+.page-employee .section-title {
     font-size: 1.8rem;
     font-weight: 600;
     margin-bottom: 15px;
 }
-.section-placeholder {
+.page-employee .section-placeholder {
     font-size: 1.1rem;
     color: rgba(255, 255, 255, 0.8);
 }
-
-/* Обновление сетки для списка заявок */
-.list-header {
-    /* Номер, Название, Помещение, Время, (Статус не в сетке) */
+/* Фильтры заявок */
+.page-employee .filter-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.page-employee .filter-btn {
+    font-family: 'Montserrat Alternates', sans-serif;
+    border: 1px solid white;
+    background-color: transparent;
+    color: white;
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+.page-employee .filter-btn:hover { background-color: rgba(255, 255, 255, 0.2); }
+.page-employee .filter-btn.active { background-color: white; color: #333; }
+/* Список заявок */
+.page-employee .application-list {
+    background-color: white;
+    color: #333;
+    width: 100%;
+    border-radius: 25px;
+    padding: 20px 10px 20px 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.page-employee .application-list::-webkit-scrollbar { display: none; }
+.page-employee .list-header {
+    display: grid;
     grid-template-columns: 80px 1.5fr 1fr 120px 150px;
+    gap: 20px;
+    padding: 0 15px;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 15px;
 }
-
-.item-summary {
-    /* Иконка, Номер, Название, Помещение, Время, Статус */
+.page-employee .list-header span:first-child { padding-left: 30px; }
+.page-employee .application-item { border-bottom: 1px solid #eee; }
+.page-employee .application-item:last-child { border-bottom: none; }
+.page-employee .item-summary {
+    display: grid;
     grid-template-columns: 30px 50px 1.5fr 1fr 120px 150px;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
-.item-time {
+.page-employee .item-summary:hover { background-color: #f9f9f9; }
+.page-employee .toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+    justify-self: center;
+}
+.page-employee .status-badge {
+    padding: 8px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-align: center;
+    color: white;
+}
+.page-employee .status-approved { background: linear-gradient(to top, #6DBE00, #a9d465); }
+.page-employee .status-pending { background-color: #ccc; color: #555; }
+.page-employee .status-rejected { background-color: #e74c3c; }
+.page-employee .item-time {
     font-weight: 500;
     color: #3B9551;
 }
-
-/* --- Стили для кнопок навигации (стрелки) --- */
-
-
-.nav-link-back-icon {
-    display: block;
-}
-
-/* --- ОСНОВНЫЕ СТИЛИ ДЛЯ КНОПКИ (раскомментировано) --- */
-.nav-button.back-button {
-    background-color: transparent; /* <--- Убирает серый фон */
-    border: 2px solid rgba(255, 255, 255, 0.7); /* <--- Задает нашу рамку */
-
-    /* Делаем кнопку круглой и одинакового размера */
-    width: 50px;
-    height: 50px;
-    border-radius: 50%; /* <--- Делает ее круглой */
-
-    /* Убираем лишние отступы */
-    padding: 0;
-
-    cursor: pointer;
-    display: flex; /* Используем flex для идеального центрирования стрелки */
-    justify-content: center;
-    align-items: center;
-
-    transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
-}
-
-/* --- СТИЛИ ДЛЯ SVG-КАРТИНКИ ВНУТРИ КНОПКИ (синтаксис исправлен) --- */
-.nav-button.back-button img {
-    width: 45px;
-    height: 45px;
-}
-
-/* --- СТИЛИ ДЛЯ НАВЕДЕНИЯ НА КНОПКУ (синтаксис исправлен) --- */
-.nav-button.back-button:hover {
-    transform: scale(1.05);
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: white;
-}
-/* --- Новые стили для заголовка с кнопкой --- */
-.page-header-container {
-    position: relative; /* Создаем контекст для позиционирования кнопки */
-    width: 100%;
-    padding-left: 70px; /* Оставляем слева место для кнопки */
-}
-
-/* Позиционируем кнопку абсолютно, слева */
-.page-header-container .nav-link-back-icon {
-    position: absolute;
-    left: 0;
-    top: 15px; /* Небольшой отступ сверху, можно подобрать */
-}
-
-/* Старый стиль для controls-container, который мы не трогали */
-.controls-container {
-    width: 100%;
-    max-width: 1280px;
-    display: flex;
-    justify-content: space-between;
+.page-employee .item-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: flex-end;
     gap: 20px;
+    padding: 0 45px;
+}
+.page-employee .details-content p { margin: 0 0 8px; line-height: 1.5; color: #555; }
+.page-employee .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.page-employee .btn-approve, .page-employee .btn-reject {
+    font-family: 'Montserrat Alternates', sans-serif;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 25px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.page-employee .btn-approve { background: linear-gradient(to top, #6DBE00, #a9d465); }
+.page-employee .btn-reject { background-color: #444; }
+.page-employee .btn-approve:hover, .page-employee .btn-reject:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.page-employee .application-item.expanded .toggle-icon { transform: rotate(180deg); }
+.page-employee .application-item.expanded .item-details {
+    max-height: 500px;
+    padding: 0 45px 20px 45px;
 }
 
+
 /* =================================================================== */
-/*                      АДАПТИВНЫЕ СТИЛИ (MEDIA QUERIES)             */
+/*               4. АДАПТИВНЫЕ СТИЛИ (MEDIA QUERIES)                   */
 /* =================================================================== */
 
 @media (max-width: 992px) {
-    /* --- dateTimePage.css --- */
-    .page-datetime .controls-container {
-      flex-direction: column;
-      align-items: flex-start;
-      max-width: none;
+    /* --- Адаптация для страницы Даты и времени --- */
+    /* Теперь вместо stacking'а мы центрируем элементы и разрешаем им переноситься (wrap) */
+    .page-datetime .page-header-container {
+        flex-wrap: wrap;
+        justify-content: center; /* Центрируем, когда элементы переносятся на новую строку */
     }
     .page-datetime .schedule-container {
-      overflow-x: auto;
-      padding: 20px;
+        overflow-x: auto; /* Включаем горизонтальный скролл для таблицы на планшетах */
+        padding: 20px;
     }
 
-    /* --- application.css --- */
+    /* --- Адаптация для страницы Заявки --- */
     .page-application .application-form {
         grid-template-columns: 1fr;
     }
@@ -1003,7 +960,7 @@ input:-webkit-autofill:active {
         margin-top: 20px;
     }
 
-    /* --- employeePage.css --- */
+    /* --- Адаптация для страницы Сотрудника --- */
     .page-employee .list-header { display: none; }
     .page-employee .item-summary {
         display: flex;
@@ -1011,6 +968,7 @@ input:-webkit-autofill:active {
         align-items: flex-start;
         gap: 10px;
         position: relative;
+        grid-template-columns: 1fr; /* Сброс грида */
     }
     .page-employee .item-summary > span { width: 100%; }
     .page-employee .toggle-icon { position: absolute; top: 20px; right: 15px; }
@@ -1024,7 +982,7 @@ input:-webkit-autofill:active {
 }
 
 @media (max-width: 768px) {
-    /* --- Общие стили для всех страниц --- */
+    /* --- Общие стили для мобильных --- */
     .wrapper {
         padding: 20px;
     }
@@ -1039,10 +997,10 @@ input:-webkit-autofill:active {
         width: 60px;
     }
     .mainText, .subText {
-      text-align: left;
+        text-align: left;
     }
 
-    /* --- mainPage.css --- */
+    /* --- Адаптация для Главной страницы --- */
     .page-main .mainText {
         font-size: clamp(1.5rem, 6vw, 2.5rem);
     }
@@ -1050,16 +1008,27 @@ input:-webkit-autofill:active {
         width: 100%;
     }
 
-    /* --- roomsPage.css --- */
-    .page-rooms .choose-time-button svg {
-        width: 100%;
-    }
-
-    /* --- application.css --- */
+    /* --- Адаптация для страницы Заявки --- */
     .page-application .form-wrapper {
         padding: 30px 25px;
     }
     .page-application .submit-button {
         justify-self: stretch;
+    }
+
+    /* --- Адаптация модального окна Помещений --- */
+    .page-rooms .modal-content {
+        flex-direction: column;
+        max-height: 85vh;
+    }
+    .page-rooms #modal-image-container {
+        height: 250px;
+        min-height: 250px;
+    }
+    .page-rooms #modal-details-container {
+        padding: 20px;
+    }
+    .page-rooms .modal-title {
+        font-size: 1.5rem;
     }
 }
