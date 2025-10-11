@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 modalText.textContent = 'Ваша заявка принята. Дождитесь одобрения администратора. Ответ придёт к Вам на почту.';
-                modal.style.display = 'flex';
+                modal.classList.add('visible');
                 form.reset();
                 localStorage.removeItem('selectedRoomId');
                 localStorage.removeItem('selectedRoomName');
@@ -165,13 +165,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Логика модального окна (остается без изменений) ---
+    // --- Логика модального окна ---
+
+    // Функция закрытия модального окна и редиректа
     function closeModal() {
-        modal.style.display = 'none';
+        // 1. Скрываем модальное окно
+        modal.classList.remove('visible');
+
+        // 2. Перенаправляем пользователя на главную страницу
         window.location.href = '/';
     }
-    closeModalBtn.addEventListener('click', closeModal);
+
+    // Назначаем обработчик на кнопку "ОК" внутри модального окна
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeModal);
+    }
+
+    // Назначаем обработчик на клик по затемненному фону (вне окна)
     modal.addEventListener('click', (event) => {
-        if (event.target === modal) closeModal();
+        if (event.target === modal) {
+            closeModal();
+        }
     });
 });
