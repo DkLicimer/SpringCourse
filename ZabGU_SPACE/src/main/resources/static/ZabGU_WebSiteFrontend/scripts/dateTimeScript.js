@@ -69,6 +69,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         createHeaders(monday);
         const now = new Date();
         const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+        const maxBookingDate = new Date(now);
+        maxBookingDate.setMonth(now.getMonth() + 1);
+        // Устанавливаем время на конец дня, чтобы включить последний день полностью
+        maxBookingDate.setHours(23, 59, 59, 999);
+
         for (let time = TIME_START; time < TIME_END; time += TIME_STEP) {
             scheduleContainer.appendChild(createTimeLabel(time));
             for (let day = 0; day < 7; day++) {
@@ -78,8 +84,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const minutes = (time % 1) * 60;
                 const slotDateTime = new Date(dayDate);
                 slotDateTime.setHours(hours, minutes, 0, 0);
-                const isDisabled = slotDateTime < twentyFourHoursFromNow;
-                scheduleContainer.appendChild(createTimeSlot(dayDate, time, isDisabled));
+                let disabledReason = null;
+                if (slotDateTime < twentyFourHoursFromNow) {
+                    disabledReason = "past"; // Причина: время уже прошло
+                } else if (slotDateTime > maxBookingDate) {
+                    disabledReason = "future"; // Причина: слишком далекое будущее
+                }
+                scheduleContainer.appendChild(createTimeSlot(dayDate, time, disabledReason));;
             }
             scheduleContainer.appendChild(createTimeLabel(time));
         }
@@ -101,30 +112,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // === ИСПРАВЛЕННАЯ ФУНКЦИЯ createTimeSlot ===
-    function createTimeSlot(date, time, isDisabled) {
+    function createTimeSlot(date, time, disabledReason) {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
         const dateTimeString = `${formatDate(date)}T${formatTime(time)}`;
         slot.dataset.datetime = dateTimeString;
 
-        // Шаг 1: Проверяем, забронирована ли ячейка.
-        if (bookedSlots.has(dateTimeString)) {
+        const isBooked = bookedSlots.has(dateTimeString);
+        const isDisabled = !!disabledReason; // Ячейка неактивна, если есть любая причина
+
+        if (isBooked && isDisabled) {
+            slot.classList.add('booked-past'); // Это может быть только прошедшая бронь
             const eventInfo = bookedSlots.get(dateTimeString);
-            slot.classList.add('booked');
             if (eventInfo.eventName) {
                 slot.textContent = eventInfo.eventName;
                 slot.dataset.slotCount = eventInfo.slotCount;
             }
-            // Шаг 2: Если не забронирована, проверяем, выбрана ли она пользователем.
-        } else if (selectedSlots.has(dateTimeString)) {
+        } else if (isBooked) {
+            slot.classList.add('booked');
+            const eventInfo = bookedSlots.get(dateTimeString);
+            if (eventInfo.eventName) {
+                slot.textContent = eventInfo.eventName;
+                slot.dataset.slotCount = eventInfo.slotCount;
+            }
+        } else if (selectedSlots.has(dateTimeString) && !isDisabled) {
             slot.classList.add('selected');
-        }
-
-        // Шаг 3: НЕЗАВИСИМО от предыдущих шагов, проверяем, доступна ли ячейка по времени.
-        // Этот класс может быть добавлен поверх класса 'booked'.
-        if (isDisabled) {
+        } else if (isDisabled) {
             slot.classList.add('disabled');
-            slot.title = "Бронирование возможно не менее чем за 24 часа.";
+            // Устанавливаем подсказку в зависимости от причины
+            if (disabledReason === "past") {
+                slot.title = "Бронирование возможно не менее чем за 24 часа.";
+            } else if (disabledReason === "future") {
+                slot.title = "Бронировать можно не более чем на месяц вперед.";
+            }
         }
 
         return slot;
@@ -179,6 +199,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         weekDisplay.textContent = `${start} – ${end}`;
     }
 
+    // === НОВАЯ ФУНКЦИЯ ДЛЯ УПРАВЛЕНИЯ КНОПКОЙ ===
+    function updateConfirmButtonState() {
+        const hasSelection = selectedSlots.size > 0;
+        confirmBtn.disabled = !hasSelection; // disabled = true, если нет выбора
+    }
+
     // === ИСПРАВЛЕННАЯ ФУНКЦИЯ handleSlotClick ===
     function handleSlotClick(event) {
         const slot = event.target.closest('.time-slot');
@@ -203,6 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             selectedSlots.add(dateTimeString);
             slot.classList.add('selected');
         }
+
+        updateConfirmButtonState();
     }
 
     // --- ИНИЦИАЛИЗАЦИЯ И СЛУШАТЕЛИ ---
@@ -215,14 +243,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSchedule();
     });
     scheduleContainer.addEventListener('click', handleSlotClick);
-    confirmBtn.addEventListener('click', () => { /* ... (без изменений) ... */
+    confirmBtn.addEventListener('click', (event) => { // <-- 1. Получаем объект события (event)
+        event.preventDefault(); // <-- 2. СРАЗУ отменяем переход по ссылке
+
         if (selectedSlots.size === 0) {
             alert('Пожалуйста, выберите хотя бы один временной слот.');
-            return;
+            return; // <-- 3. Прерываем скрипт, если нет выбранных слотов
         }
+
+        // Этот код выполнится, только если все проверки пройдены
         localStorage.setItem('selectedSlots', JSON.stringify(Array.from(selectedSlots).sort()));
-        window.location.href = '/apply';
+        window.location.href = '/apply'; // <-- Переходим на страницу программно
     });
 
     await renderSchedule();
+    updateConfirmButtonState();
 });

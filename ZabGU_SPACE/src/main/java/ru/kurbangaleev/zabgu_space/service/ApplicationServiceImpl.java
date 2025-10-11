@@ -1,5 +1,6 @@
 package ru.kurbangaleev.zabgu_space.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.kurbangaleev.zabgu_space.dto.request.CreateApplicationRequest;
@@ -21,6 +22,11 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final RoomRepository roomRepository;
     private final EmailService emailService;
+    @Value("${app.booking.min-hours-before}")
+    private int minHoursBefore;
+
+    @Value("${app.booking.max-months-ahead}")
+    private int maxMonthsAhead;
 
     public ApplicationServiceImpl(ApplicationRepository applicationRepository, RoomRepository roomRepository, EmailService emailService) {
         this.applicationRepository = applicationRepository;
@@ -36,12 +42,13 @@ public class ApplicationServiceImpl implements ApplicationService {
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("Помещение с ID " + request.getRoomId() + " не найдено"));
 
-        if (OffsetDateTime.now().until(request.getStartTime(), ChronoUnit.HOURS) < 24) {
-            throw new IllegalArgumentException("Бронировать можно не позднее чем за 24 часа до начала.");
+        // === НАЧАЛО ИЗМЕНЕНИЙ ===
+        if (OffsetDateTime.now().until(request.getStartTime(), ChronoUnit.HOURS) < minHoursBefore) {
+            throw new IllegalArgumentException("Бронировать можно не позднее чем за " + minHoursBefore + " часа до начала.");
         }
 
-        if (request.getStartTime().isAfter(OffsetDateTime.now().plusMonths(1))) {
-            throw new IllegalArgumentException("Бронировать можно не более чем на месяц вперед.");
+        if (request.getStartTime().isAfter(OffsetDateTime.now().plusMonths(maxMonthsAhead))) {
+            throw new IllegalArgumentException("Бронировать можно не более чем на " + maxMonthsAhead + " месяц(ев) вперед.");
         }
 
         boolean isConflict = applicationRepository.existsByRoomIdAndStatusAndStartTimeBeforeAndEndTimeAfter(

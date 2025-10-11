@@ -515,6 +515,13 @@ a:hover, a:visited {
 }
 .page-datetime .confirm-button:hover { transform: scale(1.05); background-color: #83E000; }
 
+.page-datetime .confirm-button:disabled {
+    background-color: #a9a9a9; /* Темно-серый цвет */
+    cursor: not-allowed; /* Курсор "запрещено" */
+    transform: none; /* Убираем эффект увеличения при наведении */
+    opacity: 0.7; /* Делаем ее полупрозрачной */
+}
+
 /* --- Стили для сетки расписания (ИСПРАВЛЕННАЯ ВЕРСИЯ) --- */
 .page-datetime .schedule-container {
     width: 100%;
@@ -600,10 +607,10 @@ a:hover, a:visited {
     border-top: none;
 }
 
-./* --- Стили для забронированных и выбранных ячеек --- */
+/* --- Стили для забронированных и выбранных ячеек --- */
 .page-datetime .time-slot.booked {
-    background-color: #3B9551; /* Более темный, насыщенный зеленый */
-    border-color: #2E7D32;
+    background-color: #494d4e; /* Более темный, насыщенный зеленый */
+    border-color: #494d4e;
     color: white; /* Белый цвет текста для контраста */
     font-weight: 500;
     cursor: not-allowed;
@@ -636,6 +643,7 @@ a:hover, a:visited {
 /* Стиль для неактивных (прошедших) ячеек */
 .page-datetime .time-slot.disabled {
     background-color: #f8f9fa; /* Очень светлый серый фон */
+    color: black;
     cursor: not-allowed; /* Курсор "запрещено" */
     /* Легкая штриховка для наглядности */
     background-image: repeating-linear-gradient(
@@ -670,10 +678,9 @@ a:hover, a:visited {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 .page-application .application-form {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px 50px;
-    align-items: end;
+    display: flex; /* Используем Flexbox для простоты */
+    flex-direction: column; /* Элементы будут идти в столбик */
+    gap: 5px; /* Увеличим расстояние между полями для воздуха */
 }
 .page-application .form-field { position: relative; }
 .page-application .form-field input {
@@ -681,7 +688,7 @@ a:hover, a:visited {
     border: none;
     border-bottom: 2px solid #8fcc29;
     background: transparent;
-    padding: 10px 0;
+    padding: 5px 0;
     font-size: clamp(1rem, 2.5vw, 1.2rem);
     font-family: 'Montserrat Alternates', sans-serif;
     color: #333;
@@ -689,7 +696,7 @@ a:hover, a:visited {
 }
 .page-application .form-field label {
     position: absolute;
-    bottom: 10px;
+    bottom: 20px;
     left: 0;
     font-size: clamp(1rem, 2.5vw, 1.2rem);
     color: #999;
@@ -730,8 +737,6 @@ a:hover, a:visited {
     border-radius: 50px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    grid-column: 2;
-    grid-row: 1 / span 6;
     align-self: center;
 }
 .page-application .submit-button:hover {
@@ -767,6 +772,38 @@ a:hover, a:visited {
 }
 .page-application .modal-close-button:hover {
     background-color: #5aa000;
+}
+
+/* === НОВЫЕ СТИЛИ ДЛЯ ВАЛИДАЦИИ ФОРМЫ === */
+
+/* Контейнер поля в состоянии ошибки */
+.page-application .form-field.error input {
+    border-bottom-color: #e74c3c; /* Ярко-красный цвет рамки */
+}
+
+/* Подпись поля в состоянии ошибки (когда она "всплыла") */
+.page-application .form-field.error input:focus + label,
+.page-application .form-field.error input:not(:placeholder-shown) + label {
+    color: #e74c3c; /* Красный цвет текста */
+}
+
+/* Текст сообщения об ошибке */
+.page-application .error-message {
+    color: #e74c3c;
+    font-size: 0.85rem; /* Маленький, но читаемый шрифт */
+    padding-top: 5px;
+    /* Важно: задаем минимальную высоту, чтобы форма не "прыгала" при появлении/исчезновении текста */
+    min-height: 1.2em;
+    display: block; /* Чтобы min-height сработал */
+}
+
+/* ========================================= */
+
+/* === НОВЫЙ БЛОК ДЛЯ НИЖНЕЙ ЧАСТИ ФОРМЫ === */
+.page-application .form-footer {
+    display: flex;
+    justify-content: space-between; /* Разносит элементы по краям */
+    align-items: center; /* Выравнивает по центру по вертикали */
 }
 
 /* ----------- 3.5 Стили для страницы Сотрудника (`employeePage.html`) ----------- */
