@@ -42,4 +42,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
      */
     boolean existsByRoomIdAndStatusAndStartTimeBeforeAndEndTimeAfter(
             Long roomId, ApplicationStatus status, OffsetDateTime endTime, OffsetDateTime startTime);
+
+    boolean existsByRoomId(Long roomId);
 }

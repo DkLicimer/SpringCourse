@@ -970,6 +970,135 @@ a:hover, a:visited {
     padding: 0 45px 20px 45px;
 }
 
+/* === НОВЫЕ СТИЛИ ДЛЯ РАЗДЕЛА "ПОМЕЩЕНИЯ" === */
+.page-employee .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.page-employee .btn-add-new {
+    font-family: 'Montserrat Alternates', sans-serif;
+    background: linear-gradient(to top, #6DBE00, #a9d465);
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.page-employee .btn-add-new:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.page-employee .rooms-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.page-employee .room-card-admin {
+    background-color: white;
+    color: #333;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+.page-employee .room-card-admin h5 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.page-employee .room-card-admin p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 15px;
+    flex-grow: 1;
+}
+.page-employee .room-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: auto;
+}
+.page-employee .btn-edit, .page-employee .btn-delete-card {
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+.page-employee .btn-edit { background-color: #f0f0f0; color: #333; }
+.page-employee .btn-edit:hover { background-color: #e0e0e0; }
+.page-employee .btn-delete-card { background-color: #e74c3c; color: white; }
+.page-employee .btn-delete-card:hover { background-color: #c0392b; }
+
+/* Стили для модальных окон */
+.page-employee .modal-content { padding: 30px; }
+.page-employee .room-modal-title { margin-bottom: 25px}
+.page-employee .room-edit-modal-content { max-width: 600px; }
+.page-employee .delete-confirm-modal-content { max-width: 400px; text-align: center; }
+.page-employee .room-edit-modal-content h3 {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 25px; /* Добавим отступ снизу для красоты */
+}
+.page-employee .delete-confirm-modal-content h4 { font-size: 1.4rem; margin-bottom: 10px; }
+.page-employee .delete-confirm-modal-content p { margin-bottom: 25px; }
+
+.page-employee #room-edit-form {
+    margin-top: 15px; /* Добавляем отступ сверху для всей формы */
+}
+
+.page-employee #room-edit-form .form-field {
+    margin-bottom: 25px;
+    position: relative;
+}
+.page-employee #room-edit-form input,
+.page-employee #room-edit-form textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 12px;
+    font-size: 1rem;
+    color: #333;
+    background: #f9f9f9;
+}
+.page-employee #room-edit-form textarea { resize: vertical; }
+
+/* VVVV КЛЮЧЕВЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ VVVV */
+.page-employee #room-edit-form label {
+    position: absolute;
+    top: -20px; /* Располагаем над полем */
+    left: 10px;
+    background-color: white; /* Фон, чтобы перекрыть рамку поля */
+    padding: 0 5px;
+    font-size: 0.85rem;
+    color: #555;
+    transition: all 0.2s ease;
+}
+/* Убираем ненужные плейсхолдеры из полей ввода */
+.page-employee #room-edit-form input::placeholder,
+.page-employee #room-edit-form textarea::placeholder {
+    color: transparent;
+}
+/* ^^^^ КОНЕЦ КЛЮЧЕВЫХ ИЗМЕНЕНИЙ ^^^^ */
+
+.page-employee .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
 
 /* =================================================================== */
 /*               4. АДАПТИВНЫЕ СТИЛИ (MEDIA QUERIES)                   */
