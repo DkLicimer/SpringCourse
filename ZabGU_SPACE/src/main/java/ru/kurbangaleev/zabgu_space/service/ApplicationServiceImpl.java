@@ -79,13 +79,14 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     public List<Application> getAllApplications(ApplicationStatus status) {
-        // ... (этот метод остается без изменений)
         if (status == null) {
-            return applicationRepository.findAll();
+            // Используем новый метод для получения ВСЕХ заявок,
+            // отсортированных по убыванию даты создания.
+            return applicationRepository.findAllByOrderByCreatedAtDesc();
         }
-        return applicationRepository.findAll().stream()
-                .filter(app -> app.getStatus() == status)
-                .toList();
+        // Используем новый метод, который фильтрует по статусу
+        // на уровне БД и сразу же сортирует результат.
+        return applicationRepository.findByStatusOrderByCreatedAtDesc(status);
     }
 
     @Override

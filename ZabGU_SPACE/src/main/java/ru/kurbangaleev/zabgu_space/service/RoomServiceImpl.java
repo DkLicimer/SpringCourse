@@ -71,6 +71,15 @@ public class RoomServiceImpl implements RoomService {
         if (applicationRepository.existsByRoomId(id)) {
             throw new IllegalStateException("Нельзя удалить помещение, так как для него существуют заявки.");
         }
+
+        // 1. Находим помещение в базе данных, чтобы получить путь к файлу
+        Room roomToDelete = roomRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Помещение с ID " + id + " не найдено."));
+
+        // 2. Вызываем наш новый метод для удаления файла с диска
+        fileStorageService.deleteFile(roomToDelete.getImagePath());
+
+        // 3. Только после этого удаляем запись из базы данных
         roomRepository.deleteById(id);
     }
 }

@@ -14,6 +14,29 @@ public class FileStorageService {
 
     private final Path fileStorageLocation; // <-- Заменяем строку на Path
 
+    // VVVV ДОБАВЬТЕ ЭТОТ МЕТОД VVVV
+    public void deleteFile(String imagePath) {
+        // Проверяем, что путь не пустой и не является путем по умолчанию
+        if (imagePath == null || imagePath.isBlank() || !imagePath.startsWith("/uploads/")) {
+            return;
+        }
+
+        try {
+            // Извлекаем только имя файла из URL-пути (например, из "/uploads/image.jpg" получаем "image.jpg")
+            String fileName = Paths.get(imagePath).getFileName().toString();
+            Path targetLocation = this.fileStorageLocation.resolve(fileName);
+
+            // Безопасное удаление файла: не вызовет ошибку, если файла уже нет
+            Files.deleteIfExists(targetLocation);
+        } catch (IOException ex) {
+            // В реальном приложении здесь стоило бы использовать логгер
+            System.err.println("Не удалось удалить файл: " + imagePath);
+            // Мы не "пробрасываем" исключение дальше, чтобы не прерывать
+            // процесс удаления записи из БД, даже если файл удалить не удалось.
+        }
+    }
+    // ^^^^ КОНЕЦ НОВОГО МЕТОДА ^^^^
+
     // Внедряем значение из application.properties
     public FileStorageService(@Value("${file.upload-dir}") String uploadDir) {
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
@@ -39,7 +62,7 @@ public class FileStorageService {
 
             // VVVV ВАЖНОЕ ИЗМЕНЕНИЕ VVVV
             // Возвращаем URL-путь, по которому файл будет доступен, а не путь в файловой системе
-            return "ZabGU_WebSiteFrontend/css/images/uploads/" + fileName;
+            return "/uploads/" + fileName;
         } catch (IOException ex) {
             throw new RuntimeException("Не удалось сохранить файл " + fileName, ex);
         }

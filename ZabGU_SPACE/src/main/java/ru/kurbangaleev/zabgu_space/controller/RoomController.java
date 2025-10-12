@@ -1,12 +1,14 @@
 package ru.kurbangaleev.zabgu_space.controller;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.kurbangaleev.zabgu_space.dto.response.ScheduleItemResponse;
 import ru.kurbangaleev.zabgu_space.entity.Application;
 import ru.kurbangaleev.zabgu_space.entity.ApplicationStatus;
 import ru.kurbangaleev.zabgu_space.entity.Room;
 import ru.kurbangaleev.zabgu_space.repository.ApplicationRepository; // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
+import ru.kurbangaleev.zabgu_space.repository.RoomRepository;
 import ru.kurbangaleev.zabgu_space.service.RoomService;
 
 import java.time.LocalDate;
@@ -23,16 +25,27 @@ public class RoomController {
 
     private final RoomService roomService;
     private final ApplicationRepository applicationRepository; // <-- ДОБАВЬТЕ ЭТУ ЗАВИСИМОСТЬ
+    private final RoomRepository roomRepository;
 
     // ОБНОВИТЕ КОНСТРУКТОР
-    public RoomController(RoomService roomService, ApplicationRepository applicationRepository) {
+    public RoomController(RoomService roomService, ApplicationRepository applicationRepository, RoomRepository roomRepository) {
         this.roomService = roomService;
         this.applicationRepository = applicationRepository;
+        this.roomRepository = roomRepository;
     }
 
     @GetMapping
     public List<Room> getAllRooms() {
         return roomService.getAllRooms();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
+        // Найдем комнату в репозитории и вернем ее.
+        // Если комната не найдена, вернется ошибка 404 Not Found.
+        return roomRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // VVVV ДОБАВЬТЕ ВЕСЬ ЭТОТ НОВЫЙ МЕТОД VVVV

@@ -25,10 +25,25 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // URL-шаблон, по которому будут доступны файлы
+        // --- НАЧАЛО ВАЖНОЙ ЧАСТИ ---
+
+        // Для Windows-путей вида "C:\Users\..." заменяем обратные слеши на прямые
+        String resourceLocation = uploadDir.replace("\\", "/");
+
+        // Убеждаемся, что путь начинается с "file:///" и заканчивается слешем "/"
+        if (!resourceLocation.startsWith("file:///")) {
+            resourceLocation = "file:///" + resourceLocation;
+        }
+        if (!resourceLocation.endsWith("/")) {
+            resourceLocation = resourceLocation + "/";
+        }
+
+        // Эта строка для отладки. Посмотрите в консоль при запуске, какой путь получился.
+        System.out.println("Serving uploads from: " + resourceLocation);
+
         registry.addResourceHandler("/uploads/**")
-                // Путь в файловой системе, где лежат эти файлы.
-                // "file:" - обязательный префикс для указания на внешнюю папку.
-                .addResourceLocations("file:" + uploadDir);
+                .addResourceLocations(resourceLocation);
+
+        // --- КОНЕЦ ВАЖНОЙ ЧАСТИ ---
     }
 }

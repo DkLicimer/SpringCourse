@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteConfirmModal = document.getElementById('delete-confirm-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
     const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-    let roomIdToDelete = null; // Переменная для хранения ID удаляемого помещения
+    let roomIdToDelete = null;
 
     const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -39,14 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeSection = document.getElementById(targetSectionId);
             activeSection.classList.add('active');
 
-            // Если мы переключились на раздел "Помещения", загружаем данные
             if (button.dataset.section === 'rooms') {
                 fetchAndRenderRooms();
             }
         });
     });
 
-    // --- 1. ЛОГИКА ОТОБРАЖЕНИЯ (без изменений) ---
+    // --- 1. ЛОГИКА ОТОБРАЖЕНИЯ ---
     function showAdminPanel() {
         loginFormContainer.style.display = 'none';
         adminPanel.style.display = 'block';
@@ -57,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('jwtToken');
     }
 
-    // --- 2. ЛОГИКА РАБОТЫ С API (общая функция без изменений) ---
+    // --- 2. ЛОГИКА РАБОТЫ С API ---
     async function fetchWithAuth(url, options = {}) {
         const token = localStorage.getItem('jwtToken');
         if (!token) {
@@ -73,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return response;
     }
 
-    // --- 3. ЛОГИКА АУТЕНТИФИКАЦИИ (без изменений) ---
+    // --- 3. ЛОГИКА АУТЕНТИФИКАЦИИ ---
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         loginError.textContent = '';
@@ -89,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 localStorage.setItem('jwtToken', data.accessToken);
                 showAdminPanel();
-                fetchAndRenderApplications(); // Загружаем заявки после входа
+                fetchAndRenderApplications();
             } else {
                 loginError.textContent = 'Неверный логин или пароль.';
             }
@@ -98,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 4. ЛОГИКА РАБОТЫ С ЗАЯВКАМИ (без изменений) ---
+    // --- 4. ЛОГИКА РАБОТЫ С ЗАЯВКАМИ ---
     async function fetchAndRenderApplications(status = '') {
         try {
             const url = status ? `${API_BASE_URL}/admin/applications?status=${status}` : `${API_BASE_URL}/admin/applications`;
@@ -108,10 +107,132 @@ document.addEventListener('DOMContentLoaded', () => {
             renderApplications(applications);
         } catch (error) { console.error(error.message); }
     }
-    async function approveApplication(id) { /* ... (без изменений) ... */ }
-    async function rejectApplication(id) { /* ... (без изменений) ... */ }
-    function renderApplications(applications) { /* ... (без изменений) ... */ }
-    function addEventListenersToItems() { /* ... (без изменений) ... */ }
+
+    function renderApplications(applications) {
+        applicationListContent.innerHTML = '';
+
+        if (!applications || applications.length === 0) {
+            applicationListContent.innerHTML = '<p style="padding: 20px; text-align: center; color: #888;">Заявки с выбранным статусом не найдены.</p>';
+            return;
+        }
+
+        applications.forEach(app => {
+            const chitaZone = 'Asia/Chita';
+            const startTime = new Date(app.startTime).toLocaleString('ru-RU', { timeZone: chitaZone, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const endTime = new Date(app.endTime).toLocaleString('ru-RU', { timeZone: chitaZone, hour: '2-digit', minute: '2-digit' });
+            const timeString = `${startTime} – ${endTime}`;
+
+            let statusClass = '';
+            let statusText = '';
+            switch (app.status) {
+                case 'APPROVED':
+                    statusClass = 'status-approved';
+                    statusText = 'Одобрена';
+                    break;
+                case 'REJECTED':
+                    statusClass = 'status-rejected';
+                    statusText = 'Отклонена';
+                    break;
+                default:
+                    statusClass = 'status-pending';
+                    statusText = 'Ожидает';
+                    break;
+            }
+
+            const item = document.createElement('div');
+            item.className = 'application-item';
+            item.dataset.id = app.id;
+
+            item.innerHTML = `
+            <div class="item-summary">
+                <span class="toggle-icon">▼</span>
+                <span>${app.id}</span>
+                <span>${app.eventName}</span>
+                <span>${app.roomName}</span>
+                <span class="item-time">${timeString}</span>
+                <span><div class="status-badge ${statusClass}">${statusText}</div></span>
+            </div>
+            <div class="item-details">
+                <div class="details-content">
+                    <p><strong>Заявитель:</strong> ${app.applicantFullName}</p>
+                    <p><strong>Должность:</strong> ${app.applicantPosition}</p>
+                    <p><strong>Email:</strong> ${app.applicantEmail}</p>
+                    <p><strong>Телефон:</strong> ${app.applicantPhone}</p>
+                    <p><strong>Нужен звукорежиссёр:</strong> ${app.soundEngineerRequired ? 'Да' : 'Нет'}</p>
+                    ${app.rejectionReason ? `<p><strong>Причина отклонения:</strong> ${app.rejectionReason}</p>` : ''}
+                </div>
+                <div class="action-buttons">
+                    ${app.status === 'PENDING' ? `
+                        <button class="btn-approve">Одобрить</button>
+                        <button class="btn-reject">Отклонить</button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+            applicationListContent.appendChild(item);
+        });
+
+        addEventListenersToItems();
+    }
+
+    function addEventListenersToItems() {
+        document.querySelectorAll('.application-item').forEach(item => {
+            const summary = item.querySelector('.item-summary');
+            const id = item.dataset.id;
+
+            summary.addEventListener('click', () => {
+                item.classList.toggle('expanded');
+            });
+
+            const approveBtn = item.querySelector('.btn-approve');
+            if (approveBtn) {
+                approveBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('Вы уверены, что хотите ОДОБРИТЬ эту заявку?')) {
+                        approveApplication(id);
+                    }
+                });
+            }
+
+            const rejectBtn = item.querySelector('.btn-reject');
+            if (rejectBtn) {
+                rejectBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const reason = prompt('Укажите причину отклонения:');
+                    if (reason) {
+                        rejectApplication(id, reason);
+                    }
+                });
+            }
+        });
+    }
+
+    async function approveApplication(id) {
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/admin/applications/${id}/approve`, { method: 'POST' });
+            if (!response.ok) throw new Error('Ошибка при одобрении');
+            fetchAndRenderApplications(document.querySelector('.filter-btn.active').dataset.status);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function rejectApplication(id, reason) {
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/admin/applications/${id}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            });
+            if (!response.ok) throw new Error('Ошибка при отклонении');
+            fetchAndRenderApplications(document.querySelector('.filter-btn.active').dataset.status);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    // DUPLICATE FUNCTION REMOVED FROM HERE
+
     filterButtons.forEach(button => {
         button.addEventListener('click', () => {
             filterButtons.forEach(btn => btn.classList.remove('active'));
@@ -120,17 +241,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 5. НОВАЯ ЛОГИКА ДЛЯ РАЗДЕЛА "ПОМЕЩЕНИЯ" ---
+    // --- 5. ЛОГИКА ДЛЯ РАЗДЕЛА "ПОМЕЩЕНИЯ" ---
 
-    // 5.1. Получение и отрисовка списка помещений
+    // ... остальной код для помещений без изменений ...
     async function fetchAndRenderRooms() {
         try {
-            // Используем публичный эндпоинт, т.к. для просмотра не нужна авторизация
             const response = await fetch(`${API_BASE_URL}/rooms`);
             if (!response.ok) throw new Error('Не удалось загрузить помещения');
 
             const rooms = await response.json();
-            roomsListContainer.innerHTML = ''; // Очищаем контейнер
+            roomsListContainer.innerHTML = '';
 
             if (rooms.length === 0) {
                 roomsListContainer.innerHTML = '<p>Помещения еще не добавлены.</p>';
@@ -155,17 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 5.2. Логика модального окна (открыть/закрыть)
     function openRoomModal(room = null) {
-        roomEditForm.reset(); // Сбрасываем форму
-        if (room) { // Режим редактирования
+        roomEditForm.reset();
+        if (room) {
             roomModalTitle.textContent = 'Редактировать помещение';
             roomIdInput.value = room.id;
             document.getElementById('room-name').value = room.name;
             document.getElementById('room-address').value = room.address;
             document.getElementById('room-capacity').value = room.capacity;
-            document.getElementById('room-image-path').value = room.imagePath;
-        } else { // Режим создания
+        } else {
             roomModalTitle.textContent = 'Добавить новое помещение';
             roomIdInput.value = '';
         }
@@ -176,13 +294,11 @@ document.addEventListener('DOMContentLoaded', () => {
         roomEditModal.classList.remove('visible');
     }
 
-    // 5.3. Логика сохранения (создание/обновление)
     async function handleRoomFormSubmit(event) {
         event.preventDefault();
         const id = roomIdInput.value;
         const imageFile = document.getElementById('room-image-file').files[0];
 
-        // Используем FormData для отправки файла и текста вместе
         const formData = new FormData();
         formData.append('name', document.getElementById('room-name').value);
         formData.append('address', document.getElementById('room-address').value);
@@ -191,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageFile) {
             formData.append('imageFile', imageFile);
         } else if (!id) {
-            // Если это создание нового помещения, файл обязателен
             alert('Пожалуйста, выберите изображение для нового помещения.');
             return;
         }
@@ -200,11 +315,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const method = id ? 'PUT' : 'POST';
 
         try {
-            // ВАЖНО: При отправке FormData НЕ НУЖНО устанавливать заголовок Content-Type
             const token = localStorage.getItem('jwtToken');
             const response = await fetch(url, {
                 method: method,
-                headers: { 'Authorization': `Bearer ${token}` }, // Только токен
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData,
             });
 
@@ -214,21 +328,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             closeRoomModal();
-            fetchAndRenderRooms(); // Обновляем список
+            fetchAndRenderRooms();
         } catch (error) {
             alert(`Не удалось сохранить помещение: ${error.message}`);
         }
     }
 
-    // 5.4. Логика удаления
     function openDeleteModal(id) {
         roomIdToDelete = id;
         deleteConfirmModal.classList.add('visible');
     }
+
     function closeDeleteModal() {
         deleteConfirmModal.classList.remove('visible');
         roomIdToDelete = null;
     }
+
     async function handleDeleteConfirm() {
         if (!roomIdToDelete) return;
 
@@ -248,26 +363,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 5.5. Навешивание обработчиков событий
     addRoomBtn.addEventListener('click', () => openRoomModal());
     cancelRoomEditBtn.addEventListener('click', closeRoomModal);
     roomEditForm.addEventListener('submit', handleRoomFormSubmit);
 
-    // Делегирование событий для кнопок "Редактировать" и "Удалить"
     roomsListContainer.addEventListener('click', async (event) => {
         const target = event.target;
+
         if (target.classList.contains('btn-edit')) {
             const id = target.dataset.roomId;
-            // Получаем актуальные данные комнаты перед открытием модального окна
-            const response = await fetch(`${API_BASE_URL}/rooms/${id}`); // Предполагаем, что такой эндпоинт есть
-            // ПРОСТОЕ РЕШЕНИЕ: получаем данные из общего списка, а не делаем доп. запрос
-            const allRoomsResponse = await fetch(`${API_BASE_URL}/rooms`);
-            const allRooms = await allRoomsResponse.json();
-            const roomData = allRooms.find(r => r.id == id);
-            if (roomData) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/rooms/${id}`);
+                if (!response.ok) {
+                    throw new Error(`Ошибка сети: ${response.status}`);
+                }
+                const roomData = await response.json();
                 openRoomModal(roomData);
-            } else {
-                alert('Не удалось найти данные для этого помещения');
+            } catch (error) {
+                console.error("Ошибка при получении данных о помещении:", error);
+                alert('Не удалось загрузить данные для этого помещения.');
             }
         }
         if (target.classList.contains('btn-delete-card')) {
@@ -280,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmDeleteBtn.addEventListener('click', handleDeleteConfirm);
 
 
-    // --- 6. НАЧАЛЬНАЯ ЗАГРУЗКА И ВЫХОД ИЗ СИСТЕМЫ (без изменений) ---
+    // --- 6. НАЧАЛЬНАЯ ЗАГРУЗКА И ВЫХОД ИЗ СИСТЕМЫ ---
     if (localStorage.getItem('jwtToken')) {
         showAdminPanel();
         fetchAndRenderApplications();

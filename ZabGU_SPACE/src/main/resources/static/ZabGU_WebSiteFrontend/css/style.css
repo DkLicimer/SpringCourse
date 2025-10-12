@@ -891,19 +891,24 @@ a:hover, a:visited {
 .page-employee .application-list::-webkit-scrollbar { display: none; }
 .page-employee .list-header {
     display: grid;
-    grid-template-columns: 80px 1.5fr 1fr 120px 150px;
+    /* Устанавливаем 5 колонок, пропуская первую для иконки */
+    grid-template-columns: 30px 50px 1.5fr 1fr 220px 150px;
     gap: 20px;
     padding: 0 15px;
     font-weight: 600;
     color: #888;
     margin-bottom: 15px;
 }
-.page-employee .list-header span:first-child { padding-left: 30px; }
+
+/* Выбираем первый span (Номер) и сдвигаем его во вторую колонку */
+.page-employee .list-header span:first-child {
+    grid-column: 2;
+}
 .page-employee .application-item { border-bottom: 1px solid #eee; }
 .page-employee .application-item:last-child { border-bottom: none; }
 .page-employee .item-summary {
     display: grid;
-    grid-template-columns: 30px 50px 1.5fr 1fr 120px 150px;
+    grid-template-columns: 30px 50px 1.5fr 1fr 220px 150px;
     align-items: center;
     gap: 20px;
     padding: 20px 15px;
@@ -988,10 +993,10 @@ a:hover, a:visited {
     font-size: 1rem;
     font-weight: 500;
     transition: transform 0.2s, box-shadow 0.2s;
-}
-.page-employee .btn-add-new:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+
+    /* VVVV ДОБАВЛЕНО VVVV */
+    /* Смещаем кнопку на 8 пикселей вверх. Можете изменить это значение. */
+    transform: translateX(8px);
 }
 
 .page-employee .rooms-list-container {

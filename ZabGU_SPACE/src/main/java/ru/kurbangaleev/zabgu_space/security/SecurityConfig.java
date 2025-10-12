@@ -48,6 +48,7 @@ public class SecurityConfig {
                                 "/employee",
                                 // Пути к статическим ресурсам (CSS, JS, картинки)
                                 "/ZabGU_WebSiteFrontend/**",
+                                "/uploads/**",
                                 // Публичные эндпоинты API
                                 "/api/auth/**",
                                 "/api/rooms/**",

@@ -12,6 +12,23 @@ import java.util.List;
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
 
+    // VVVV ДОБАВЬТЕ ЭТИ ДВА МЕТОДА VVVV
+
+    /**
+     * Находит все заявки и сортирует их по полю 'createdAt' в порядке убывания (DESC).
+     * Новые заявки будут первыми.
+     */
+    List<Application> findAllByOrderByCreatedAtDesc();
+
+    /**
+     * Находит все заявки с определенным статусом и сортирует их по убыванию даты создания.
+     * @param status Статус для фильтрации (PENDING, APPROVED, REJECTED)
+     * @return отсортированный список заявок
+     */
+    List<Application> findByStatusOrderByCreatedAtDesc(ApplicationStatus status);
+
+    // ^^^^ КОНЕЦ НОВЫХ МЕТОДОВ ^^^^
+
     /**
      * Находит все ОДОБРЕННЫЕ заявки для конкретного помещения в заданном временном диапазоне.
      * Используется для отображения расписания в календаре.
