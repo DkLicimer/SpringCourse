@@ -20,5 +20,7 @@ public interface ApplicationService {
 
     Application rejectApplication(Long applicationId, String reason);
 
+    Application cancelApplication(Long applicationId, String reason);
+
     List<Application> getApprovedApplicationsForPeriod(OffsetDateTime startDate, OffsetDateTime endDate);
 }

@@ -89,6 +89,37 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    @Transactional
+    public Application cancelApplication(Long applicationId, String reason) {
+        // 1. Находим заявку или выбрасываем исключение
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("Заявка с ID " + applicationId + " не найдена."));
+
+        // 2. ВАЖНАЯ ПРОВЕРКА: отменять можно только одобренные заявки
+        if (application.getStatus() != ApplicationStatus.APPROVED) {
+            throw new IllegalStateException("Можно отменить только одобренную заявку.");
+        }
+
+        // 3. Меняем статус и сохраняем причину
+        application.setStatus(ApplicationStatus.REJECTED);
+        application.setRejectionReason("Бронь отменена администратором: " + reason);
+        applicationRepository.save(application);
+
+        // 4. Отправляем email-уведомление пользователю
+        String subject = "Ваша заявка на бронирование была отменена";
+        String text = String.format(
+                "Здравствуйте, %s!\n\nСообщаем вам, что ваша одобренная ранее заявка №%d на мероприятие '%s' была отменена администратором.\n\nПричина: %s\n\nПриносим извинения за возможные неудобства.",
+                application.getApplicantFullName(),
+                application.getId(),
+                application.getEventName(),
+                reason
+        );
+        emailService.sendSimpleMessage(application.getApplicantEmail(), subject, text);
+
+        return application;
+    }
+
+    @Override
     public Page<Application> getAllApplications(ApplicationStatus status, Pageable pageable) {
         if (status == null) {
             // Вызываем новый метод репозитория

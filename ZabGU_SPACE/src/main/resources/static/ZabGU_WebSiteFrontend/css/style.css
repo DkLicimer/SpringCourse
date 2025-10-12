@@ -247,8 +247,12 @@ a:hover, a:visited {
 /* --- Фоны для всех остальных страниц --- */
 .page-rooms, .page-datetime, .page-application, .page-employee {
     background-image: url('images/backgrd.jpg');
+
+    /* Эти 4 свойства создадут эффект фиксированного фона */
+    background-attachment: fixed;
     background-position: center center;
-    background-repeat: repeat;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 /* ----------- 3.1 Стили для Главной страницы (`mainPage.html`) ----------- */
@@ -814,6 +818,7 @@ a:hover, a:visited {
     align-items: flex-start;
     width: 100%;
     gap: 20px;
+    flex-grow: 1;
 }
 .page-employee .logoutButton svg { transition: transform 0.2s; }
 .page-employee .logoutButton svg:hover { transform: scale(1.1); }
@@ -952,7 +957,7 @@ a:hover, a:visited {
     gap: 10px;
     margin-bottom: 20px;
 }
-.page-employee .btn-approve, .page-employee .btn-reject {
+.page-employee .btn-approve, .page-employee .btn-reject, .page-employee .btn-cancel { /* <--- Добавили .btn-cancel */
     font-family: 'Montserrat Alternates', sans-serif;
     border: none;
     border-radius: 20px;
@@ -965,7 +970,12 @@ a:hover, a:visited {
 }
 .page-employee .btn-approve { background: linear-gradient(to top, #6DBE00, #a9d465); }
 .page-employee .btn-reject { background-color: #444; }
-.page-employee .btn-approve:hover, .page-employee .btn-reject:hover {
+
+/* VVVV ДОБАВЬТЕ ЭТО ПРАВИЛО VVVV */
+.page-employee .btn-cancel { background-color: #e74c3c; } /* Красный цвет для опасного действия */
+
+
+.page-employee .btn-approve:hover, .page-employee .btn-reject:hover, .page-employee .btn-cancel:hover { /* <--- Добавили .btn-cancel */
     transform: scale(1.05);
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }

@@ -193,7 +193,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><strong>Заявитель:</strong> ${app.applicantFullName}</p><p><strong>Должность:</strong> ${app.applicantPosition}</p><p><strong>Email:</strong> ${app.applicantEmail}</p><p><strong>Телефон:</strong> ${app.applicantPhone}</p><p><strong>Нужен звукорежиссёр:</strong> ${app.soundEngineerRequired ? 'Да' : 'Нет'}</p>${app.rejectionReason ? `<p><strong>Причина отклонения:</strong> ${app.rejectionReason}</p>` : ''}
                     </div>
                     <div class="action-buttons">
-                        ${app.status === 'PENDING' ? `<button class="btn-approve">Одобрить</button><button class="btn-reject">Отклонить</button>` : ''}
+                        ${(() => {
+                                    if (app.status === 'PENDING') {
+                                        return `<button class="btn-approve">Одобрить</button><button class="btn-reject">Отклонить</button>`;
+                                    } else if (app.status === 'APPROVED') {
+                                        return `<button class="btn-cancel">Отменить бронь</button>`;
+                                    }
+                                    return ''; // Для статуса REJECTED кнопок нет
+                                })()}
                     </div>
                 </div>`;
             applicationListContent.appendChild(item);
@@ -228,6 +235,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+            const cancelBtn = item.querySelector('.btn-cancel');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const reason = prompt('Укажите причину отмены бронирования:');
+                    // Проверяем, что пользователь ввел причину и не нажал "Отмена"
+                    if (reason && reason.trim()) {
+                        updateApplicationStatus(id, 'cancel', reason);
+                    }
+                });
+            }
         });
     }
 
@@ -237,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateApplicationStatus(id, action, reason = null) {
         const url = `${API_BASE_URL}/admin/applications/${id}/${action}`;
         const options = { method: 'POST' };
-        if (action === 'reject' && reason) {
+        if ((action === 'reject' || action === 'cancel') && reason) {
             options.body = JSON.stringify({ reason });
         }
         try {

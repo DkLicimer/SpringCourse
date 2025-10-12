@@ -100,6 +100,13 @@ public class AdminController {
         return ResponseEntity.ok(convertToDto(rejectedApplication));
     }
 
+    @PostMapping("/applications/{id}/cancel")
+    public ResponseEntity<ApplicationDetailsResponse> cancelApplication(
+            @PathVariable Long id, @RequestBody RejectApplicationRequest request) {
+        Application cancelledApplication = applicationService.cancelApplication(id, request.getReason());
+        return ResponseEntity.ok(convertToDto(cancelledApplication));
+    }
+
     // Вспомогательный метод для конвертации Entity -> DTO
     private ApplicationDetailsResponse convertToDto(Application app) {
         return ApplicationDetailsResponse.builder()

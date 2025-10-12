@@ -15,35 +15,26 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**") // Разрешаем CORS для всех путей, начинающихся с /api/
-                .allowedOrigins("*") // ВАЖНО: для разработки. В продакшене нужно указать конкретный домен фронтенда!
+        registry.addMapping("/api/**")
+                .allowedOrigins("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(false); // Установи в true, если используешь куки или http-аутентификацию
+                .allowCredentials(false);
     }
 
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // --- НАЧАЛО ВАЖНОЙ ЧАСТИ ---
 
-        // Для Windows-путей вида "C:\Users\..." заменяем обратные слеши на прямые
-        String resourceLocation = uploadDir.replace("\\", "/");
-
-        // Убеждаемся, что путь начинается с "file:///" и заканчивается слешем "/"
-        if (!resourceLocation.startsWith("file:///")) {
-            resourceLocation = "file:///" + resourceLocation;
-        }
-        if (!resourceLocation.endsWith("/")) {
-            resourceLocation = resourceLocation + "/";
-        }
-
-        // Эта строка для отладки. Посмотрите в консоль при запуске, какой путь получился.
-        System.out.println("Serving uploads from: " + resourceLocation);
-
+        // --- ОБРАБОТЧИК ДЛЯ ЗАГРУЖЕННЫХ ПОЛЬЗОВАТЕЛЕМ КАРТИНОК ---
+        // URL: /uploads/** -> Файловая система (внутри Docker-тома)
+        String resourceLocation = "file:" + uploadDir + "/";
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(resourceLocation);
 
-        // --- КОНЕЦ ВАЖНОЙ ЧАСТИ ---
+        // --- ОБРАБОТЧИК ДЛЯ СТАТИЧЕСКИХ КАРТИНОК ИЗ МИГРАЦИЙ ---
+        // URL: /images/** -> Ресурсы приложения (classpath)
+        registry.addResourceHandler("/images/**")
+                .addResourceLocations("classpath:/static/images/");
     }
 }
