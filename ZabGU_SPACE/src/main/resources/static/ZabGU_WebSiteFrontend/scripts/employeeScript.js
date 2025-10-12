@@ -1,16 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === СТАРЫЕ ЭЛЕМЕНТЫ ===
+    //======================================================================
+    // 1. КОНСТАНТЫ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+    //======================================================================
+
+    // --- Элементы DOM ---
     const loginFormContainer = document.getElementById('login-form-container');
     const adminPanel = document.getElementById('admin-panel');
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
-    const applicationListContent = document.getElementById('application-list-content');
-    const filterButtons = document.querySelectorAll('.filter-btn');
     const adminNavButtons = document.querySelectorAll('.admin-nav-btn');
     const adminSections = document.querySelectorAll('.admin-section');
     const logoutButton = document.getElementById('logout-button');
 
-    // === НОВЫЕ ЭЛЕМЕНТЫ ДЛЯ РАЗДЕЛА "ПОМЕЩЕНИЯ" ===
+    // Элементы раздела "Заявки"
+    const applicationListContent = document.getElementById('application-list-content');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    // Элементы раздела "Помещения"
     const roomsListContainer = document.getElementById('rooms-list-container');
     const addRoomBtn = document.getElementById('add-room-btn');
     const roomEditModal = document.getElementById('room-edit-modal');
@@ -18,53 +24,71 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelRoomEditBtn = document.getElementById('cancel-room-edit-btn');
     const roomModalTitle = document.getElementById('room-modal-title');
     const roomIdInput = document.getElementById('room-id-input');
-
-    // Элементы модального окна удаления
     const deleteConfirmModal = document.getElementById('delete-confirm-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
     const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+    // Элементы раздела "Календарь"
+    const calendarGrid = document.getElementById('calendar-grid');
+    const currentMonthDisplay = document.getElementById('current-month-display');
+    const prevMonthBtn = document.getElementById('prev-month-btn');
+    const nextMonthBtn = document.getElementById('next-month-btn');
+
+    // --- Константы API ---
+    const API_BASE_URL = '/api'; // Относительный путь для переносимости
+
+    // --- Переменные состояния приложения ---
+    let currentPage = 0;
+    let currentStatus = ''; // '' означает "Все заявки"
     let roomIdToDelete = null;
+    let calendarCurrentDate = new Date(); // Для календаря
+    let popularityChartInstance = null; // Для аналитики
+    let activityChartInstance = null; // Для аналитики
 
-    const API_BASE_URL = 'http://localhost:8080/api';
+    //======================================================================
+    // 2. ОСНОВНЫЕ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    //======================================================================
 
-    // --- ЛОГИКА НАВИГАЦИИ ПО РАЗДЕЛАМ ---
-    adminNavButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetSectionId = `section-${button.dataset.section}`;
-
-            adminNavButtons.forEach(btn => btn.classList.remove('active'));
-            adminSections.forEach(section => section.classList.remove('active'));
-
-            button.classList.add('active');
-            const activeSection = document.getElementById(targetSectionId);
-            activeSection.classList.add('active');
-
-            if (button.dataset.section === 'rooms') {
-                fetchAndRenderRooms();
-            }
-        });
-    });
-
-    // --- 1. ЛОГИКА ОТОБРАЖЕНИЯ ---
+    /**
+     * Показывает админ-панель и скрывает форму входа.
+     */
     function showAdminPanel() {
         loginFormContainer.style.display = 'none';
         adminPanel.style.display = 'block';
     }
+
+    /**
+     * Показывает форму входа, скрывает админ-панель и очищает токен.
+     */
     function showLoginForm() {
         loginFormContainer.style.display = 'block';
         adminPanel.style.display = 'none';
         localStorage.removeItem('jwtToken');
     }
 
-    // --- 2. ЛОГИКА РАБОТЫ С API ---
+    /**
+     * Обертка для fetch, добавляющая токен авторизации и обрабатывающая ошибки.
+     */
     async function fetchWithAuth(url, options = {}) {
         const token = localStorage.getItem('jwtToken');
         if (!token) {
             showLoginForm();
             throw new Error("Токен не найден");
         }
-        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers };
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        };
+
+        // Для FormData Content-Type устанавливается браузером автоматически
+        if (options.body instanceof FormData) {
+            delete headers['Content-Type'];
+        } else if (!headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         const response = await fetch(url, { ...options, headers });
+
         if (response.status === 401 || response.status === 403) {
             showLoginForm();
             throw new Error("Ошибка авторизации");
@@ -72,12 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return response;
     }
 
-    // --- 3. ЛОГИКА АУТЕНТИФИКАЦИИ ---
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+
+    //======================================================================
+    // 3. МОДУЛЬ: АУТЕНТИФИКАЦИЯ
+    //======================================================================
+
+    /**
+     * Обрабатывает отправку формы входа.
+     */
+    async function handleLoginSubmit(event) {
+        event.preventDefault();
         loginError.textContent = '';
-        const login = e.target.login.value;
-        const password = e.target.password.value;
+        const login = event.target.login.value;
+        const password = event.target.password.value;
         try {
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
@@ -88,175 +119,176 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 localStorage.setItem('jwtToken', data.accessToken);
                 showAdminPanel();
-                fetchAndRenderApplications();
+                fetchAndRenderApplications('', 0);
             } else {
                 loginError.textContent = 'Неверный логин или пароль.';
             }
         } catch (error) {
             loginError.textContent = 'Ошибка сети. Попробуйте позже.';
         }
-    });
-
-    // --- 4. ЛОГИКА РАБОТЫ С ЗАЯВКАМИ ---
-    async function fetchAndRenderApplications(status = '') {
-        try {
-            const url = status ? `${API_BASE_URL}/admin/applications?status=${status}` : `${API_BASE_URL}/admin/applications`;
-            const response = await fetchWithAuth(url);
-            if (!response.ok) throw new Error('Не удалось загрузить заявки');
-            const applications = await response.json();
-            renderApplications(applications);
-        } catch (error) { console.error(error.message); }
     }
 
+
+    //======================================================================
+    // 4. МОДУЛЬ: УПРАВЛЕНИЕ ЗАЯВКАМИ
+    //======================================================================
+
+    /**
+     * Загружает и отображает страницу с заявками.
+     */
+    async function fetchAndRenderApplications(status, page) {
+        page = (typeof page === 'number' && page >= 0) ? page : 0;
+        currentStatus = status;
+        currentPage = page;
+
+        try {
+            const url = status
+                ? `${API_BASE_URL}/admin/applications?status=${status}&page=${page}&size=15`
+                : `${API_BASE_URL}/admin/applications?page=${page}&size=15`;
+            const response = await fetchWithAuth(url);
+            if (!response.ok) throw new Error(`Не удалось загрузить заявки (статус: ${response.status})`);
+            const pageData = await response.json();
+            renderApplications(pageData.content);
+            renderPaginationControls(pageData);
+        } catch (error) {
+            console.error(error);
+            applicationListContent.innerHTML = `<p style="padding: 20px; text-align: center; color: #888;">Ошибка загрузки данных.</p>`;
+        }
+    }
+
+    /**
+     * Отображает список заявок в DOM.
+     */
     function renderApplications(applications) {
         applicationListContent.innerHTML = '';
-
         if (!applications || applications.length === 0) {
             applicationListContent.innerHTML = '<p style="padding: 20px; text-align: center; color: #888;">Заявки с выбранным статусом не найдены.</p>';
             return;
         }
-
         applications.forEach(app => {
+            const item = document.createElement('div');
             const chitaZone = 'Asia/Chita';
             const startTime = new Date(app.startTime).toLocaleString('ru-RU', { timeZone: chitaZone, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
             const endTime = new Date(app.endTime).toLocaleString('ru-RU', { timeZone: chitaZone, hour: '2-digit', minute: '2-digit' });
             const timeString = `${startTime} – ${endTime}`;
-
-            let statusClass = '';
-            let statusText = '';
+            let statusClass = '', statusText = '';
             switch (app.status) {
-                case 'APPROVED':
-                    statusClass = 'status-approved';
-                    statusText = 'Одобрена';
-                    break;
-                case 'REJECTED':
-                    statusClass = 'status-rejected';
-                    statusText = 'Отклонена';
-                    break;
-                default:
-                    statusClass = 'status-pending';
-                    statusText = 'Ожидает';
-                    break;
+                case 'APPROVED': statusClass = 'status-approved'; statusText = 'Одобрена'; break;
+                case 'REJECTED': statusClass = 'status-rejected'; statusText = 'Отклонена'; break;
+                default: statusClass = 'status-pending'; statusText = 'Ожидает'; break;
             }
-
-            const item = document.createElement('div');
             item.className = 'application-item';
             item.dataset.id = app.id;
-
             item.innerHTML = `
-            <div class="item-summary">
-                <span class="toggle-icon">▼</span>
-                <span>${app.id}</span>
-                <span>${app.eventName}</span>
-                <span>${app.roomName}</span>
-                <span class="item-time">${timeString}</span>
-                <span><div class="status-badge ${statusClass}">${statusText}</div></span>
-            </div>
-            <div class="item-details">
-                <div class="details-content">
-                    <p><strong>Заявитель:</strong> ${app.applicantFullName}</p>
-                    <p><strong>Должность:</strong> ${app.applicantPosition}</p>
-                    <p><strong>Email:</strong> ${app.applicantEmail}</p>
-                    <p><strong>Телефон:</strong> ${app.applicantPhone}</p>
-                    <p><strong>Нужен звукорежиссёр:</strong> ${app.soundEngineerRequired ? 'Да' : 'Нет'}</p>
-                    ${app.rejectionReason ? `<p><strong>Причина отклонения:</strong> ${app.rejectionReason}</p>` : ''}
+                <div class="item-summary">
+                    <span class="toggle-icon">▼</span>
+                    <span>${app.id}</span>
+                    <span>${app.eventName}</span>
+                    <span>${app.roomName}</span>
+                    <span class="item-time">${timeString}</span>
+                    <span><div class="status-badge ${statusClass}">${statusText}</div></span>
                 </div>
-                <div class="action-buttons">
-                    ${app.status === 'PENDING' ? `
-                        <button class="btn-approve">Одобрить</button>
-                        <button class="btn-reject">Отклонить</button>
-                    ` : ''}
-                </div>
-            </div>
-        `;
+                <div class="item-details">
+                    <div class="details-content">
+                        <p><strong>Заявитель:</strong> ${app.applicantFullName}</p><p><strong>Должность:</strong> ${app.applicantPosition}</p><p><strong>Email:</strong> ${app.applicantEmail}</p><p><strong>Телефон:</strong> ${app.applicantPhone}</p><p><strong>Нужен звукорежиссёр:</strong> ${app.soundEngineerRequired ? 'Да' : 'Нет'}</p>${app.rejectionReason ? `<p><strong>Причина отклонения:</strong> ${app.rejectionReason}</p>` : ''}
+                    </div>
+                    <div class="action-buttons">
+                        ${app.status === 'PENDING' ? `<button class="btn-approve">Одобрить</button><button class="btn-reject">Отклонить</button>` : ''}
+                    </div>
+                </div>`;
             applicationListContent.appendChild(item);
         });
-
-        addEventListenersToItems();
+        addEventListenersToApplicationItems();
     }
 
-    function addEventListenersToItems() {
+    /**
+     * Добавляет обработчики событий на кнопки заявок.
+     */
+    function addEventListenersToApplicationItems() {
         document.querySelectorAll('.application-item').forEach(item => {
             const summary = item.querySelector('.item-summary');
             const id = item.dataset.id;
-
-            summary.addEventListener('click', () => {
-                item.classList.toggle('expanded');
-            });
-
+            summary.addEventListener('click', () => item.classList.toggle('expanded'));
             const approveBtn = item.querySelector('.btn-approve');
             if (approveBtn) {
                 approveBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (confirm('Вы уверены, что хотите ОДОБРИТЬ эту заявку?')) {
-                        approveApplication(id);
+                        updateApplicationStatus(id, 'approve');
                     }
                 });
             }
-
             const rejectBtn = item.querySelector('.btn-reject');
             if (rejectBtn) {
                 rejectBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const reason = prompt('Укажите причину отклонения:');
                     if (reason) {
-                        rejectApplication(id, reason);
+                        updateApplicationStatus(id, 'reject', reason);
                     }
                 });
             }
         });
     }
 
-    async function approveApplication(id) {
+    /**
+     * Универсальная функция для изменения статуса заявки.
+     */
+    async function updateApplicationStatus(id, action, reason = null) {
+        const url = `${API_BASE_URL}/admin/applications/${id}/${action}`;
+        const options = { method: 'POST' };
+        if (action === 'reject' && reason) {
+            options.body = JSON.stringify({ reason });
+        }
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/admin/applications/${id}/approve`, { method: 'POST' });
-            if (!response.ok) throw new Error('Ошибка при одобрении');
-            fetchAndRenderApplications(document.querySelector('.filter-btn.active').dataset.status);
+            const response = await fetchWithAuth(url, options);
+            if (!response.ok) throw new Error(`Ошибка при выполнении действия: ${action}`);
+            await fetchAndRenderApplications(currentStatus, currentPage);
         } catch (error) {
             alert(error.message);
         }
     }
 
-    async function rejectApplication(id, reason) {
-        try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/admin/applications/${id}/reject`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: reason })
-            });
-            if (!response.ok) throw new Error('Ошибка при отклонении');
-            fetchAndRenderApplications(document.querySelector('.filter-btn.active').dataset.status);
-        } catch (error) {
-            alert(error.message);
+    /**
+     * Отображает кнопки пагинации.
+     */
+    function renderPaginationControls(pageData) {
+        const paginationContainer = document.getElementById('pagination-controls');
+        if (!paginationContainer) return;
+        paginationContainer.innerHTML = '';
+        if (pageData.totalPages <= 1) return;
+        const createButton = (text, page, isDisabled = false) => {
+            const button = document.createElement('button');
+            button.innerHTML = text;
+            button.className = 'pagination-btn';
+            button.disabled = isDisabled;
+            button.addEventListener('click', () => fetchAndRenderApplications(currentStatus, page));
+            return button;
+        };
+        paginationContainer.appendChild(createButton('‹ Назад', pageData.number - 1, pageData.first));
+        for (let i = 0; i < pageData.totalPages; i++) {
+            const pageButton = createButton(i + 1, i);
+            if (i === pageData.number) pageButton.classList.add('active');
+            paginationContainer.appendChild(pageButton);
         }
+        paginationContainer.appendChild(createButton('Вперед ›', pageData.number + 1, pageData.last));
     }
 
-    // DUPLICATE FUNCTION REMOVED FROM HERE
 
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            fetchAndRenderApplications(button.dataset.status);
-        });
-    });
+    //======================================================================
+    // 5. МОДУЛЬ: УПРАВЛЕНИЕ ПОМЕЩЕНИЯМИ
+    //======================================================================
 
-    // --- 5. ЛОГИКА ДЛЯ РАЗДЕЛА "ПОМЕЩЕНИЯ" ---
-
-    // ... остальной код для помещений без изменений ...
     async function fetchAndRenderRooms() {
         try {
             const response = await fetch(`${API_BASE_URL}/rooms`);
             if (!response.ok) throw new Error('Не удалось загрузить помещения');
-
             const rooms = await response.json();
             roomsListContainer.innerHTML = '';
-
             if (rooms.length === 0) {
                 roomsListContainer.innerHTML = '<p>Помещения еще не добавлены.</p>';
                 return;
             }
-
             rooms.forEach(room => {
                 const card = document.createElement('div');
                 card.className = 'room-card-admin';
@@ -266,8 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="room-card-actions">
                         <button class="btn-edit" data-room-id="${room.id}">Редактировать</button>
                         <button class="btn-delete-card" data-room-id="${room.id}">Удалить</button>
-                    </div>
-                `;
+                    </div>`;
                 roomsListContainer.appendChild(card);
             });
         } catch (error) {
@@ -282,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             roomIdInput.value = room.id;
             document.getElementById('room-name').value = room.name;
             document.getElementById('room-address').value = room.address;
-            document.getElementById('room-capacity').value = room.capacity;
+            document.getElementById('room-capacity').value = room.capacity.replace(/<br\s*\/?>/gi, '|'); // Обратное преобразование
         } else {
             roomModalTitle.textContent = 'Добавить новое помещение';
             roomIdInput.value = '';
@@ -298,7 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const id = roomIdInput.value;
         const imageFile = document.getElementById('room-image-file').files[0];
-
         const formData = new FormData();
         formData.append('name', document.getElementById('room-name').value);
         formData.append('address', document.getElementById('room-address').value);
@@ -313,20 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const url = id ? `${API_BASE_URL}/admin/rooms/${id}` : `${API_BASE_URL}/admin/rooms`;
         const method = id ? 'PUT' : 'POST';
-
         try {
-            const token = localStorage.getItem('jwtToken');
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData,
-            });
-
+            const response = await fetchWithAuth(url, { method, body: formData });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Ошибка ${response.status}`);
             }
-
             closeRoomModal();
             fetchAndRenderRooms();
         } catch (error) {
@@ -346,86 +368,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleDeleteConfirm() {
         if (!roomIdToDelete) return;
-
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/admin/rooms/${roomIdToDelete}`, {
-                method: 'DELETE',
-            });
+            const response = await fetchWithAuth(`${API_BASE_URL}/admin/rooms/${roomIdToDelete}`, { method: 'DELETE' });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Ошибка ${response.status}`);
             }
             closeDeleteModal();
             fetchAndRenderRooms();
-        } catch(error) {
+        } catch (error) {
             alert(`Ошибка удаления: ${error.message}`);
             closeDeleteModal();
         }
     }
 
-    addRoomBtn.addEventListener('click', () => openRoomModal());
-    cancelRoomEditBtn.addEventListener('click', closeRoomModal);
-    roomEditForm.addEventListener('submit', handleRoomFormSubmit);
+    //======================================================================
+    // 6. МОДУЛЬ: КАЛЕНДАРЬ
+    //======================================================================
 
-    roomsListContainer.addEventListener('click', async (event) => {
-        const target = event.target;
-
-        if (target.classList.contains('btn-edit')) {
-            const id = target.dataset.roomId;
-            try {
-                const response = await fetch(`${API_BASE_URL}/rooms/${id}`);
-                if (!response.ok) {
-                    throw new Error(`Ошибка сети: ${response.status}`);
-                }
-                const roomData = await response.json();
-                openRoomModal(roomData);
-            } catch (error) {
-                console.error("Ошибка при получении данных о помещении:", error);
-                alert('Не удалось загрузить данные для этого помещения.');
-            }
-        }
-        if (target.classList.contains('btn-delete-card')) {
-            const id = target.dataset.roomId;
-            openDeleteModal(id);
-        }
-    });
-
-    cancelDeleteBtn.addEventListener('click', closeDeleteModal);
-    confirmDeleteBtn.addEventListener('click', handleDeleteConfirm);
-
-
-    // --- 6. НАЧАЛЬНАЯ ЗАГРУЗКА И ВЫХОД ИЗ СИСТЕМЫ ---
-    if (localStorage.getItem('jwtToken')) {
-        showAdminPanel();
-        fetchAndRenderApplications();
-    } else {
-        showLoginForm();
-    }
-
-    if (logoutButton) {
-        logoutButton.addEventListener('click', (event) => {
-            event.preventDefault();
-            localStorage.removeItem('jwtToken');
-            alert('Вы успешно вышли из системы.');
-            window.location.href = '/';
-        });
-    }
-
-    // --- 7. ЛОГИКА ДЛЯ РАЗДЕЛА "КАЛЕНДАРЬ" ---
-
-    const calendarGrid = document.getElementById('calendar-grid');
-    const currentMonthDisplay = document.getElementById('current-month-display');
-    const prevMonthBtn = document.getElementById('prev-month-btn');
-    const nextMonthBtn = document.getElementById('next-month-btn');
-
-    let currentDate = new Date(); // Используем для отслеживания текущего отображаемого месяца
-
-    // Функция для генерации "случайного" цвета на основе названия помещения
     function getRoomColor(roomName) {
         let hash = 0;
-        for (let i = 0; i < roomName.length; i++) {
-            hash = roomName.charCodeAt(i) + ((hash << 5) - hash);
-        }
+        for (let i = 0; i < roomName.length; i++) hash = roomName.charCodeAt(i) + ((hash << 5) - hash);
         let color = '#';
         for (let i = 0; i < 3; i++) {
             let value = (hash >> (i * 8)) & 0xFF;
@@ -435,56 +398,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderCalendar() {
-        if (!calendarGrid) return; // Выходим, если элементы календаря не на странице
-
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-
-        // 1. Устанавливаем заголовок
-        currentMonthDisplay.textContent = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(currentDate);
-
-        // 2. Очищаем старую сетку
+        if (!calendarGrid) return;
+        const year = calendarCurrentDate.getFullYear();
+        const month = calendarCurrentDate.getMonth();
+        currentMonthDisplay.textContent = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(calendarCurrentDate);
         calendarGrid.innerHTML = '';
-
-        // 3. Определяем даты для запроса к API (с запасом в одну неделю до и после)
         const firstDayOfMonth = new Date(year, month, 1);
         const lastDayOfMonth = new Date(year, month + 1, 0);
-
         const startDate = new Date(firstDayOfMonth);
-        startDate.setDate(startDate.getDate() - 7); // Захватываем конец предыдущего месяца
-
+        startDate.setDate(startDate.getDate() - 7);
         const endDate = new Date(lastDayOfMonth);
-        endDate.setDate(endDate.getDate() + 7); // Захватываем начало следующего месяца
-
-        // 4. Запрашиваем данные
+        endDate.setDate(endDate.getDate() + 7);
         let events = [];
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/admin/schedule?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
-            if (response.ok) {
-                events = await response.json();
-            }
+            if (response.ok) events = await response.json();
         } catch (error) {
             console.error("Ошибка загрузки расписания для календаря:", error);
         }
-
-        // 5. Строим календарь
-        const firstDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // 0=Пн, 1=Вт...
+        const firstDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
         const daysInMonth = lastDayOfMonth.getDate();
         const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-        // Дни предыдущего месяца
         for (let i = 0; i < firstDayOfWeek; i++) {
-            const day = daysInPrevMonth - firstDayOfWeek + i + 1;
-            calendarGrid.appendChild(createDayCell(day, month - 1, year, events, true));
+            calendarGrid.appendChild(createDayCell(daysInPrevMonth - firstDayOfWeek + i + 1, month - 1, year, events, true));
         }
-
-        // Дни текущего месяца
         for (let i = 1; i <= daysInMonth; i++) {
             calendarGrid.appendChild(createDayCell(i, month, year, events, false));
         }
-
-        // Дни следующего месяца
-        const remainingCells = 42 - (firstDayOfWeek + daysInMonth); // 6 недель * 7 дней
+        const remainingCells = 42 - (firstDayOfWeek + daysInMonth);
         for (let i = 1; i <= remainingCells; i++) {
             calendarGrid.appendChild(createDayCell(i, month + 1, year, events, true));
         }
@@ -494,28 +435,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const cell = document.createElement('div');
         cell.className = 'calendar-day';
         if (isOtherMonth) cell.classList.add('other-month');
-
         const cellDate = new Date(year, month, day);
-        const today = new Date();
-        if (cellDate.toDateString() === today.toDateString()) {
-            cell.classList.add('today');
-        }
-
+        if (cellDate.toDateString() === new Date().toDateString()) cell.classList.add('today');
         const dayNumber = document.createElement('span');
         dayNumber.textContent = day;
         cell.appendChild(dayNumber);
-
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'calendar-events';
-
-        // Ищем события для этого дня
-        const dayEvents = allEvents.filter(event => {
-            const eventStartDate = new Date(event.startTime);
-            return eventStartDate.getFullYear() === cellDate.getFullYear() &&
-                eventStartDate.getMonth() === cellDate.getMonth() &&
-                eventStartDate.getDate() === cellDate.getDate();
-        });
-
+        const dayEvents = allEvents.filter(event => new Date(event.startTime).toDateString() === cellDate.toDateString());
         dayEvents.forEach(event => {
             const eventEl = document.createElement('div');
             eventEl.className = 'calendar-event';
@@ -526,130 +453,55 @@ document.addEventListener('DOMContentLoaded', () => {
             eventEl.style.backgroundColor = getRoomColor(event.roomName);
             eventsContainer.appendChild(eventEl);
         });
-
         cell.appendChild(eventsContainer);
         return cell;
     }
 
-    // Обработчики для кнопок навигации
-    if (prevMonthBtn && nextMonthBtn) {
-        prevMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
-        });
-        nextMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
-    }
-
-    // Добавляем вызов renderCalendar при переключении на вкладку
-    adminNavButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.dataset.section === 'calendar') {
-                renderCalendar();
-            }
-        });
-    });
-
-    // Первоначальная отрисовка, если вкладка "Календарь" активна по умолчанию
-    if (document.querySelector('.admin-nav-btn[data-section="calendar"].active')) {
-        renderCalendar();
-    }
-
-    // --- 8. ЛОГИКА ПЕРЕХОДА ИЗ КАЛЕНДАРЯ В ЗАЯВКИ ---
-
     async function handleCalendarEventClick(e) {
-        // Ищем ближайший родительский элемент с классом 'calendar-event'
         const eventElement = e.target.closest('.calendar-event');
-
-        // Если клик был не по событию, ничего не делаем
         if (!eventElement) return;
-
         const appId = eventElement.dataset.applicationId;
         if (!appId) return;
-
-        // 1. Находим нужную вкладку и программно "кликаем" по ней
-        const applicationsTab = document.querySelector('.admin-nav-btn[data-section="applications"]');
-        if (applicationsTab) {
-            applicationsTab.click();
-        }
-
-        // 2. Ждем короткую паузу, чтобы список заявок успел загрузиться
-        // Это простой, но надежный способ дождаться асинхронной операции
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // 3. Находим элемент заявки в списке
-        const targetApplication = document.querySelector(`.application-item[data-id="${appId}"]`);
-
+        document.querySelector('.admin-nav-btn[data-section="applications"]').click();
+        await new Promise(resolve => setTimeout(resolve, 150));
+        let targetApplication = document.querySelector(`.application-item[data-id="${appId}"]`);
         if (targetApplication) {
-            // 4. Плавно прокручиваем к нему
             targetApplication.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 5. Раскрываем детали, если они еще не раскрыты
-            if (!targetApplication.classList.contains('expanded')) {
-                targetApplication.classList.add('expanded');
-            }
-
-            // 6. Добавляем временную подсветку для привлечения внимания
-            targetApplication.style.backgroundColor = '#e6f7ff'; // Светло-голубой
-            setTimeout(() => {
-                targetApplication.style.backgroundColor = ''; // Убираем подсветку через 2 секунды
-            }, 2000);
-
+            if (!targetApplication.classList.contains('expanded')) targetApplication.classList.add('expanded');
+            targetApplication.style.backgroundColor = '#e6f7ff';
+            setTimeout(() => { targetApplication.style.backgroundColor = ''; }, 2000);
         } else {
-            // Если заявка не найдена (например, из-за фильтра), сбрасываем фильтры и пробуем снова
-            const allFilterBtn = document.querySelector('.filter-btn[data-status=""]');
-            if(allFilterBtn) {
-                allFilterBtn.click();
-                // Еще одна пауза для загрузки
-                await new Promise(resolve => setTimeout(resolve, 100));
-                const finalTarget = document.querySelector(`.application-item[data-id="${appId}"]`);
-                if (finalTarget) {
-                    finalTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    if (!finalTarget.classList.contains('expanded')) {
-                        finalTarget.classList.add('expanded');
-                    }
-                    finalTarget.style.backgroundColor = '#e6f7ff';
-                    setTimeout(() => { finalTarget.style.backgroundColor = ''; }, 2000);
-                } else {
-                    alert('Не удалось найти указанную заявку.');
-                }
+            document.querySelector('.filter-btn[data-status=""]').click();
+            await new Promise(resolve => setTimeout(resolve, 150));
+            targetApplication = document.querySelector(`.application-item[data-id="${appId}"]`);
+            if (targetApplication) {
+                targetApplication.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (!targetApplication.classList.contains('expanded')) targetApplication.classList.add('expanded');
+                targetApplication.style.backgroundColor = '#e6f7ff';
+                setTimeout(() => { targetApplication.style.backgroundColor = ''; }, 2000);
+            } else {
+                alert('Не удалось найти указанную заявку.');
             }
         }
     }
 
-    // Привязываем наш новый обработчик к сетке календаря
-    if (calendarGrid) {
-        calendarGrid.addEventListener('click', handleCalendarEventClick);
-    }
 
-    // --- 9. ЛОГИКА ДЛЯ РАЗДЕЛА "АНАЛИТИКА" ---
-
-    // Переменные для хранения созданных графиков, чтобы их можно было уничтожить
-    let popularityChartInstance = null;
-    let activityChartInstance = null;
+    //======================================================================
+    // 7. МОДУЛЬ: АНАЛИТИКА
+    //======================================================================
 
     async function loadAndRenderAnalytics() {
         const dashboard = document.getElementById('analytics-dashboard');
         if (!dashboard) return;
-
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/admin/analytics`);
             if (!response.ok) throw new Error('Не удалось загрузить данные аналитики');
             const data = await response.json();
-
-            // 1. Рендерим KPI-карточки
             document.getElementById('kpi-total').textContent = data.totalApplications;
             document.getElementById('kpi-approved').textContent = data.approvedApplications;
             document.getElementById('kpi-rejected').textContent = data.rejectedApplications;
-
-            // 2. Рендерим график популярности помещений
             renderRoomPopularityChart(data.roomPopularity);
-
-            // 3. Рендерим график активности
             renderBookingActivityChart(data.dailyActivity);
-
         } catch (error) {
             console.error(error);
             dashboard.innerHTML = '<p style="color: red; text-align: center;">Ошибка загрузки аналитики.</p>';
@@ -659,98 +511,117 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderRoomPopularityChart(popularityData) {
         const ctx = document.getElementById('room-popularity-chart');
         if (!ctx) return;
-
-        // Уничтожаем старый график, если он был
-        if (popularityChartInstance) {
-            popularityChartInstance.destroy();
-        }
-
-        const labels = popularityData.map(item => item.roomName);
-        const data = popularityData.map(item => item.bookingCount);
-
+        if (popularityChartInstance) popularityChartInstance.destroy();
         popularityChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Кол-во бронирований',
-                    data: data,
-                    backgroundColor: 'rgba(109, 190, 0, 0.6)',
-                    borderColor: 'rgba(109, 190, 0, 1)',
-                    borderWidth: 1
-                }]
+                labels: popularityData.map(item => item.roomName),
+                datasets: [{ label: 'Кол-во бронирований', data: popularityData.map(item => item.bookingCount), backgroundColor: 'rgba(109, 190, 0, 0.6)', borderColor: 'rgba(109, 190, 0, 1)', borderWidth: 1 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
         });
     }
 
     function renderBookingActivityChart(activityData) {
         const ctx = document.getElementById('booking-activity-chart');
         if (!ctx) return;
-
-        if (activityChartInstance) {
-            activityChartInstance.destroy();
-        }
-
-        const labels = activityData.map(item => new Date(item.date).toLocaleDateString('ru-RU'));
-        const data = activityData.map(item => item.bookingCount);
-
+        if (activityChartInstance) activityChartInstance.destroy();
         activityChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Новые бронирования',
-                    data: data,
-                    fill: true,
-                    backgroundColor: 'rgba(109, 190, 0, 0.1)',
-                    borderColor: 'rgba(109, 190, 0, 1)',
-                    tension: 0.1
-                }]
+                labels: activityData.map(item => new Date(item.date).toLocaleDateString('ru-RU')),
+                datasets: [{ label: 'Новые бронирования', data: activityData.map(item => item.bookingCount), fill: true, backgroundColor: 'rgba(109, 190, 0, 0.1)', borderColor: 'rgba(109, 190, 0, 1)', tension: 0.1 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+
+    //======================================================================
+    // 8. ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+    //======================================================================
+
+    function initialize() {
+        // --- Навигация по разделам админ-панели ---
+        adminNavButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetSectionId = `section-${button.dataset.section}`;
+                adminNavButtons.forEach(btn => btn.classList.remove('active'));
+                adminSections.forEach(section => section.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(targetSectionId).classList.add('active');
+                switch (button.dataset.section) {
+                    case 'rooms': fetchAndRenderRooms(); break;
+                    case 'calendar': renderCalendar(); break;
+                    case 'analytics': loadAndRenderAnalytics(); break;
+                }
+            });
+        });
+
+        // --- Обработчики для фильтров заявок ---
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                fetchAndRenderApplications(button.dataset.status, 0);
+            });
+        });
+
+        // --- Обработчики для раздела "Помещения" ---
+        addRoomBtn.addEventListener('click', () => openRoomModal());
+        cancelRoomEditBtn.addEventListener('click', closeRoomModal);
+        roomEditForm.addEventListener('submit', handleRoomFormSubmit);
+        roomsListContainer.addEventListener('click', async (event) => {
+            const target = event.target;
+            if (target.classList.contains('btn-edit')) {
+                const id = target.dataset.roomId;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/rooms/${id}`);
+                    if (!response.ok) throw new Error(`Ошибка сети: ${response.status}`);
+                    const roomData = await response.json();
+                    openRoomModal(roomData);
+                } catch (error) {
+                    alert('Не удалось загрузить данные для этого помещения.');
                 }
             }
-        });
-    }
-
-    // Добавляем вызов аналитики при переключении на вкладку
-    adminNavButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.dataset.section === 'analytics') {
-                loadAndRenderAnalytics();
+            if (target.classList.contains('btn-delete-card')) {
+                openDeleteModal(target.dataset.roomId);
             }
         });
-    });
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+        confirmDeleteBtn.addEventListener('click', handleDeleteConfirm);
 
-    // Первоначальная отрисовка, если вкладка "Аналитика" активна по умолчанию
-    if (document.querySelector('.admin-nav-btn[data-section="analytics"].active')) {
-        loadAndRenderAnalytics();
+        // --- Обработчики для раздела "Календарь" ---
+        if (prevMonthBtn && nextMonthBtn) {
+            prevMonthBtn.addEventListener('click', () => {
+                calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() - 1);
+                renderCalendar();
+            });
+            nextMonthBtn.addEventListener('click', () => {
+                calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + 1);
+                renderCalendar();
+            });
+        }
+        if (calendarGrid) {
+            calendarGrid.addEventListener('click', handleCalendarEventClick);
+        }
+
+        // --- Обработчик формы входа и кнопки выхода ---
+        loginForm.addEventListener('submit', handleLoginSubmit);
+        logoutButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            alert('Вы успешно вышли из системы.');
+            showLoginForm();
+        });
+
+        // --- Проверка токена и запуск приложения ---
+        if (localStorage.getItem('jwtToken')) {
+            showAdminPanel();
+            fetchAndRenderApplications(currentStatus, currentPage); // Начальная загрузка заявок
+        } else {
+            showLoginForm();
+        }
     }
 
+    initialize(); // Запускаем всю инициализацию
 });
-

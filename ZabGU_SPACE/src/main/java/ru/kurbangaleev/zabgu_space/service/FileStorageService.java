@@ -7,12 +7,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import org.apache.commons.io.FilenameUtils;
 
 @Service
 public class FileStorageService {
 
-    private final Path fileStorageLocation; // <-- Заменяем строку на Path
+    private final Path fileStorageLocation;
+    // Белый список разрешенных типов контента
+    private static final List<String> ALLOWED_CONTENT_TYPES = Arrays.asList("image/jpeg", "image/png");
+    // Белый список разрешенных расширений
+    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
 
     // VVVV ДОБАВЬТЕ ЭТОТ МЕТОД VVVV
     public void deleteFile(String imagePath) {
@@ -48,6 +55,22 @@ public class FileStorageService {
     }
 
     public String storeFile(MultipartFile file) {
+        // === НАЧАЛО БЛОКА ВАЛИДАЦИИ ===
+        if (file.isEmpty()) {
+            throw new RuntimeException("Невозможно сохранить пустой файл.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new RuntimeException("Ошибка: недопустимый тип файла. Разрешены только JPG и PNG.");
+        }
+
+        String extension = FilenameUtils.getExtension(file.getOriginalFilename());
+        if (extension == null || !ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
+            throw new RuntimeException("Ошибка: недопустимое расширение файла. Разрешены только .jpg, .jpeg, .png.");
+        }
+        // === КОНЕЦ БЛОКА ВАЛИДАЦИИ ===
+
         String originalFileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
         // Очищаем имя файла от недопустимых символов
         String cleanFileName = originalFileName.replaceAll("[^a-zA-Z0-9._-]", "");

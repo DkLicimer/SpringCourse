@@ -104,6 +104,12 @@
             <version>1.18.38</version>
         </dependency>
 
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+
         <!-- Для тестов -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -3,6 +3,8 @@ package ru.kurbangaleev.zabgu_space.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import ru.kurbangaleev.zabgu_space.dto.request.CreateApplicationRequest;
 import ru.kurbangaleev.zabgu_space.entity.Application;
 import ru.kurbangaleev.zabgu_space.entity.ApplicationStatus;
@@ -87,15 +89,13 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
-    public List<Application> getAllApplications(ApplicationStatus status) {
+    public Page<Application> getAllApplications(ApplicationStatus status, Pageable pageable) {
         if (status == null) {
-            // Используем новый метод для получения ВСЕХ заявок,
-            // отсортированных по убыванию даты создания.
-            return applicationRepository.findAllByOrderByCreatedAtDesc();
+            // Вызываем новый метод репозитория
+            return applicationRepository.findAll(pageable);
         }
-        // Используем новый метод, который фильтрует по статусу
-        // на уровне БД и сразу же сортирует результат.
-        return applicationRepository.findByStatusOrderByCreatedAtDesc(status);
+        // Вызываем новый метод репозитория
+        return applicationRepository.findByStatus(status, pageable);
     }
 
     @Override

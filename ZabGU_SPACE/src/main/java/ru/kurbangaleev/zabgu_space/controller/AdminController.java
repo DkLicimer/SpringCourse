@@ -1,6 +1,10 @@
 package ru.kurbangaleev.zabgu_space.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,14 +72,19 @@ public class AdminController {
     }
 
     @GetMapping("/applications")
-    public List<ApplicationDetailsResponse> getAllApplications(
-            @RequestParam(required = false) ApplicationStatus status) {
+    public Page<ApplicationDetailsResponse> getAllApplications(
+            @RequestParam(required = false) ApplicationStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
 
-        List<Application> applications = applicationService.getAllApplications(status);
-        // Конвертируем сущности в DTO перед отправкой клиенту
-        return applications.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        // 1. Создаем объект Pageable. Мы хотим сортировать по дате создания (новые сверху).
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        // 2. Вызываем обновленный метод сервиса
+        Page<Application> applicationsPage = applicationService.getAllApplications(status, pageable);
+
+        // 3. Конвертируем Page<Application> в Page<ApplicationDetailsResponse>
+        return applicationsPage.map(this::convertToDto);
     }
 
     @PostMapping("/applications/{id}/approve")
