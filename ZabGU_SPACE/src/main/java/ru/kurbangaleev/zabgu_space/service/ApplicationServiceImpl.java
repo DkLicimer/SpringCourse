@@ -35,6 +35,15 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    public List<Application> getApprovedApplicationsForPeriod(OffsetDateTime startDate, OffsetDateTime endDate) {
+        return applicationRepository.findByStatusAndStartTimeBetweenOrderByStartTimeAsc(
+                ApplicationStatus.APPROVED,
+                startDate,
+                endDate
+        );
+    }
+
+    @Override
     @Transactional
     public Application createApplication(CreateApplicationRequest request) {
         // ... (этот метод остается без изменений)

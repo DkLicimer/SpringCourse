@@ -100,20 +100,62 @@
                             </div>
                         </section>
 
-                        <!-- 2.2. РАЗДЕЛ "КАЛЕНДАРЬ" (пока заглушка) -->
+                        <!-- 2.2. РАЗДЕЛ "КАЛЕНДАРЬ" -->
                         <section id="section-calendar" class="admin-section">
-                            <h2 class="section-title">Календарь занятости помещений</h2>
-                            <p class="section-placeholder">Этот раздел находится в разработке.</p>
+                            <div class="calendar-container">
+                                <header class="calendar-header">
+                                    <button id="prev-month-btn" class="month-nav-btn">&lt;</button>
+                                    <h2 id="current-month-display" class="current-month"></h2>
+                                    <button id="next-month-btn" class="month-nav-btn">&gt;</button>
+                                </header>
+                                <div class="calendar-weekdays">
+                                    <span>Пн</span>
+                                    <span>Вт</span>
+                                    <span>Ср</span>
+                                    <span>Чт</span>
+                                    <span>Пт</span>
+                                    <span>Сб</span>
+                                    <span>Вс</span>
+                                </div>
+                                <div id="calendar-grid" class="calendar-grid">
+                                    <!-- Дни будут генерироваться здесь с помощью JavaScript -->
+                                </div>
+                            </div>
                         </section>
 
-                        <!-- 2.3. РАЗДЕЛ "АНАЛИТИКА" (пока заглушка) -->
+                        <!-- 2.3. РАЗДЕЛ "АНАЛИТИКА" -->
                         <section id="section-analytics" class="admin-section">
-                            <h2 class="section-title">Аналитика</h2>
-                            <p class="section-placeholder">Этот раздел находится в разработке.</p>
+                            <div id="analytics-dashboard" class="analytics-dashboard">
+                                <!-- KPI-карточки -->
+                                <div class="kpi-grid">
+                                    <div class="kpi-card">
+                                        <h3 class="kpi-title">Всего заявок</h3>
+                                        <p id="kpi-total" class="kpi-value">...</p>
+                                    </div>
+                                    <div class="kpi-card approved">
+                                        <h3 class="kpi-title">Одобрено</h3>
+                                        <p id="kpi-approved" class="kpi-value">...</p>
+                                    </div>
+                                    <div class="kpi-card rejected">
+                                        <h3 class="kpi-title">Отклонено</h3>
+                                        <p id="kpi-rejected" class="kpi-value">...</p>
+                                    </div>
+                                </div>
+                                <!-- Графики -->
+                                <div class="charts-grid">
+                                    <div class="chart-container">
+                                        <h4>Популярность помещений</h4>
+                                        <canvas id="room-popularity-chart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h4>Активность за 30 дней</h4>
+                                        <canvas id="booking-activity-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                         </section>
 
-                        <!-- 2.4. РАЗДЕЛ "ПОМЕЩЕНИЯ" (пока заглушка) -->
-                        <!-- 2.4. РАЗДЕЛ "ПОМЕЩЕНИЯ" (бывшая заглушка) -->
+                        <!-- 2.4. РАЗДЕЛ "ПОМЕЩЕНИЯ"  -->
                         <section id="section-rooms" class="admin-section">
                             <div class="section-header">
                                 <h2 class="section-title">Управление помещениями</h2>
@@ -169,6 +211,7 @@
                     </div>
                 </div>
             </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="/ZabGU_WebSiteFrontend/scripts/employeeScript.js"></script>
     </body>
 </html>

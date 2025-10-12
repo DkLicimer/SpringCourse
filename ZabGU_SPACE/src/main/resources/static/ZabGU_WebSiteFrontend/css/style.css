@@ -1104,6 +1104,160 @@ a:hover, a:visited {
     margin-top: 25px;
 }
 
+/* === НОВЫЕ СТИЛИ ДЛЯ КАЛЕНДАРЯ АДМИНИСТРАТОРА === */
+.page-employee .calendar-container {
+    background-color: white;
+    color: #333;
+    border-radius: 25px;
+    padding: 25px 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    width: 100%;
+}
+
+.page-employee .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.page-employee .current-month {
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.page-employee .month-nav-btn {
+    background: #f0f0f0;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.page-employee .month-nav-btn:hover {
+    background: #e0e0e0;
+}
+
+.page-employee .calendar-weekdays,
+.page-employee .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.page-employee .calendar-weekdays {
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.page-employee .calendar-day {
+    min-height: 120px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    padding: 8px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    overflow: hidden;
+}
+
+.page-employee .calendar-day.other-month {
+    color: #ccc;
+    background-color: #fcfcfc;
+}
+
+.page-employee .calendar-day.today {
+    background-color: #e6f7ff;
+}
+
+.page-employee .calendar-events {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.page-employee .calendar-event {
+    background-color: #6DBE00;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+/* === НОВЫЕ СТИЛИ ДЛЯ АНАЛИТИКИ === */
+.page-employee .analytics-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.page-employee .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.page-employee .kpi-card {
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-radius: 15px;
+    color: #333;
+    border-left: 5px solid #555;
+}
+.page-employee .kpi-card.approved { border-left-color: #28a745; }
+.page-employee .kpi-card.rejected { border-left-color: #dc3545; }
+
+.page-employee .kpi-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.page-employee .kpi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.page-employee .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.page-employee .chart-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    position: relative; /* <-- ВАЖНО: Это говорит Chart.js, относительно чего измерять размер */
+    height: 350px;      /* <-- ВАЖНО: Это задает жесткое ограничение по высоте */
+}
+
+.page-employee .chart-container h4 {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 992px) {
+    .page-employee .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 /* =================================================================== */
 /*               4. АДАПТИВНЫЕ СТИЛИ (MEDIA QUERIES)                   */

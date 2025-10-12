@@ -5,6 +5,7 @@ import ru.kurbangaleev.zabgu_space.dto.request.CreateApplicationRequest;
 import ru.kurbangaleev.zabgu_space.entity.Application;
 import ru.kurbangaleev.zabgu_space.entity.ApplicationStatus;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface ApplicationService {
@@ -15,4 +16,6 @@ public interface ApplicationService {
     Application approveApplication(Long applicationId);
 
     Application rejectApplication(Long applicationId, String reason);
+
+    List<Application> getApprovedApplicationsForPeriod(OffsetDateTime startDate, OffsetDateTime endDate);
 }

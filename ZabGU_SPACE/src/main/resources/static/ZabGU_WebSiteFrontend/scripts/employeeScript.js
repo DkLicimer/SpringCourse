@@ -410,4 +410,347 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/';
         });
     }
+
+    // --- 7. ЛОГИКА ДЛЯ РАЗДЕЛА "КАЛЕНДАРЬ" ---
+
+    const calendarGrid = document.getElementById('calendar-grid');
+    const currentMonthDisplay = document.getElementById('current-month-display');
+    const prevMonthBtn = document.getElementById('prev-month-btn');
+    const nextMonthBtn = document.getElementById('next-month-btn');
+
+    let currentDate = new Date(); // Используем для отслеживания текущего отображаемого месяца
+
+    // Функция для генерации "случайного" цвета на основе названия помещения
+    function getRoomColor(roomName) {
+        let hash = 0;
+        for (let i = 0; i < roomName.length; i++) {
+            hash = roomName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            let value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    }
+
+    async function renderCalendar() {
+        if (!calendarGrid) return; // Выходим, если элементы календаря не на странице
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        // 1. Устанавливаем заголовок
+        currentMonthDisplay.textContent = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(currentDate);
+
+        // 2. Очищаем старую сетку
+        calendarGrid.innerHTML = '';
+
+        // 3. Определяем даты для запроса к API (с запасом в одну неделю до и после)
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+
+        const startDate = new Date(firstDayOfMonth);
+        startDate.setDate(startDate.getDate() - 7); // Захватываем конец предыдущего месяца
+
+        const endDate = new Date(lastDayOfMonth);
+        endDate.setDate(endDate.getDate() + 7); // Захватываем начало следующего месяца
+
+        // 4. Запрашиваем данные
+        let events = [];
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/admin/schedule?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
+            if (response.ok) {
+                events = await response.json();
+            }
+        } catch (error) {
+            console.error("Ошибка загрузки расписания для календаря:", error);
+        }
+
+        // 5. Строим календарь
+        const firstDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // 0=Пн, 1=Вт...
+        const daysInMonth = lastDayOfMonth.getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        // Дни предыдущего месяца
+        for (let i = 0; i < firstDayOfWeek; i++) {
+            const day = daysInPrevMonth - firstDayOfWeek + i + 1;
+            calendarGrid.appendChild(createDayCell(day, month - 1, year, events, true));
+        }
+
+        // Дни текущего месяца
+        for (let i = 1; i <= daysInMonth; i++) {
+            calendarGrid.appendChild(createDayCell(i, month, year, events, false));
+        }
+
+        // Дни следующего месяца
+        const remainingCells = 42 - (firstDayOfWeek + daysInMonth); // 6 недель * 7 дней
+        for (let i = 1; i <= remainingCells; i++) {
+            calendarGrid.appendChild(createDayCell(i, month + 1, year, events, true));
+        }
+    }
+
+    function createDayCell(day, month, year, allEvents, isOtherMonth) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        if (isOtherMonth) cell.classList.add('other-month');
+
+        const cellDate = new Date(year, month, day);
+        const today = new Date();
+        if (cellDate.toDateString() === today.toDateString()) {
+            cell.classList.add('today');
+        }
+
+        const dayNumber = document.createElement('span');
+        dayNumber.textContent = day;
+        cell.appendChild(dayNumber);
+
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'calendar-events';
+
+        // Ищем события для этого дня
+        const dayEvents = allEvents.filter(event => {
+            const eventStartDate = new Date(event.startTime);
+            return eventStartDate.getFullYear() === cellDate.getFullYear() &&
+                eventStartDate.getMonth() === cellDate.getMonth() &&
+                eventStartDate.getDate() === cellDate.getDate();
+        });
+
+        dayEvents.forEach(event => {
+            const eventEl = document.createElement('div');
+            eventEl.className = 'calendar-event';
+            eventEl.dataset.applicationId = event.id;
+            const eventTime = new Date(event.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            eventEl.textContent = `${eventTime} - ${event.roomName}`;
+            eventEl.title = `${event.eventName}\n${event.applicantFullName}`;
+            eventEl.style.backgroundColor = getRoomColor(event.roomName);
+            eventsContainer.appendChild(eventEl);
+        });
+
+        cell.appendChild(eventsContainer);
+        return cell;
+    }
+
+    // Обработчики для кнопок навигации
+    if (prevMonthBtn && nextMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+
+    // Добавляем вызов renderCalendar при переключении на вкладку
+    adminNavButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.dataset.section === 'calendar') {
+                renderCalendar();
+            }
+        });
+    });
+
+    // Первоначальная отрисовка, если вкладка "Календарь" активна по умолчанию
+    if (document.querySelector('.admin-nav-btn[data-section="calendar"].active')) {
+        renderCalendar();
+    }
+
+    // --- 8. ЛОГИКА ПЕРЕХОДА ИЗ КАЛЕНДАРЯ В ЗАЯВКИ ---
+
+    async function handleCalendarEventClick(e) {
+        // Ищем ближайший родительский элемент с классом 'calendar-event'
+        const eventElement = e.target.closest('.calendar-event');
+
+        // Если клик был не по событию, ничего не делаем
+        if (!eventElement) return;
+
+        const appId = eventElement.dataset.applicationId;
+        if (!appId) return;
+
+        // 1. Находим нужную вкладку и программно "кликаем" по ней
+        const applicationsTab = document.querySelector('.admin-nav-btn[data-section="applications"]');
+        if (applicationsTab) {
+            applicationsTab.click();
+        }
+
+        // 2. Ждем короткую паузу, чтобы список заявок успел загрузиться
+        // Это простой, но надежный способ дождаться асинхронной операции
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 3. Находим элемент заявки в списке
+        const targetApplication = document.querySelector(`.application-item[data-id="${appId}"]`);
+
+        if (targetApplication) {
+            // 4. Плавно прокручиваем к нему
+            targetApplication.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 5. Раскрываем детали, если они еще не раскрыты
+            if (!targetApplication.classList.contains('expanded')) {
+                targetApplication.classList.add('expanded');
+            }
+
+            // 6. Добавляем временную подсветку для привлечения внимания
+            targetApplication.style.backgroundColor = '#e6f7ff'; // Светло-голубой
+            setTimeout(() => {
+                targetApplication.style.backgroundColor = ''; // Убираем подсветку через 2 секунды
+            }, 2000);
+
+        } else {
+            // Если заявка не найдена (например, из-за фильтра), сбрасываем фильтры и пробуем снова
+            const allFilterBtn = document.querySelector('.filter-btn[data-status=""]');
+            if(allFilterBtn) {
+                allFilterBtn.click();
+                // Еще одна пауза для загрузки
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const finalTarget = document.querySelector(`.application-item[data-id="${appId}"]`);
+                if (finalTarget) {
+                    finalTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (!finalTarget.classList.contains('expanded')) {
+                        finalTarget.classList.add('expanded');
+                    }
+                    finalTarget.style.backgroundColor = '#e6f7ff';
+                    setTimeout(() => { finalTarget.style.backgroundColor = ''; }, 2000);
+                } else {
+                    alert('Не удалось найти указанную заявку.');
+                }
+            }
+        }
+    }
+
+    // Привязываем наш новый обработчик к сетке календаря
+    if (calendarGrid) {
+        calendarGrid.addEventListener('click', handleCalendarEventClick);
+    }
+
+    // --- 9. ЛОГИКА ДЛЯ РАЗДЕЛА "АНАЛИТИКА" ---
+
+    // Переменные для хранения созданных графиков, чтобы их можно было уничтожить
+    let popularityChartInstance = null;
+    let activityChartInstance = null;
+
+    async function loadAndRenderAnalytics() {
+        const dashboard = document.getElementById('analytics-dashboard');
+        if (!dashboard) return;
+
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/admin/analytics`);
+            if (!response.ok) throw new Error('Не удалось загрузить данные аналитики');
+            const data = await response.json();
+
+            // 1. Рендерим KPI-карточки
+            document.getElementById('kpi-total').textContent = data.totalApplications;
+            document.getElementById('kpi-approved').textContent = data.approvedApplications;
+            document.getElementById('kpi-rejected').textContent = data.rejectedApplications;
+
+            // 2. Рендерим график популярности помещений
+            renderRoomPopularityChart(data.roomPopularity);
+
+            // 3. Рендерим график активности
+            renderBookingActivityChart(data.dailyActivity);
+
+        } catch (error) {
+            console.error(error);
+            dashboard.innerHTML = '<p style="color: red; text-align: center;">Ошибка загрузки аналитики.</p>';
+        }
+    }
+
+    function renderRoomPopularityChart(popularityData) {
+        const ctx = document.getElementById('room-popularity-chart');
+        if (!ctx) return;
+
+        // Уничтожаем старый график, если он был
+        if (popularityChartInstance) {
+            popularityChartInstance.destroy();
+        }
+
+        const labels = popularityData.map(item => item.roomName);
+        const data = popularityData.map(item => item.bookingCount);
+
+        popularityChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Кол-во бронирований',
+                    data: data,
+                    backgroundColor: 'rgba(109, 190, 0, 0.6)',
+                    borderColor: 'rgba(109, 190, 0, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    function renderBookingActivityChart(activityData) {
+        const ctx = document.getElementById('booking-activity-chart');
+        if (!ctx) return;
+
+        if (activityChartInstance) {
+            activityChartInstance.destroy();
+        }
+
+        const labels = activityData.map(item => new Date(item.date).toLocaleDateString('ru-RU'));
+        const data = activityData.map(item => item.bookingCount);
+
+        activityChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Новые бронирования',
+                    data: data,
+                    fill: true,
+                    backgroundColor: 'rgba(109, 190, 0, 0.1)',
+                    borderColor: 'rgba(109, 190, 0, 1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Добавляем вызов аналитики при переключении на вкладку
+    adminNavButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.dataset.section === 'analytics') {
+                loadAndRenderAnalytics();
+            }
+        });
+    });
+
+    // Первоначальная отрисовка, если вкладка "Аналитика" активна по умолчанию
+    if (document.querySelector('.admin-nav-btn[data-section="analytics"].active')) {
+        loadAndRenderAnalytics();
+    }
+
 });
+
