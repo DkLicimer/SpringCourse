@@ -247,11 +247,6 @@ a:hover, a:visited {
 /* --- Фоны для всех остальных страниц --- */
 .page-rooms, .page-datetime, .page-application, .page-employee {
     background-image: url('images/backgrd.jpg');
-
-    /* Эти 4 свойства создадут эффект фиксированного фона */
-    background-attachment: fixed;
-    background-position: center center;
-    background-repeat: no-repeat;
     background-size: cover;
 }
 

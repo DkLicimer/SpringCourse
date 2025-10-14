@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const TIME_START = 8.5;
     const TIME_END = 22;
     const TIME_STEP = 0.5;
+    const DAYS_IN_WEEK = 7;
 
     // --- ЭЛЕМЕНТЫ DOM ---
     const scheduleContainer = document.getElementById('schedule-container');
@@ -11,13 +12,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextWeekBtn = document.getElementById('next-week');
     const confirmBtn = document.getElementById('confirm-booking');
 
-    // --- ДАННЫЕ ---
+    // --- ДАННЫЕ И СОСТОЯНИЕ ---
     const selectedRoomId = localStorage.getItem('selectedRoomId');
     let bookedSlots = new Map();
     let selectedSlots = new Set();
     let currentDate = new Date();
     const startOfThisWeek = getMonday(new Date());
     startOfThisWeek.setHours(0, 0, 0, 0);
+
+    // Переменная для логики выбора двумя кликами
+    let selectionStartSlot = null;
 
     if (!selectedRoomId) {
         alert("Пожалуйста, сначала выберите помещение!");
@@ -26,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function fetchBookedSlots(monday) {
+        // ... (эта функция остается без изменений) ...
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         const startDate = formatDate(monday);
@@ -39,20 +44,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             bookings.forEach(booking => {
                 const startTime = new Date(booking.startTime);
                 const endTime = new Date(booking.endTime);
-                const durationMinutes = (endTime - startTime) / (1000 * 60);
-                const totalSlots = Math.round(durationMinutes / 30);
                 let current = new Date(startTime);
-                let slotIndex = 0;
+                let isFirstSlot = true; // Флаг для первой ячейки в брони
                 while (current < endTime) {
                     const dateTimeString = `${formatDate(current)}T${formatTime(current.getHours() + current.getMinutes() / 60)}`;
-                    const isFirstSlot = (slotIndex === 0);
-                    const eventInfo = {
-                        eventName: isFirstSlot ? booking.eventName : "",
-                        slotCount: isFirstSlot ? totalSlots : 0
-                    };
-                    bookedSlots.set(dateTimeString, eventInfo);
+                    // Название мероприятия сохраняем только для первой ячейки
+                    bookedSlots.set(dateTimeString, { eventName: isFirstSlot ? booking.eventName : "" });
+                    isFirstSlot = false;
                     current.setMinutes(current.getMinutes() + 30);
-                    slotIndex++;
                 }
             });
         } catch (error) {
@@ -111,45 +110,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ createTimeSlot ===
+
+    // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (без изменений) ---
     function createTimeSlot(date, time, disabledReason) {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
         const dateTimeString = `${formatDate(date)}T${formatTime(time)}`;
         slot.dataset.datetime = dateTimeString;
 
-        const isBooked = bookedSlots.has(dateTimeString);
-        const isDisabled = !!disabledReason; // Ячейка неактивна, если есть любая причина
-
-        if (isBooked && isDisabled) {
-            slot.classList.add('booked-past'); // Это может быть только прошедшая бронь
-            const eventInfo = bookedSlots.get(dateTimeString);
-            if (eventInfo.eventName) {
-                slot.textContent = eventInfo.eventName;
-                slot.dataset.slotCount = eventInfo.slotCount;
-            }
-        } else if (isBooked) {
+        if (bookedSlots.has(dateTimeString)) {
             slot.classList.add('booked');
             const eventInfo = bookedSlots.get(dateTimeString);
+            // Отображаем название, только если оно не пустое (т.е. это первая ячейка брони)
             if (eventInfo.eventName) {
                 slot.textContent = eventInfo.eventName;
-                slot.dataset.slotCount = eventInfo.slotCount;
             }
-        } else if (selectedSlots.has(dateTimeString) && !isDisabled) {
-            slot.classList.add('selected');
-        } else if (isDisabled) {
+        } else if (disabledReason) {
             slot.classList.add('disabled');
-            // Устанавливаем подсказку в зависимости от причины
-            if (disabledReason === "past") {
-                slot.title = "Бронирование возможно не менее чем за 24 часа.";
-            } else if (disabledReason === "future") {
-                slot.title = "Бронировать можно не более чем на месяц вперед.";
-            }
+            if (disabledReason === "past") slot.title = "Бронирование возможно не менее чем за 24 часа.";
+            else if (disabledReason === "future") slot.title = "Бронировать можно не более чем на месяц вперед.";
         }
-
         return slot;
     }
-
     function createHeaders(monday) { /* ... (без изменений) ... */
         const emptyHeaderStart = document.createElement('div');
         emptyHeaderStart.className = 'grid-header';
@@ -198,62 +180,105 @@ document.addEventListener('DOMContentLoaded', async () => {
         const end = `${sunday.getDate()} ${monthNames[sunday.getMonth()]}`;
         weekDisplay.textContent = `${start} – ${end}`;
     }
-
-    // === НОВАЯ ФУНКЦИЯ ДЛЯ УПРАВЛЕНИЯ КНОПКОЙ ===
     function updateConfirmButtonState() {
         const hasSelection = selectedSlots.size > 0;
-        confirmBtn.disabled = !hasSelection; // disabled = true, если нет выбора
+        confirmBtn.disabled = !hasSelection;
     }
 
-    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ handleSlotClick ===
-    function handleSlotClick(event) {
-        const slot = event.target.closest('.time-slot');
-        if (!slot) return;
+    // ==========================================================
+    // ===               НОВАЯ ЛОГИКА ВЫБОРА                  ===
+    // ==========================================================
 
-        // Проверка на 'disabled' должна идти ПЕРЕД проверкой на 'booked'
-        if (slot.classList.contains('disabled')) {
-            alert('Бронирование возможно только на будущие даты (не менее чем за 24 часа).');
+    function clearAllSelections() {
+        document.querySelectorAll('.time-slot.selected').forEach(s => s.classList.remove('selected'));
+        selectedSlots.clear();
+        selectionStartSlot = null;
+        updateConfirmButtonState();
+    }
+
+    function handleSlotClick(event) {
+        const targetSlot = event.target.closest('.time-slot');
+        if (!targetSlot || targetSlot.classList.contains('disabled') || targetSlot.classList.contains('booked')) {
             return;
         }
 
-        // Эта проверка теперь будет работать, так как класс 'booked' присваивается всегда
-        if (slot.classList.contains('booked')) {
-            return; // Просто ничего не делаем, если ячейка забронирована
-        }
-
-        const dateTimeString = slot.dataset.datetime;
-        if (selectedSlots.has(dateTimeString)) {
-            selectedSlots.delete(dateTimeString);
-            slot.classList.remove('selected');
+        if (!selectionStartSlot) {
+            // --- ПЕРВЫЙ КЛИК: НАЧАЛО ВЫБОРА ---
+            clearAllSelections();
+            selectionStartSlot = targetSlot;
+            targetSlot.classList.add('selected');
+            selectedSlots.add(targetSlot.dataset.datetime);
         } else {
-            selectedSlots.add(dateTimeString);
-            slot.classList.add('selected');
-        }
+            // --- ВТОРОЙ КЛИК: ЗАВЕРШЕНИЕ ВЫБОРА ---
+            const allSlots = Array.from(scheduleContainer.querySelectorAll('.time-slot'));
+            const startIndex = allSlots.indexOf(selectionStartSlot);
+            const endIndex = allSlots.indexOf(targetSlot);
 
+            // 1. Проверяем, что выбор в одной колонке (в одном дне)
+            const startColumn = startIndex % DAYS_IN_WEEK;
+            const endColumn = endIndex % DAYS_IN_WEEK;
+            if (startColumn !== endColumn) {
+                alert("Нельзя выбирать диапазон на несколько дней. Пожалуйста, выберите время в пределах одного дня.");
+                clearAllSelections();
+                return;
+            }
+
+            // 2. Определяем верхнюю и нижнюю строки в выбранной колонке
+            const startRow = Math.floor(startIndex / DAYS_IN_WEEK);
+            const endRow = Math.floor(endIndex / DAYS_IN_WEEK);
+            const [minRow, maxRow] = [startRow, endRow].sort((a, b) => a - b);
+
+            let isValidRange = true;
+            let tempSelectedSlots = [];
+
+            // 3. Проверяем все ячейки СТРОГО ВНУТРИ этой колонки между строками
+            for (let r = minRow; r <= maxRow; r++) {
+                const slotIndexToCheck = r * DAYS_IN_WEEK + startColumn;
+                const slotInRange = allSlots[slotIndexToCheck];
+
+                if (slotInRange.classList.contains('booked') || slotInRange.classList.contains('disabled')) {
+                    isValidRange = false;
+                    break; // Нашли препятствие, диапазон невалиден
+                }
+                tempSelectedSlots.push(slotInRange);
+            }
+
+            // 4. Применяем или сбрасываем выделение
+            if (isValidRange) {
+                clearAllSelections();
+                tempSelectedSlots.forEach(slot => {
+                    slot.classList.add('selected');
+                    selectedSlots.add(slot.dataset.datetime);
+                });
+                selectionStartSlot = null; // Выбор завершен, сбрасываем
+            } else {
+                alert("Выбранный диапазон пересекается с занятым временем. Пожалуйста, выберите другой интервал.");
+                clearAllSelections();
+            }
+        }
         updateConfirmButtonState();
     }
 
     // --- ИНИЦИАЛИЗАЦИЯ И СЛУШАТЕЛИ ---
-    prevWeekBtn.addEventListener('click', () => { /* ... (без изменений) ... */
+    prevWeekBtn.addEventListener('click', () => {
         currentDate.setDate(currentDate.getDate() - 7);
         renderSchedule();
     });
-    nextWeekBtn.addEventListener('click', () => { /* ... (без изменений) ... */
+    nextWeekBtn.addEventListener('click', () => {
         currentDate.setDate(currentDate.getDate() + 7);
         renderSchedule();
     });
+
     scheduleContainer.addEventListener('click', handleSlotClick);
-    confirmBtn.addEventListener('click', (event) => { // <-- 1. Получаем объект события (event)
-        event.preventDefault(); // <-- 2. СРАЗУ отменяем переход по ссылке
 
+    confirmBtn.addEventListener('click', (event) => {
+        event.preventDefault();
         if (selectedSlots.size === 0) {
-            alert('Пожалуйста, выберите хотя бы один временной слот.');
-            return; // <-- 3. Прерываем скрипт, если нет выбранных слотов
+            alert('Пожалуйста, выберите временной диапазон.');
+            return;
         }
-
-        // Этот код выполнится, только если все проверки пройдены
         localStorage.setItem('selectedSlots', JSON.stringify(Array.from(selectedSlots).sort()));
-        window.location.href = '/apply'; // <-- Переходим на страницу программно
+        window.location.href = '/apply';
     });
 
     await renderSchedule();
