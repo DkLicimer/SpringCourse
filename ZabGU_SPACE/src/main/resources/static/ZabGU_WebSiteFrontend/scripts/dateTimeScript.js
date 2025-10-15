@@ -30,27 +30,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function fetchBookedSlots(monday) {
-        // ... (эта функция остается без изменений) ...
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         const startDate = formatDate(monday);
         const endDate = formatDate(sunday);
         try {
-            const url = `http://localhost:8080/api/rooms/${selectedRoomId}/schedule?start_date=${startDate}&end_date=${endDate}`;
+            const url = `/api/rooms/${selectedRoomId}/schedule?start_date=${startDate}&end_date=${endDate}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Ошибка загрузки расписания');
             const bookings = await response.json();
-            bookedSlots.clear();
+
+            bookedSlots.clear(); // Очищаем старые данные
+
             bookings.forEach(booking => {
                 const startTime = new Date(booking.startTime);
                 const endTime = new Date(booking.endTime);
                 let current = new Date(startTime);
-                let isFirstSlot = true; // Флаг для первой ячейки в брони
+                let isFirstSlot = true;
+                let totalSlots = (endTime.getTime() - startTime.getTime()) / (30 * 60 * 1000);
+
                 while (current < endTime) {
                     const dateTimeString = `${formatDate(current)}T${formatTime(current.getHours() + current.getMinutes() / 60)}`;
-                    // Название мероприятия сохраняем только для первой ячейки
-                    bookedSlots.set(dateTimeString, { eventName: isFirstSlot ? booking.eventName : "" });
-                    isFirstSlot = false;
+                    // Сохраняем информацию только для ПЕРВОЙ ячейки брони
+                    if (isFirstSlot) {
+                        bookedSlots.set(dateTimeString, {
+                            eventName: booking.eventName,
+                            isStart: true, // Флаг начала брони
+                            slotCount: totalSlots // Сколько ячеек занимает бронь
+                        });
+                        isFirstSlot = false;
+                    } else {
+                        // Остальные ячейки просто помечаем как "занятые", но без информации
+                        bookedSlots.set(dateTimeString, { eventName: "", isStart: false });
+                    }
                     current.setMinutes(current.getMinutes() + 30);
                 }
             });
@@ -114,22 +126,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (без изменений) ---
     function createTimeSlot(date, time, disabledReason) {
         const slot = document.createElement('div');
-        slot.className = 'time-slot';
         const dateTimeString = `${formatDate(date)}T${formatTime(time)}`;
-        slot.dataset.datetime = dateTimeString;
 
+        // Проверяем, есть ли информация о брони в этом слоте
         if (bookedSlots.has(dateTimeString)) {
-            slot.classList.add('booked');
             const eventInfo = bookedSlots.get(dateTimeString);
-            // Отображаем название, только если оно не пустое (т.е. это первая ячейка брони)
-            if (eventInfo.eventName) {
-                slot.textContent = eventInfo.eventName;
-                slot.title = eventInfo.eventName;
+
+            if (eventInfo.isStart) {
+                // Это НАЧАЛО бронирования. Создаем большую ячейку.
+                slot.className = 'time-slot booked';
+                slot.dataset.datetime = dateTimeString;
+
+                // Устанавливаем высоту ячейки в зависимости от количества слотов
+                slot.style.height = `calc(${eventInfo.slotCount * 30}px + ${eventInfo.slotCount - 1} * 0px)`; // 30px - высота слота
+                // Устанавливаем grid-row-end, чтобы ячейка растянулась
+                slot.style.gridRowEnd = `span ${eventInfo.slotCount}`;
+
+                // Добавляем текстовый узел для вертикального выравнивания
+                const textSpan = document.createElement('span');
+                textSpan.textContent = eventInfo.eventName;
+                slot.appendChild(textSpan);
+
+            } else {
+                // Это "хвост" бронирования. Мы не создаем для него видимый элемент,
+                // так как его место уже занято большой ячейкой.
+                // Можно вернуть пустой div или null, чтобы не нарушать сетку.
+                slot.className = 'time-slot hidden-part';
+                return slot;
             }
-        } else if (disabledReason) {
-            slot.classList.add('disabled');
-            if (disabledReason === "past") slot.title = "Бронирование возможно не менее чем за 24 часа.";
-            else if (disabledReason === "future") slot.title = "Бронировать можно не более чем на 6 месяцев вперед.";
+
+        } else {
+            // Это свободная или недоступная ячейка (логика остается прежней)
+            slot.className = 'time-slot';
+            slot.dataset.datetime = dateTimeString;
+            if (disabledReason) {
+                slot.classList.add('disabled');
+                if (disabledReason === "past") slot.title = "Бронирование возможно не менее чем за 24 часа.";
+                else if (disabledReason === "future") slot.title = "Бронировать можно не более чем на 6 месяцев вперед.";
+            }
         }
         return slot;
     }

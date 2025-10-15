@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  data-room-capacity="${room.capacity}"
                  data-room-image="${room.imagePath}">
                 
-                <img src="${room.imagePath}" alt="Фото ${room.name}" class="card-main-image">
+                <img loading="lazy" src="${room.imagePath}" alt="Фото ${room.name}" class="card-main-image">
                 <div class="card-title-overlay">
                     <h2 class="card-title">${room.name}</h2>
                 </div>
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === ШАГ 7: Функция загрузки данных с сервера ===
     async function loadRooms() {
         try {
-            const response = await fetch('http://localhost:8080/api/rooms');
+            const response = await fetch('/api/rooms');
             if (!response.ok) throw new Error('Не удалось загрузить данные');
             roomsData = await response.json();
             displayRoomCards();

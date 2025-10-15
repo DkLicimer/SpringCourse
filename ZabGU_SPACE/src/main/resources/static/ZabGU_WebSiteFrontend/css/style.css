@@ -608,20 +608,30 @@ a:hover, a:visited {
 
 /* --- Стили для забронированных и выбранных ячеек --- */
 .page-datetime .time-slot.booked {
-    background-color: #494d4e; /* Более темный, насыщенный зеленый */
-    border-color: #494d4e;
-    color: white; /* Белый цвет текста для контраста */
+    background-color: #494d4e;
+    border: 1px solid #6c757d; /* Добавим рамку для визуального отделения */
+    color: white;
     font-weight: 500;
     cursor: not-allowed;
-    /* Выравниваем текст по левому краю для длинных названий */
-    justify-content: flex-start;
-    text-align: left;
-    padding: 0 8px; /* Небольшой отступ от края */
+    border-radius: 8px; /* Скруглим углы для красоты */
+    padding: 8px;
+    z-index: 5; /* Чтобы перекрывать линии сетки */
 
-    /* Важно: для управления длинным текстом */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Добавляет "..." если текст не помещается */
+    /* === КЛЮЧЕВЫЕ ИЗМЕНЕНИЯ === */
+    display: flex; /* Включаем Flexbox */
+    justify-content: center; /* Центрируем по горизонтали */
+    align-items: center; /* Центрируем по вертикали */
+    text-align: center; /* Центрируем текст, если он в несколько строк */
+
+    white-space: normal; /* Разрешаем перенос строк */
+    overflow: hidden; /* Скрываем текст, если он все равно не помещается */
+    word-break: break-word; /* Разрываем длинные слова, чтобы избежать выхода за границы */
+    line-height: 1.3; /* Межстрочный интервал */
+}
+
+/* Добавляем новый стиль для скрытых частей брони */
+.page-datetime .time-slot.hidden-part {
+    display: none; /* Полностью скрываем эти элементы */
 }
 
 /* Динамический размер шрифта в зависимости от длительности брони */
