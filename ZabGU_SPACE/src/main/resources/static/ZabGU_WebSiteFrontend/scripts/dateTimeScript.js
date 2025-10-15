@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
         const maxBookingDate = new Date(now);
-        maxBookingDate.setMonth(now.getMonth() + 1);
+        maxBookingDate.setMonth(now.getMonth() + 6);
         // Устанавливаем время на конец дня, чтобы включить последний день полностью
         maxBookingDate.setHours(23, 59, 59, 999);
 
@@ -124,11 +124,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Отображаем название, только если оно не пустое (т.е. это первая ячейка брони)
             if (eventInfo.eventName) {
                 slot.textContent = eventInfo.eventName;
+                slot.title = eventInfo.eventName;
             }
         } else if (disabledReason) {
             slot.classList.add('disabled');
             if (disabledReason === "past") slot.title = "Бронирование возможно не менее чем за 24 часа.";
-            else if (disabledReason === "future") slot.title = "Бронировать можно не более чем на месяц вперед.";
+            else if (disabledReason === "future") slot.title = "Бронировать можно не более чем на 6 месяцев вперед.";
         }
         return slot;
     }
