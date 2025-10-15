@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                modalText.textContent = 'Ваша заявка принята. Дождитесь одобрения администратора. Ответ придёт к Вам на почту.';
+                modalText.textContent = 'Ваша заявка принята. Дождитесь одобрения администратора. Ответ придёт к Вам на электронную почту.';
                 modal.classList.add('visible');
                 form.reset();
                 localStorage.removeItem('selectedRoomId');

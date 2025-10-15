@@ -34,6 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevMonthBtn = document.getElementById('prev-month-btn');
     const nextMonthBtn = document.getElementById('next-month-btn');
 
+    // Элементы модального окна для ввода причины
+    const reasonModal = document.getElementById('reason-modal');
+    const reasonModalTitle = document.getElementById('reason-modal-title');
+    const reasonForm = document.getElementById('reason-form');
+    const cancelReasonBtn = document.getElementById('cancel-reason-btn');
+    const reasonAppIdInput = document.getElementById('reason-app-id');
+    const reasonAppActionInput = document.getElementById('reason-app-action');
+    const reasonTextInput = document.getElementById('reason-text-input');
+
     // --- Константы API ---
     const API_BASE_URL = '/api'; // Относительный путь для переносимости
 
@@ -48,6 +57,28 @@ document.addEventListener('DOMContentLoaded', () => {
     //======================================================================
     // 2. ОСНОВНЫЕ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
     //======================================================================
+
+    /**
+     * Открывает модальное окно для ввода причины.
+     */
+    function openReasonModal(id, action) {
+        reasonForm.reset();
+        reasonAppIdInput.value = id;
+        reasonAppActionInput.value = action;
+        if (action === 'reject') {
+            reasonModalTitle.textContent = 'Укажите причину отклонения';
+        } else {
+            reasonModalTitle.textContent = 'Укажите причину отмены';
+        }
+        reasonModal.classList.add('visible');
+    }
+
+    /**
+     * Закрывает модальное окно для ввода причины.
+     */
+    function closeReasonModal() {
+        reasonModal.classList.remove('visible');
+    }
 
     /**
      * Показывает админ-панель и скрывает форму входа.
@@ -194,13 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="action-buttons">
                         ${(() => {
-                                    if (app.status === 'PENDING') {
-                                        return `<button class="btn-approve">Одобрить</button><button class="btn-reject">Отклонить</button>`;
-                                    } else if (app.status === 'APPROVED') {
-                                        return `<button class="btn-cancel">Отменить бронь</button>`;
-                                    }
-                                    return ''; // Для статуса REJECTED кнопок нет
-                                })()}
+                if (app.status === 'PENDING') {
+                    return `<button class="btn-approve">Одобрить</button><button class="btn-reject">Отклонить</button>`;
+                } else if (app.status === 'APPROVED') {
+                    return `<button class="btn-cancel">Отменить бронь</button>`;
+                }
+                return ''; // Для статуса REJECTED кнопок нет
+            })()}
                     </div>
                 </div>`;
             applicationListContent.appendChild(item);
@@ -216,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const summary = item.querySelector('.item-summary');
             const id = item.dataset.id;
             summary.addEventListener('click', () => item.classList.toggle('expanded'));
+
             const approveBtn = item.querySelector('.btn-approve');
             if (approveBtn) {
                 approveBtn.addEventListener('click', (e) => {
@@ -225,25 +257,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+
             const rejectBtn = item.querySelector('.btn-reject');
             if (rejectBtn) {
                 rejectBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const reason = prompt('Укажите причину отклонения:');
-                    if (reason) {
-                        updateApplicationStatus(id, 'reject', reason);
-                    }
+                    openReasonModal(id, 'reject');
                 });
             }
+
             const cancelBtn = item.querySelector('.btn-cancel');
             if (cancelBtn) {
                 cancelBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const reason = prompt('Укажите причину отмены бронирования:');
-                    // Проверяем, что пользователь ввел причину и не нажал "Отмена"
-                    if (reason && reason.trim()) {
-                        updateApplicationStatus(id, 'cancel', reason);
-                    }
+                    openReasonModal(id, 'cancel');
                 });
             }
         });
@@ -536,7 +563,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: popularityData.map(item => item.roomName),
                 datasets: [{ label: 'Кол-во бронирований', data: popularityData.map(item => item.bookingCount), backgroundColor: 'rgba(109, 190, 0, 0.6)', borderColor: 'rgba(109, 190, 0, 1)', borderWidth: 1 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        bottom: 40
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
         });
     }
 
@@ -548,9 +596,38 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 labels: activityData.map(item => new Date(item.date).toLocaleDateString('ru-RU')),
-                datasets: [{ label: 'Новые бронирования', data: activityData.map(item => item.bookingCount), fill: true, backgroundColor: 'rgba(109, 190, 0, 0.1)', borderColor: 'rgba(109, 190, 0, 1)', tension: 0.1 }]
+                datasets: [{
+                    label: 'Новые бронирования',
+                    data: activityData.map(item => item.bookingCount),
+                    fill: true,
+                    backgroundColor: 'rgba(109, 190, 0, 0.1)',
+                    borderColor: 'rgba(109, 190, 0, 1)',
+                    tension: 0 // ИЗМЕНЕНИЕ: Убираем сглаживание линии
+                }]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        bottom: 40
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            // Гарантирует отображение только целых чисел на оси
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
         });
     }
 
@@ -584,6 +661,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchAndRenderApplications(button.dataset.status, 0);
             });
         });
+
+        // --- Обработчики для модального окна причины ---
+        if (reasonModal) {
+            cancelReasonBtn.addEventListener('click', closeReasonModal);
+            reasonForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = reasonAppIdInput.value;
+                const action = reasonAppActionInput.value;
+                const reason = reasonTextInput.value;
+                if (reason && reason.trim()) {
+                    updateApplicationStatus(id, action, reason);
+                    closeReasonModal();
+                } else {
+                    alert('Причина не может быть пустой.');
+                }
+            });
+        }
 
         // --- Обработчики для раздела "Помещения" ---
         addRoomBtn.addEventListener('click', () => openRoomModal());

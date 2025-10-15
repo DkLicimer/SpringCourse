@@ -443,6 +443,40 @@ a:hover, a:visited {
     width: 100%;
 }
 
+.page-datetime .schedule-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.page-datetime .legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.page-datetime .legend-color-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    margin-right: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.page-datetime .legend-color-box.available { background-color: #e0f2d4; }
+.page-datetime .legend-color-box.booked { background-color: #494d4e; }
+.page-datetime .legend-color-box.selected { background-color: #28a745; }
+.page-datetime .legend-color-box.disabled {
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, #e9ecef 4px, #e9ecef 8px);
+    background-color: #f8f9fa;
+}
+.page-datetime .instruction-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 5px;
+    white-space: nowrap;
+}
+
 /* КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Этот контейнер теперь управляет всеми тремя элементами */
 .page-datetime .page-header-container {
     display: flex;
@@ -1073,6 +1107,20 @@ a:hover, a:visited {
 }
 .page-employee .delete-confirm-modal-content h4 { font-size: 1.4rem; margin-bottom: 10px; }
 .page-employee .delete-confirm-modal-content p { margin-bottom: 25px; }
+
+.page-employee .reason-modal-content { max-width: 500px; }
+.page-employee .reason-modal-content h3 { text-align: center; font-size: 1.5rem; color: #333; margin-bottom: 25px; }
+.page-employee #reason-form textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 12px;
+    font-size: 1rem;
+    color: #333;
+    background: #f9f9f9;
+    resize: vertical; /* Разрешаем изменять размер по вертикали */
+    min-height: 120px; /* Задаем минимальную высоту */
+}
 
 .page-employee #room-edit-form {
     margin-top: 15px; /* Добавляем отступ сверху для всей формы */

@@ -203,6 +203,24 @@
                 </div>
             </div>
 
+            <div id="reason-modal" class="modal-overlay">
+                <div class="modal-content reason-modal-content">
+                    <h3 id="reason-modal-title">Укажите причину</h3>
+                    <form id="reason-form">
+                        <input type="hidden" id="reason-app-id">
+                        <input type="hidden" id="reason-app-action">
+                        <div class="form-field">
+                            <textarea id="reason-text-input" required rows="5" placeholder=" "></textarea>
+                            <label for="reason-text-input">Причина</label>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="cancel-reason-btn" class="btn-cancel">Отмена</button>
+                            <button type="submit" class="btn-save">Подтвердить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Модальное окно для подтверждения удаления -->
             <div id="delete-confirm-modal" class="modal-overlay">
                 <div class="modal-content delete-confirm-modal-content">
