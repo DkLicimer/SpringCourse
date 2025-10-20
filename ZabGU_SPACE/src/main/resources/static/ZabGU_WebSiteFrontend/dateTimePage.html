@@ -2,15 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- Важнейший тег для адаптивности -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЗабГУ Пространства</title>
+    <title>ЗабГУ Пространства - Выбор времени</title>
     <link rel="stylesheet" href="/ZabGU_WebSiteFrontend/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 </head>
-<script src="/ZabGU_WebSiteFrontend/scripts/dateTimeScript.js"></script>
 <body class="page-datetime">
 <div class="wrapper">
     <header class="header-container">
@@ -42,52 +40,54 @@
         </div>
     </header>
 
-    <!-- === ИСПРАВЛЕННАЯ СТРУКТУРА ВЕРХНЕЙ ЧАСТИ === -->
     <div class="page-header-container">
-
-        <!-- Кнопка "Назад" теперь сама по себе -->
         <a href="/rooms" class="nav-link-back-icon">
             <button class="nav-button back-button">
                 <img src="/ZabGU_WebSiteFrontend/css/images/left-arrow.svg" alt="Назад">
             </button>
         </a>
-
-        <!-- Контейнер для всего остального -->
-        <div class="controls-container">
-            <div class="title-block">
-                <h1 class="mainText">Дата и время</h1>
-                <!-- VVVV НАЧАЛО ИЗМЕНЕНИЙ VVVV -->
-                <div class="schedule-legend">
-                    <div class="legend-item"><span class="legend-color-box available"></span> Свободно</div>
-                    <div class="legend-item"><span class="legend-color-box booked"></span> Занято</div>
-                    <div class="legend-item"><span class="legend-color-box selected"></span> Выбрано</div>
-                    <div class="legend-item"><span class="legend-color-box disabled"></span> Недоступно</div>
-                </div>
-                <p class="subText instruction-text">Для выбора диапазона кликните на время начала, а затем на время окончания.</p>
-                <!-- ^^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^^ -->
-            </div>
-            <div class="actions-block">
-                <div class="week-navigator">
-                    <button id="prev-week" class="week-arrow">&larr;</button>
-                    <span id="week-display">1 – 7 Сентября</span>
-                    <button id="next-week" class="week-arrow">&rarr;</button>
-                </div>
-                <a href="/apply">
-                    <button id="confirm-booking" class="confirm-button">Подтвердить</button>
-                </a>
-            </div>
+        <div class="title-block">
+            <h1 class="mainText">Дата и время</h1>
+            <p class="subText instruction-text">Выберите день, а затем кликните на время начала и окончания.</p>
+        </div>
+        <div class="actions-block">
+            <a href="/apply" class="confirm-button-link">
+                <button id="confirm-booking" class="confirm-button">Подтвердить</button>
+            </a>
         </div>
     </div>
-    <!-- ============================================= -->
-    <!-- Контейнер для всей сетки бронирования -->
-    <div class="schedule-container" id="schedule-container">
-        <!-- Сюда JavaScript будет генерировать сетку -->
+
+    <!-- Блок управления датой -->
+    <div class="date-controls-wrapper">
+        <div class="week-navigator">
+            <button id="prev-week" class="week-arrow">&larr;</button>
+            <span id="week-display">1 – 7 Сентября</span>
+            <button id="next-week" class="week-arrow">&rarr;</button>
+        </div>
+
+        <!-- НОВЫЙ БЛОК ДЛЯ ВКЛАДОК ДНЕЙ НЕДЕЛИ -->
+        <div class="day-tabs-container" id="day-tabs-container">
+            <!-- Сюда JavaScript будет вставлять кнопки Пн, Вт, Ср... -->
+        </div>
     </div>
-    </main>
+
+    <!-- Легенда -->
+    <div class="schedule-legend">
+        <div class="legend-item"><span class="legend-color-box available"></span> Свободно</div>
+        <div class="legend-item"><span class="legend-color-box booked"></span> Занято</div>
+        <div class="legend-item"><span class="legend-color-box selected"></span> Выбрано</div>
+        <div class="legend-item"><span class="legend-color-box disabled"></span> Недоступно</div>
+    </div>
+
+    <!-- Контейнер для сетки бронирования -->
+    <div class="schedule-container" id="schedule-container">
+        <!-- Сюда JavaScript будет генерировать сетку для ОДНОГО дня -->
+    </div>
 
     <footer class="footer">
         <p>© 2015 ФГБОУ ВО "ЗабГУ" Адрес: 672039, г.Чита, ул.Александро-Заводская, д.30, E-mail: mail@zabgu.ru</p>
     </footer>
 </div>
+<script src="/ZabGU_WebSiteFrontend/scripts/dateTimeScript.js"></script>
 </body>
 </html>
