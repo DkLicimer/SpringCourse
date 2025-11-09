@@ -62,17 +62,22 @@
       </header>
 
       <!-- Секция HERO (главный экран) -->
-      <section class="hero-banner" style="background-image: url('images/main_image.jpg');">
+      <section class="hero-banner">
         <div class="container">
-            <div class="hero-banner__content">
-                <h1 class="hero-banner__title">
-                    НАЧНИ СВОЮ ИСТОРИЮ <br>В БОЛЬШОМ СПОРТЕ<br>С БАСКЕТБОЛЬНЫМ КЛУБОМ<br>
-                    <span class="hero-banner__title--accent">LOKO</span>
-                </h1>
-                <div class="hero-banner__cta">
-                    <a href="#contact-form-section" class="btn">ХОЧУ ВСТУПИТЬ</a>
-                </div>
+          <div class="hero-banner__wrapper">
+            <div class="hero-banner__image">
+              <img src="images/main_image.jpg" alt="Баскетбольная команда LOKO">
             </div>
+            <div class="hero-banner__content">
+              <h1 class="hero-banner__title">
+                НАЧНИ СВОЮ ИСТОРИЮ <br>В БОЛЬШОМ СПОРТЕ<br>С БАСКЕТБОЛЬНЫМ КЛУБОМ<br>
+                <span class="hero-banner__title--accent">LOKO</span>
+              </h1>
+              <div class="hero-banner__cta">
+                <a href="#contact-form-section" class="btn">ХОЧУ ВСТУПИТЬ</a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -80,9 +85,10 @@
       <section id="club" class="about-club">
         <div class="container">
           <h2 class="section-title">НАШ КЛУБ</h2>
-          <p class="about-club__description">
-            Баскетбольный клуб Локомотив — это многократный победитель и призер чемпионатов Забайкальского края, участник финала 4-х лучших команд МЛБЛ Бурятии. Клуб вырос в сильную мужскую команду с богатой историей и традициями спортивного совершенства. Локомотив активно развивает баскетбол в регионе, воспитывает молодых спортсменов и ведет борьбу за высокие места в соревнованиях. Спортивный комплекс Локомотив, где проходят тренировки и игры, является одним из спортивных центров Читы с давней историей, что добавляет клубу особую значимость и статус. Присоединяйтесь к нашей команде и поддерживайте дух настоящего баскетбола в Забайкалье!
-          </p>
+          <div class="about-club__description">
+            <p>Баскетбольный клуб Локомотив — многократный победитель и призер чемпионатов Забайкальского края, участник финала четырёх лучших команд МЛБЛ Бурятии. Клуб вырос в сильную мужскую команду с богатой историей и традициями спортивного совершенства.</p>
+            <p>Будьте частью большой баскетбольной семьи — поддерживайте дух настоящего баскетбола в Забайкалье с клубом Локомотив!</p>
+          </div>
         </div>
       </section>
 
@@ -90,33 +96,46 @@
       <section id="gym" class="training-halls">
         <div class="container">
           <h2 class="section-title">ГДЕ МЫ ТРЕНИРУЕМСЯ</h2>
-          <h3 class="section-subtitle">Адреса спортзалов</h3>
-          <address class="training-halls__address">г. Чита, ул. Бутина, 3<br />г. Чита, ул. Донская, 8</address>
-          <img class="training-halls__map" src="img/rectangle-23.png" alt="Карта расположения спортзалов" />
+          <div class="training-halls__wrapper">
+            <div class="training-halls__info">
+              <h3 class="section-subtitle">Адреса спортзалов</h3>
+              <ul class="training-halls__list">
+                <li>г. Чита, ул. Бутина, 3</li>
+                <li>г. Чита, ул. Донская, 8</li>
+              </ul>
+            </div>
+            <div class="training-halls__map">
+              <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3Af1de3b60f4221b4faa73a9ee47bf755048cd315fa22a94d214e60dc0ff987e58&amp;source=constructor" width="649" height="468" frameborder="0"></iframe>
+              
+            </div>
+          </div>
         </div>
       </section>
       
       <!-- Секция ДОКУМЕНТЫ -->
       <section id="documents" class="enrollment-documents">
         <div class="container">
-            <div class="enrollment-documents__wrapper">
-                <div class="enrollment-documents__info">
-                    <h2 class="section-title">ЧТО ВАМ НУЖНО, ЧТОБЫ ЗАПИСАТЬСЯ К НАМ</h2>
-                    <ul class="enrollment-documents__list">
-                        <li>Заявление на прием</li>
-                        <li>Копию свидетельства о рождении ребенка</li>
-                        <li>Копию паспорта одного из родителей</li>
-                        <li>Медицинскую справку с допуском к занятиям спортом</li>
-                        <li>Фотографию ребенка размером 3х4 см</li>
-                    </ul>
-                    <p class="enrollment-documents__note">
-                        Все документы обеспечивают официальное и безопасное участие вашего ребенка в тренировках и соревнованиях клуба.
-                    </p>
-                </div>
-                <div class="enrollment-documents__image-container">
-                    <img src="img/rectangle-24.png" alt="Пример необходимых документов" class="enrollment-documents__image" />
-                </div>
-            </div>
+          <!-- ЗАГОЛОВОК ТЕПЕРЬ НАХОДИТСЯ ЗДЕСЬ, НАД КОЛОНКАМИ -->
+          <h2 class="section-title">ЧТО ВАМ НУЖНО, ЧТОБЫ ЗАПИСАТЬСЯ К НАМ</h2>
+          
+          <div class="enrollment-documents__wrapper">
+              <div class="enrollment-documents__info">
+                  <!-- Заголовок отсюда убран -->
+                  <ul class="enrollment-documents__list">
+                      <li>Заявление на прием</li>
+                      <li>Копию свидетельства о рождении ребенка</li>
+                      <li>Копию паспорта одного из родителей</li>
+                      <li>Медицинскую справку с допуском к занятиям спортом</li>
+                  </ul>
+                  <p class="enrollment-documents__note">
+                      Все документы обеспечивают официальное и безопасное участие вашего ребенка в тренировках и соревнованиях клуба.
+                  </p>
+              </div>
+              <div class="enrollment-documents__image-container">
+                  <!-- Убедитесь, что путь к картинке верный -->
+                  <img src="images/docs_img.jpg" alt="Тренировочный процесс в зале" class="enrollment-documents__image" />
+              </div>
+          </div>
         </div>
       </section>
 
@@ -124,12 +143,23 @@
       <section id="gallery" class="club-gallery">
         <div class="container">
           <h2 class="section-title">ЯРКИЕ МОМЕНТЫ ИЗ ЖИЗНИ КЛУБА</h2>
-          <div class="club-gallery__grid">
-            <img class="club-gallery__item" src="img/rectangle-25.png" alt="Момент из жизни клуба 1" />
-            <img class="club-gallery__item" src="img/rectangle-26.png" alt="Момент из жизни клуба 2" />
-            <img class="club-gallery__item" src="img/rectangle-27.png" alt="Момент из жизни клуба 3" />
-            <img class="club-gallery__item" src="img/rectangle-28.png" alt="Момент из жизни клуба 4" />
+          
+          <!-- Обертка для рядов, которая скроет все лишнее -->
+          <div class="club-gallery__track">
+            <!-- Первый ряд фотографий -->
+            <div class="club-gallery__row">
+              <img class="club-gallery__item" src="images/photo_1.jpg" alt="Момент из жизни клуба 1" />
+              <img class="club-gallery__item" src="images/photo_2.jpg" alt="Момент из жизни клуба 2" />
+              <!-- JavaScript автоматически добавит сюда копии для бесконечной прокрутки -->
+            </div>
+            <!-- Второй ряд фотографий -->
+            <div class="club-gallery__row">
+              <img class="club-gallery__item" src="images/photo_3.jpg" alt="Момент из жизни клуба 3" />
+              <img class="club-gallery__item" src="images/photo_4.jpg" alt="Момент из жизни клуба 4" />
+              <!-- JavaScript автоматически добавит сюда копии для бесконечной прокрутки -->
+            </div>
           </div>
+
         </div>
       </section>
 

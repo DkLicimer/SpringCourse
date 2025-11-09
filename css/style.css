@@ -145,52 +145,6 @@
       display: none;
   }
 
-
-/*     СТИЛИ ГЛАВНОГО ЭКРАНА (HERO)    */
-
-.hero {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('../images/main_background.jpg');
-  background-size: cover;
-  background-position: center;
-  color: #fff;
-  
-  min-height: 800px; 
-  display: flex;
-  align-items: flex-end; 
-  padding-bottom: 100px; 
-}
-
-.hero-content {
-  max-width: 1100px; 
-}
-
-.hero-content h1 {
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1.2;
-  margin: 0 0 20px 0;
-}
-
-.hero-content .hero-subtitle {
-  font-size: 30px;
-  font-weight: 500;
-  font-style: italic;
-  margin: 0 0 40px 0;
-  max-width: 950px; 
-}
-
-.hero .btn {
-  font-size: 30px;
-  padding: 20px 50px;
-}
-
-/*        СТИЛИ СЕКЦИИ УСЛУГ          */
-
-.services {
-  padding: 100px 0;
-  background-color: #f8f8f8; 
-}
-
 .section-title {
   font-family: 'Jost', sans-serif;
   font-size: 40px;
@@ -200,293 +154,312 @@
   margin: 0 0 60px 0; 
 }
 
-.services-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px; 
-}
+/*          СТИЛИ ГЛАВНОГО ЭКРАНА (HERO)      */
 
-.service-card {
+.hero-banner {
+  padding: 60px 0;
   background-color: #fff;
-  border-radius: 20px;
-  padding: 40px 30px;
-  text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+}
+
+.hero-banner__wrapper {
   display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
+  align-items: center;
+  gap: 60px;
 }
 
-.service-card:hover {
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.16);
+.hero-banner__image {
+  flex: 1 1 55%;
+  min-width: 0;
 }
 
-.service-card-img {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  object-fit: cover; 
-  margin: 0 auto 30px auto; 
+.hero-banner__image img {
+  display: block;
+  width: 100%;
+  border-radius: 24px;
 }
 
-.service-card-title {
+.hero-banner__content {
+  flex: 1 1 45%;
+}
+
+.hero-banner__title {
+  font-size: 30px;          /* ИЗМЕНЕНИЕ: Немного увеличили размер шрифта */
+  font-weight: 400;         /* ИЗМЕНЕНИЕ: Сделали основной текст более жирным */
+  line-height: 1.5;         /* ИЗМЕНЕНИЕ: Увеличили расстояние между строками */
+  letter-spacing: 0.5px;    /* ИЗМЕНЕНИЕ: Добавили легкое расстояние между буквами */
+  text-align: center;
+  color: #000;
+  margin: 0 0 40px 0;
+}
+
+.hero-banner__title--accent {
+  display: block;
+  margin-top: 25px;
+  font-size: 42px;
+  color: #C8102E;
+  font-weight: 400;         /* ИЗМЕНЕНИЕ: Сделали LOKO еще жирнее */
+  letter-spacing: 1.5px;    /* ИЗМЕНЕНИЕ: Увеличили расстояние между буквами для акцента */
+}
+
+.hero-banner__cta {
+  text-align: center; /* Это центрирует кнопку внутри её контейнера */
+}
+
+/* Стилизация кнопки в секции HERO */
+.hero-banner .btn {
+  background-color: #C8102E;
+  color: #fff;
+  border-radius: 25px;
+  font-size: 42px;          /* ИЗМЕНЕНИЕ: Увеличили текст в кнопке */
+  font-weight: 400;
+  padding: 10px 80px;
+  letter-spacing: 1px;      /* ИЗМЕНЕНИЕ: Добавили расстояние между буквами в кнопке */
+}
+
+.hero-banner .btn:hover {
+  text-shadow: none;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(200, 16, 46, 0.3);
+}
+
+/*          СТИЛИ СЕКЦИИ "О КЛУБЕ"      */
+
+.about-club {
+  /* Создаем тот самый градиентный фон */
+  background: linear-gradient(135deg, #7d0a1d 0%, #0e5e56 100%);
+  color: #fff; /* Весь текст внутри блока будет белым */
+  padding: 100px 0;
+  text-align: center;
+}
+
+/* Переопределяем стили для заголовка в этом блоке */
+.about-club .section-title {
+  color: #fff;
+  margin-bottom: 50px;
+  font-weight: 700;
+  letter-spacing: 2px; /* Увеличиваем расстояние между буквами */
+}
+
+.about-club__description {
+  max-width: 850px; /* Ограничиваем ширину текстового блока */
+  margin: 0 auto;  /* Центрируем его */
+}
+
+.about-club__description p {
+  font-size: 20px;
+  line-height: 1.8; /* Увеличиваем межстрочное расстояние для читабельности */
+  font-weight: 400;
+}
+
+/* Добавляем отступ сверху для второго абзаца, чтобы отделить его от первого */
+.about-club__description p + p {
+  margin-top: 30px;
+}
+
+/*          СТИЛИ СЕКЦИИ "ЗАЛЫ"      */
+
+.training-halls {
+  padding: 100px 0;
+  background-color: #fff;
+}
+
+/* Переопределяем общий стиль для заголовка секции, чтобы убрать лишний отступ */
+.training-halls .section-title {
+  margin-bottom: 80px;
+}
+
+/* Создаем двухколоночный макет */
+.training-halls__wrapper {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+}
+
+/* Стили для левой колонки с текстом */
+.training-halls__info {
+  flex: 1 1 40%;
+}
+
+.training-halls__info .section-subtitle {
   font-size: 28px;
   font-weight: 600;
-  line-height: 1.3;
-  color: #000;
-  margin: 0 0 30px 0;
+  margin-bottom: 30px;
 }
 
-.service-card-list {
-  list-style: none; 
+/* Стили для списка адресов */
+.training-halls__list {
+  list-style: none; /* Убираем стандартные маркеры */
   padding: 0;
-  margin: 0 0 40px 0;
-  text-align: left;
-  font-family: 'Jost', sans-serif;
-  font-size: 18px;
-  color: #333;
-  line-height: 1.6;
+  margin: 0;
 }
 
-.service-card-list li {
+.training-halls__list li {
   position: relative;
-  padding-left: 20px; 
-  margin-bottom: 10px;
+  padding-left: 20px; /* Место для кастомного маркера */
+  font-size: 22px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
-.service-card-list li::before {
+.training-halls__list li:not(:last-child) {
+  margin-bottom: 20px;
+}
+
+/* Рисуем кастомный маркер-точку */
+.training-halls__list li::before {
   content: '•';
   position: absolute;
   left: 0;
   top: 0;
-  color: #555;
+  color: #000;
 }
 
-.btn.btn-dark {
-  background-color: #0b0b0b;
+/* Стили для правой колонки с картой */
+.training-halls__map {
+  flex: 1 1 60%;
+  height: 450px; /* Задаем фиксированную высоту для карты */
+}
+
+/* Стили для самой карты (iframe) */
+.training-halls__map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0; /* Убираем стандартную рамку */
+  border-radius: 24px; /* Скругляем углы, как на макете */
+}
+
+/*          СТИЛИ СЕКЦИИ "ДОКУМЕНТЫ"      */
+
+.enrollment-documents {
+  background: linear-gradient(135deg, #7d0a1d 0%, #0e5e56 100%);
   color: #fff;
-  border-radius: 50px; 
-  padding-top: 20px;
-  padding-bottom: 20px;
-}
-
-.btn.btn-dark:hover {
-  text-shadow: 0 0 0.6px #fff;
-}
-
-.service-card .btn {
-  margin-top: auto;
-}
-
-/*          СТИЛИ СЕКЦИИ АКЦИИ        */
-.promo {
-  background-size: 100% 100%; 
-  background-position: center;
-  background-image: linear-gradient(rgba(0, 0, 0, 3), rgba(0, 0, 0, 3)), url('../images/background_for_sale.jpg');
-  background-repeat: no-repeat;
-  color: #fff;
-  padding: 120px 0;
-  text-align: left;
-}
-
-.promo-content {
-  max-width: auto;
-}
-
-.promo-content h2 {
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1.2;
-  margin: 0 0 25px 0;
-}
-
-.promo-content p {
-  font-size: 30px;
-  font-weight: 500;
-  font-style: italic;
-  line-height: 1.5;
-  margin: 0 0 45px 0;
-  opacity: 0.9; 
-}
-
-.promo .btn {
-  font-size: 30px;
-  padding: 20px 50px;
-}
-
-/*   7. Секция "Наши работы" (Portfolio)   */
-.portfolio {
   padding: 80px 0;
-  background-color: #f9f9f9; /* Слегка отличим фон от соседних блоков */
 }
 
-/* Стили самой карусели (очень похожи на карусель услуг) */
-.portfolio-carousel {
+.enrollment-documents .section-title {
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin-bottom: 40px;
+}
+
+.enrollment-documents__wrapper {
   display: flex;
-  overflow-x: auto;
-  padding-bottom: 20px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  
-  /* --- ДОБАВЬТЕ ЭТИ СТРОКИ ДЛЯ ЭФФЕКТА ЗАТУХАНИЯ --- */
-  -webkit-mask-image: linear-gradient(to right, transparent, black 20 black 80%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-}
-.portfolio-carousel::-webkit-scrollbar {
-  display: none;
+  align-items: center;
+  gap: 80px;
 }
 
-/* Стили для каждого элемента (фотографии) в карусели */
-.portfolio-item {
-  flex: 0 0 20%; /* Каждая карточка занимает 80% ширины */
-  margin-right: 20px;
-  scroll-snap-align: center; /* Карточка будет примагничиваться к центру */
-  border-radius: 15px;
-  overflow: hidden; /* Скрываем все, что выходит за рамки скругленных углов */
+/* Левая колонка с текстом */
+.enrollment-documents__info {
+  flex: 1 1 65%; /* ИЗМЕНЕНИЕ: Увеличиваем долю текста */
 }
 
-.portfolio-item img {
+/* Правая колонка с картинкой */
+.enrollment-documents__image-container {
+  flex: 1 1 45%; /* ИЗМЕНЕНИЕ: Уменьшаем долю картинки */
+}
+
+.enrollment-documents__image {
   display: block;
   width: 100%;
-  height: 380px; /* Задаем фиксированную высоту для единообразия */
-  object-fit: cover; /* Изображение заполнит блок, сохранив пропорции (может обрезаться) */
-  transition: transform 0.4s ease;
+  border-radius: 50px;
 }
 
-/* Эффект при наведении мыши на компьютерах */
-.portfolio-item:hover img {
-  transform: scale(1.05);
+.enrollment-documents__list {
+  list-style: none;
+  padding: 0;
+  counter-reset: documents-counter;
 }
 
-/*     СТИЛИ СЕКЦИИ "КАК МЫ РАБОТАЕМ"   */
-
-.work-process {
-  padding: 100px 0;
-  background-color: #fff; 
-}
-
-.process-steps {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 30px;
-}
-
-/* Стили для каждой карточки с этапом работы */
-.step-card {
-  padding: 30px;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-}
-
-.step-card-number {
-  width: 70px;
-  height: 70px;
-  background-color: #0b0b0b;
-  color: #fff;
-  border-radius: 50%;
-  
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  
-  font-size: 38px;
-  font-weight: 700;
-  margin-bottom: 30px;
-}
-
-.step-card-title {
+.enrollment-documents__list li {
+  position: relative;
   font-size: 20px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #000;
-  margin: 0 0 15px 0;
-  min-height: 84px; 
+  line-height: 1.7;
+  padding-left: 35px;
 }
 
-.step-card-description {
-  font-family: 'Jost', sans-serif;
-  font-style: italic;
-  font-size: 18px;
+.enrollment-documents__list li:not(:last-child) {
+  margin-bottom: 20px;
+}
+
+.enrollment-documents__list li::before {
+  counter-increment: documents-counter;
+  content: counter(documents-counter) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 600;
+}
+
+.enrollment-documents__note {
+  margin-top: 40px;
+  font-size: 16px;
   line-height: 1.6;
-  color: #555;
-  margin: 0;
+  opacity: 0.9;
 }
 
-/*      СТИЛИ СЕКЦИИ "ПОЧЕМУ МЫ"       */
+/*          СТИЛИ СЕКЦИИ "ГАЛЕРЕЯ"      */
 
-.advantages {
-  padding: 100px 0;
+.club-gallery {
+  padding: 80px 0;
   background-color: #fff;
 }
 
-.advantages-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 60px; 
+.club-gallery .section-title {
+  margin-bottom: 40px;
 }
 
-.advantages-content {
-  flex: 0 0 45%; 
+/* Обертка, которая скрывает все, что выходит за ее пределы */
+.club-gallery__track {
+  overflow: hidden;
 }
 
-.advantages-image {
-  flex: 0 0 55%; 
+/* Стили для каждого ряда с картинками */
+.club-gallery__row {
+  display: flex; /* Выстраиваем картинки в ряд */
+  gap: 30px; /* Расстояние между картинками */
+  width: max-content; /* Ширина ряда равна ширине всех картинок в нем */
+  
+  /* Подключаем анимацию */
+  animation: scroll-gallery 40s linear infinite;
 }
 
-.advantages .section-title {
-  text-align: left;
+.club-gallery__row:not(:last-child) {
+  margin-bottom: 30px;
 }
 
-.advantages-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 50px 0; 
+/* Второй ряд будет двигаться в обратную сторону */
+.club-gallery__row:nth-child(2) {
+  animation-direction: reverse;
 }
 
-.advantages-list li {
-  display: flex;
-  align-items: center;
-  gap: 20px; 
-  font-family: 'Jost', sans-serif;
-  font-style: italic;
-  font-size: 22px;
-  line-height: 1.5;
-  color: #333;
-}
-
-.advantages-list li:not(:last-child) {
-  margin-bottom: 25px;
-}
-
-.advantages-list li::before {
-  content: ''; 
+/* Стили для каждой картинки в галерее */
+.club-gallery__item {
   display: block;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0; 
-  background-image: url('../images/accept_galochka.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+  height: 270px; /* Задаем одинаковую высоту для всех картинок */
+  width: auto;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.advantages-image img {
-  width: 100%; 
-  height: auto;
-  display: block;
-  border-radius: 15px; 
+/* Сама анимация прокрутки */
+@keyframes scroll-gallery {
+  /* В начале анимации ряд стоит на месте */
+  from {
+    transform: translateX(0);
+  }
+  /* В конце анимации ряд сдвигается влево ровно на половину своей ширины */
+  to {
+    transform: translateX(-50%);
+  }
 }
-
-.advantages .btn {
-  max-width: 400px;
-}
-
-/*      СТИЛИ СЕКЦИИ С ФОРМОЙ         */
+  
+/*          СТИЛИ СЕКЦИИ С ФОРМОЙ         */
 
 .contact-form-section {
-  padding: 100px 0;
+  padding: 80px 0 100px 0; /* ИЗМЕНЕНИЕ: Немного изменили вертикальные отступы */
   background-color: #fff;
 }
 
@@ -497,6 +470,10 @@
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: all 0.3s ease;
+  
+  /* ИЗМЕНЕНИЕ: Задаем максимальную ширину и центрируем блок */
+  max-width: 1000px; 
+  margin: 0 auto;
 }
 
 .contact-form-wrapper:hover {
@@ -516,11 +493,11 @@
 
 .contact-form-content {
   flex: 0 0 50%; 
-  padding: 60px;
+  padding: 50px; /* ИЗМЕНЕНИЕ: Уменьшаем внутренние отступы */
 }
 
 .contact-form-content h2 {
-  font-size: 34px;
+  font-size: 32px; /* ИЗМЕНЕНИЕ: Немного уменьшаем заголовок */
   font-weight: 600;
   line-height: 1.4;
   margin: 0 0 40px 0;
@@ -585,66 +562,58 @@
   border-top: 1px solid #eee;
 }
 
-/* Контейнер в футере выстраивает ряды вертикально и центрирует их */
 .footer .container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 30px; /* Расстояние между верхним и нижним рядом */
+  gap: 30px; 
 }
 
-/* Стили для верхнего ряда: убираем растягивание и задаем отступы */
 .footer-top {
   display: flex;
   align-items: center;
-  gap: 100px; /* Отступ между элементами в верхнем ряду */
+  gap: 100px;
 }
 
 .footer p{
   margin: 0;
   color: #333;
   font-size: 18px;
-  font-weight: 700; /* Эта строка сделает текст жирным */
+  font-weight: 700;
 }
 
 .footer-bottom {
   display: flex;
   align-items: center;
-  justify-content: center; /* Центрируем оба блока */
-  gap: 100px; /* Задаем расстояние между блоком ссылок и блоком иконок */
+  justify-content: center;
+  gap: 100px;
   width: 100%;
 }
 
-/* Ссылки в футере теперь в ряд */
 .footer-links {
   display: flex;
-  flex-direction: column; /* Располагаем ссылки одна под другой */
-  gap: 10px; /* Расстояние между ссылками */
+  flex-direction: column;
+  gap: 10px;
 } 
 
 .footer-links a {
-  position: relative; /* Это необходимо для позиционирования псевдоэлемента */
-  padding-bottom: 4px; /* Это создаст отступ для будущей линии */
+  position: relative;
+  padding-bottom: 4px;
 }
 
-/* Создаем кастомную линию с помощью псевдоэлемента ::after */
 .footer-links a::after {
-  content: ''; /* Обязательное свойство для псевдоэлементов */
-  position: absolute; /* Позиционируем относительно самой ссылки */
+  content: '';
+  position: absolute;
   left: 0;
-  bottom: 0; /* Прижимаем линию к низу ссылки (с учетом padding-bottom) */
-  
-  width: 100%; /* Линия будет во всю ширину текста */
-  height: 1px; /* Толщина линии */
-  background-color: #333; /* Цвет линии, можно выбрать любой */
-
-  /* Анимация: изначально линия невидима (масштаб по X равен 0) */
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background-color: #333;
   transform: scaleX(0);
-  transform-origin: left; /* Анимация будет идти слева направо */
-  transition: transform 0.3s ease-out; /* Плавность появления */
+  transform-origin: left;
+  transition: transform 0.3s ease-out;
 }
 
-/* При наведении на ссылку, мы "показываем" линию, масштабируя ее до 100% */
 .footer-links a:hover::after {
   transform: scaleX(1);
 }
@@ -698,40 +667,34 @@
   display: none;
 }
 
-/* Применяем стили, если ширина экрана 768px или меньше */
 @media (max-width: 768px) {
 
-  /* 0. Общие изменения */
   .container {
-    padding: 0 15px; /* Уменьшаем боковые отступы на мобильных */
+    padding: 0 15px;
   }
 
   .section-title {
-    font-size: 28px; /* Уменьшаем заголовки секций */
+    font-size: 28px;
     margin-bottom: 40px;
   }
   
-  /* Класс для блокировки прокрутки при открытом меню */
   .no-scroll {
     overflow: hidden;
   }
 
-  /* 1. Шапка сайта (Header) */
   .header .container {
       justify-content: space-between;
-      flex-wrap: nowrap; /* Запрещаем перенос, чтобы лого и бургер были на одной линии */
+      flex-wrap: nowrap;
   }
 
   .logo {
-      font-size: 28px; /* Уменьшаем логотип */
+      font-size: 28px;
   }
 
-  /* Скрываем оригинальный блок контактов на мобильных */
   .header-contacts {
       display: none;
   }
 
-  /* Стилизация бургер-меню (остается почти без изменений) */
   .burger-menu {
       display: flex;
       flex-direction: column;
@@ -752,10 +715,9 @@
   .burger-menu.is-active span:nth-child(2) { opacity: 0; }
   .burger-menu.is-active span:nth-child(3) { transform: translateY(-8.5px) rotate(-45deg); }
 
-  /* Стилизация навигации и ее содержимого */
   .main-nav {
       display: flex;
-      flex-direction: column; /* Элементы в колонку */
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       gap: 40px;
@@ -779,20 +741,19 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 40px; /* Расстояние между соц. сетями и телефоном */
+        gap: 40px;
         width: 100%;
     }
 
-    /* Располагаем элементы в нужном порядке */
     .mobile-nav-contacts .social-links {
-        order: 1; /* Соц. сети - первые */
+        order: 1;
         gap: 25px;
     }
-    .main-nav > a { /* Ссылки на услуги/акции и т.д. */
+    .main-nav > a {
         order: 2;
     }
     .mobile-nav-contacts .phone-number {
-        order: 3; /* Телефон - последний */
+        order: 3;
         font-size: 22px;
         font-weight: 600;
     }
@@ -802,124 +763,17 @@
         height: 40px;
     }
 
-
-  /* 2. Главный экран (Hero) */
-  .hero {
-    min-height: 600px;
-    padding-bottom: 60px;
-    background-position: 70% 50%; /* Смещаем фон, чтобы было видно главное */
-  }
-
-  .hero-content h1 {
-    font-size: 32px; /* Уменьшаем заголовок */
-  }
-
-  .hero-content .hero-subtitle {
-    font-size: 20px; /* Уменьшаем подзаголовок */
-  }
-
-  .hero .btn {
-    font-size: 18px; /* Уменьшаем кнопку */
-    padding: 15px 30px;
-  }
-
-
-  /* 3. Секция "Наши услуги" (Services) */
-.services-grid {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 0 30px; 
-  box-sizing: border-box; 
-  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black 95%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 20px, black 95%, transparent);
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.services-grid::-webkit-scrollbar {
-  display: none;
-}
-
-.service-card {
-  flex: 0 0 85%;
-  margin-right: 15px;
-  scroll-snap-align: center; 
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08); 
-}
-
-.service-card-title {
-  font-size: 20px;
-}
-
-.service-card-list li {
-  font-size: 14px;
-}
-
-.service-card:last-child {
-  margin-right: 0;
-}
-
-
-  /* 4. Секция "Как мы работаем?" (Work Process) */
-  .process-steps {
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 15px;
-  }
-  
-  .step-card-title {
-    font-size: 16px;
-    min-height: 0; 
-    margin-bottom: 10px;
-  }
-  
-  .step-card-description {
-    font-size: 14px;
-  }
-
-  .step-card-number {
-    width: 45px;
-    height: 45px;
-    font-size: 28px;
-    margin-bottom: 20px;
-  }
-
-
-  /* 5. Секция "Почему выбирают нас?" (Advantages) */
-  .advantages-wrapper {
-    flex-direction: column; /* Ставим блоки друг под друга */
-  }
-
-  .advantages-image {
-    order: 1; /* Картинка первая */
-  }
-
-  .advantages-content {
-    order: 2; /* Текст второй */
-  }
-  
-  .advantages .section-title {
-    text-align: center; /* Центрируем заголовок */
-  }
-
-  .advantages-list li {
-    font-size: 18px;
-  }
-
-
-  /* 6. Форма обратной связи (Contact Form) */
   .contact-form-wrapper {
-    flex-direction: column; /* Ставим блоки друг под друга */
+    flex-direction: column;
   }
   .contact-form-image {
-    order: 1; /* Картинка первая */
-    /* Убираем max-height, чтобы не обрезать контейнер */
+    order: 1;
   }
   .contact-form-image img {
-    /* Позволяем картинке самой определять свою высоту */
     height: 150px;
   }
   .contact-form-content {
-    order: 2; /* Форма вторая */
+    order: 2;
     padding: 30px 20px;
   }
 
@@ -927,47 +781,12 @@
     font-size: 24px;
     text-align: center;
   }
-
-
-  /* 7. Секция "АКЦИЯ" (Promo) */
-  .promo-content h2 {
-    font-size: 30px;
-  }
-
-  .promo-content p {
-    font-size: 20px;
-  }
-
-  .promo .btn {
-    font-size: 18px;
-    padding: 15px 30px;
-  }
-
-  /* Стили для секции "Наши работы" на мобильных */
-.portfolio-item {
-  flex-basis: 75%; /* На мобильных карточка будет занимать почти весь экран */
-  margin-right: 15px;
-}
-
-.portfolio-item img {
-  height: 350px; /* Уменьшаем высоту картинки для мобильных */
-}
-
-/* Центрируем первую и последнюю карточку с помощью отступов у контейнера */
-.portfolio-carousel {
-    padding-left: 15px;
-    padding-right: 15px;
-    /* Это свойство не дает padding'у сломать ширину блока */
-    box-sizing: border-box; 
-}
   
-
-  /* 8. Подвал (Footer) */
   .footer .container,
   .footer-top,
   .footer-bottom {
-    flex-direction: column; /* Все в одну колонку */
-    align-items: center; /* Центрируем все */
+    flex-direction: column;
+    align-items: center;
     gap: 25px;
     text-align: center;
   }

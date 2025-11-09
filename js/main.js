@@ -171,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPromotion();
   initBurgerMenu(); 
   initPortfolioCarousel();
+  initGalleryScroll();
 });
 
 async function loadPromotion() {
@@ -279,3 +280,21 @@ function initPortfolioCarousel() {
   // Запускаем автопрокрутку при загрузке страницы
   startAutoScroll();
 }
+
+/* === ЛОГИКА ДЛЯ БЕСКОНЕЧНОЙ ПРОКРУТКИ ГАЛЕРЕИ === */
+
+function initGalleryScroll() {
+  const galleryRows = document.querySelectorAll('.club-gallery__row');
+
+  galleryRows.forEach(row => {
+    // 1. Находим все картинки, которые изначально есть в ряду
+    const items = Array.from(row.children);
+    
+    // 2. Создаем копию каждой картинки и добавляем ее в конец этого же ряда
+    items.forEach(item => {
+      const clone = item.cloneNode(true);
+      row.appendChild(clone);
+    });
+  });
+}
+
