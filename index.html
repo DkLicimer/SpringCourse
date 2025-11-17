@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анастасия Пузырева - Продвижение бизнеса</title>
+    <meta name="description" content="Продвижение бизнеса в ВКонтакте, SMM, создание сайтов, онлайн-реклама и маркетинговое сопровождение.">
+    
+    <!-- Подключение шрифтов (Montserrat) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Подключение файла стилей -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container">
+            <div class="header__inner">
+                <a href="#" class="logo">
+                    <img src="images/logo.svg" alt="Логотип">
+                </a>
+                <nav class="nav" id="nav">
+                    <a href="#services" class="nav__link">Услуги</a>
+                    <a href="#cases" class="nav__link">Кейсы</a>
+                    <a href="#cta" class="nav__link nav__link--button">Оставить заявку</a>
+                    <a href="#contacts" class="nav__link">Контакты</a>
+                </nav>
+                <button class="burger" id="burger-menu" type="button" aria-label="Открыть меню">
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Главный экран -->
+        <section class="hero">
+            <div class="container hero__container">
+                <div class="hero__content">
+                    <h1 class="hero__title">
+                        <span>Анастасия Пузырева</span>
+                        ПРОДВИЖЕНИЕ БИЗНЕСА
+                    </h1>
+                    <p class="hero__subtitle">Ваши потенциальные клиенты узнают о Вас!</p>
+                    <a href="#cta" class="btn btn--light">Оставить заявку</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Услуги -->
+        <section class="section" id="services">
+            <div class="container">
+                <h2 class="section__title">УСЛУГИ</h2>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h3 class="service-card__title">ПРОДВИЖЕНИЕ ВКОНТАКТЕ</h3>
+                        <p class="service-card__text">Продающее оформление группы. Создание чат-бота с возможностью рассылки среди подписчиков. Таргетированная реклама ВКонтакте.</p>
+                        <a href="#" class="btn btn--outline">Подробнее</a>
+                    </div>
+                    <div class="service-card">
+                        <h3 class="service-card__title">SMM</h3>
+                        <p class="service-card__text">Продающее оформление аккаунтов в социальных сетях. Составление контент-плана и съемка контента (г. Чита). Таргетированная реклама в социальных сетях.</p>
+                        <a href="#" class="btn btn--outline">Подробнее</a>
+                    </div>
+                    <div class="service-card">
+                        <h3 class="service-card__title">СОЗДАНИЕ САЙТОВ</h3>
+                        <p class="service-card__text">Создание продающего сайта. Подготовка посадочных страниц для рекламы. Продвижение сайта, техническая поддержка и обслуживание.</p>
+                        <a href="#" class="btn btn--outline">Подробнее</a>
+                    </div>
+                    <div class="service-card">
+                        <h3 class="service-card__title">ОНЛАЙН-РЕКЛАМА</h3>
+                        <p class="service-card__text">Контекстная реклама. Яндекс Директ. Работа с карточками организации в Яндекс, 2ГИС и пр. Вывод в топ страниц в поиске по ключевым словам (SEO).</p>
+                        <a href="#" class="btn btn--outline">Подробнее</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Акционный баннер -->
+        <section class="promo">
+            <div class="container">
+                <p class="promo__text">🔥 <strong>ТОЛЬКО В ФЕВРАЛЕ !</strong> При заказе оформления группы и таргетированной рекламы не менее, чем на 2 месяца (ВКонтакте) <strong>ЧАТ-БОТ В ПОДАРОК</strong> 🎁</p>
+            </div>
+        </section>
+
+        <!-- Кейсы -->
+        <section class="section" id="cases">
+            <div class="container">
+                <h2 class="section__title">КЕЙСЫ</h2>
+                <div class="cases-grid">
+                    <div class="case-item"><img src="images/case-1.jpg" alt="Кейс 1"></div>
+                    <div class="case-item"><img src="images/case-2.jpg" alt="Кейс 2"></div>
+                    <div class="case-item"><img src="images/case-3.jpg" alt="Кейс 3"></div>
+                    <div class="case-item"><img src="images/case-4.jpg" alt="Кейс 4"></div>
+                </div>
+                <div class="section__footer">
+                    <a href="#" class="more-link">Еще больше кейсов</a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Форма заявки -->
+        <section class="cta" id="cta">
+            <div class="container">
+                <div class="cta-form-wrapper">
+                    <h2 class="cta__title">Хочу работать с вами!</h2>
+                    <p class="cta__subtitle">Оставьте заявку, и получите подарок</p>
+                    <form class="cta-form">
+                        <input type="text" class="form__input" placeholder="Имя">
+                        <input type="tel" class="form__input" placeholder="Телефон">
+                        <div class="form__agreement">
+                            <input type="checkbox" id="agreement" class="form__checkbox" checked>
+                            <label for="agreement">Я соглашаюсь с <a href="#">политикой конфиденциальности</a></label>
+                        </div>
+                        <button type="submit" class="btn btn--light">Оставить заявку</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Подвал -->
+    <footer class="footer" id="contacts">
+        <div class="container">
+            <div class="footer__top">
+                <div class="footer__contacts">
+                    <p class="footer__heading">Контакты</p>
+                    <a href="tel:+79245071252">+7 924 507 12 52</a>
+                    <a href="mailto:nastya0000000@gmail.com">nastya0000000@gmail.com</a>
+                    <div class="socials">
+                        <a href="#" class="socials__item" aria-label="ВКонтакте"><img src="images/vk-icon.svg" alt="VK"></a>
+                        <a href="#" class="socials__item" aria-label="Telegram"><img src="images/tg-icon.svg" alt="TG"></a>
+                        <a href="#" class="socials__item" aria-label="WhatsApp"><img src="images/wa-icon.svg" alt="WA"></a>
+                    </div>
+                </div>
+                <div class="footer__call-icon">
+                    <img src="images/phone-icon.svg" alt="Позвонить">
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <p>ИП Пузырева Анастасия Александровна</p>
+                <p>ИНН 123456789123 ОГРНИП 123456789123456</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Подключение JavaScript -->
+    <script src="js/script.js"></script>
+</body>
+</html>
