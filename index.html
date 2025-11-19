@@ -1,154 +1,217 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Анастасия Пузырева - Продвижение бизнеса</title>
-    <meta name="description" content="Продвижение бизнеса в ВКонтакте, SMM, создание сайтов, онлайн-реклама и маркетинговое сопровождение.">
-    
-    <!-- Подключение шрифтов (Montserrat) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Подключение файла стилей -->
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-
-    <!-- Шапка сайта -->
-    <header class="header">
-        <div class="container">
-            <div class="header__inner">
-                <a href="#" class="logo">
-                    <img src="images/logo.svg" alt="Логотип">
-                </a>
-                <nav class="nav" id="nav">
-                    <a href="#services" class="nav__link">Услуги</a>
-                    <a href="#cases" class="nav__link">Кейсы</a>
-                    <a href="#cta" class="nav__link nav__link--button">Оставить заявку</a>
-                    <a href="#contacts" class="nav__link">Контакты</a>
-                </nav>
-                <button class="burger" id="burger-menu" type="button" aria-label="Открыть меню">
-                    <span></span>
-                </button>
-            </div>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <title>Анастасия Пузырева - Продвижение Бизнеса</title>
+    <meta
+      name="description"
+      content="Продвижение бизнеса в социальных сетях, создание сайтов, онлайн-реклама и маркетинговое сопровождение"
+    />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="styleguide.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="screen">
+      <header class="view">
+        <img class="group" src="img/group-3.svg" alt="Логотип" />
+        <nav class="navbar" role="navigation" aria-label="Основная навигация">
+          <a href="#services" class="text-wrapper">Услуги</a>
+          <a href="#cases" class="text-wrapper">Кейсы</a>
+          <a href="#contact" class="text-wrapper">Оставить заявку</a>
+          <a href="#footer" class="text-wrapper">Контакты</a>
+        </nav>
+      </header>
+      <section class="div">
+        <div class="view-2">
+          <img class="image" src="img/image-4.png" alt="Фоновое изображение" />
+          <img
+            class="vecteezy-colorful"
+            src="img/vecteezy_colorful-fire-flame-illustration_49131181 10.png"
+            alt="Декоративный элемент огонь"
+          />
+          <img
+            class="img"
+            src="img/vecteezy_colorful-fire-flame-illustration_49131181 10.png"
+            alt="Декоративный элемент огонь"
+          />
+          <img
+            class="vecteezy-colorful-2"
+            src="img/vecteezy_colorful-fire-flame-illustration_49131181 10.png"
+            alt="Декоративный элемент огонь"
+          />
+          <img
+            class="vecteezy-colorful-3"
+            src="img/vecteezy_colorful-fire-flame-illustration_49131181 10.png"
+            alt="Декоративный элемент огонь"
+          />
+          <img
+            class="vecteezy-colorful-4"
+            src="img/vecteezy_colorful-fire-flame-illustration_49131181 10.png"
+            alt="Декоративный элемент огонь"
+          />
+          <img class="IMG" src="img/IMG-1488-1.png" alt="Анастасия Пузырева" />
         </div>
-    </header>
-
-    <main>
-        <!-- Главный экран -->
-        <section class="hero">
-            <div class="container hero__container">
-                <div class="hero__content">
-                    <h1 class="hero__title">
-                        <span>Анастасия Пузырева</span>
-                        ПРОДВИЖЕНИЕ БИЗНЕСА
-                    </h1>
-                    <p class="hero__subtitle">Ваши потенциальные клиенты узнают о Вас!</p>
-                    <a href="#cta" class="btn btn--light">Оставить заявку</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Услуги -->
-        <section class="section" id="services">
-            <div class="container">
-                <h2 class="section__title">УСЛУГИ</h2>
-                <div class="services-grid">
-                    <div class="service-card">
-                        <h3 class="service-card__title">ПРОДВИЖЕНИЕ ВКОНТАКТЕ</h3>
-                        <p class="service-card__text">Продающее оформление группы. Создание чат-бота с возможностью рассылки среди подписчиков. Таргетированная реклама ВКонтакте.</p>
-                        <a href="#" class="btn btn--outline">Подробнее</a>
-                    </div>
-                    <div class="service-card">
-                        <h3 class="service-card__title">SMM</h3>
-                        <p class="service-card__text">Продающее оформление аккаунтов в социальных сетях. Составление контент-плана и съемка контента (г. Чита). Таргетированная реклама в социальных сетях.</p>
-                        <a href="#" class="btn btn--outline">Подробнее</a>
-                    </div>
-                    <div class="service-card">
-                        <h3 class="service-card__title">СОЗДАНИЕ САЙТОВ</h3>
-                        <p class="service-card__text">Создание продающего сайта. Подготовка посадочных страниц для рекламы. Продвижение сайта, техническая поддержка и обслуживание.</p>
-                        <a href="#" class="btn btn--outline">Подробнее</a>
-                    </div>
-                    <div class="service-card">
-                        <h3 class="service-card__title">ОНЛАЙН-РЕКЛАМА</h3>
-                        <p class="service-card__text">Контекстная реклама. Яндекс Директ. Работа с карточками организации в Яндекс, 2ГИС и пр. Вывод в топ страниц в поиске по ключевым словам (SEO).</p>
-                        <a href="#" class="btn btn--outline">Подробнее</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Акционный баннер -->
-        <section class="promo">
-            <div class="container">
-                <p class="promo__text">🔥 <strong>ТОЛЬКО В ФЕВРАЛЕ !</strong> При заказе оформления группы и таргетированной рекламы не менее, чем на 2 месяца (ВКонтакте) <strong>ЧАТ-БОТ В ПОДАРОК</strong> 🎁</p>
-            </div>
-        </section>
-
-        <!-- Кейсы -->
-        <section class="section" id="cases">
-            <div class="container">
-                <h2 class="section__title">КЕЙСЫ</h2>
-                <div class="cases-grid">
-                    <div class="case-item"><img src="images/case-1.jpg" alt="Кейс 1"></div>
-                    <div class="case-item"><img src="images/case-2.jpg" alt="Кейс 2"></div>
-                    <div class="case-item"><img src="images/case-3.jpg" alt="Кейс 3"></div>
-                    <div class="case-item"><img src="images/case-4.jpg" alt="Кейс 4"></div>
-                </div>
-                <div class="section__footer">
-                    <a href="#" class="more-link">Еще больше кейсов</a>
-                </div>
-            </div>
-        </section>
-        
-        <!-- Форма заявки -->
-        <section class="cta" id="cta">
-            <div class="container">
-                <div class="cta-form-wrapper">
-                    <h2 class="cta__title">Хочу работать с вами!</h2>
-                    <p class="cta__subtitle">Оставьте заявку, и получите подарок</p>
-                    <form class="cta-form">
-                        <input type="text" class="form__input" placeholder="Имя">
-                        <input type="tel" class="form__input" placeholder="Телефон">
-                        <div class="form__agreement">
-                            <input type="checkbox" id="agreement" class="form__checkbox" checked>
-                            <label for="agreement">Я соглашаюсь с <a href="#">политикой конфиденциальности</a></label>
-                        </div>
-                        <button type="submit" class="btn btn--light">Оставить заявку</button>
-                    </form>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Подвал -->
-    <footer class="footer" id="contacts">
-        <div class="container">
-            <div class="footer__top">
-                <div class="footer__contacts">
-                    <p class="footer__heading">Контакты</p>
-                    <a href="tel:+79245071252">+7 924 507 12 52</a>
-                    <a href="mailto:nastya0000000@gmail.com">nastya0000000@gmail.com</a>
-                    <div class="socials">
-                        <a href="#" class="socials__item" aria-label="ВКонтакте"><img src="images/vk-icon.svg" alt="VK"></a>
-                        <a href="#" class="socials__item" aria-label="Telegram"><img src="images/tg-icon.svg" alt="TG"></a>
-                        <a href="#" class="socials__item" aria-label="WhatsApp"><img src="images/wa-icon.svg" alt="WA"></a>
-                    </div>
-                </div>
-                <div class="footer__call-icon">
-                    <img src="images/phone-icon.svg" alt="Позвонить">
-                </div>
-            </div>
-            <div class="footer__bottom">
-                <p>ИП Пузырева Анастасия Александровна</p>
-                <p>ИНН 123456789123 ОГРНИП 123456789123456</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Подключение JavaScript -->
-    <script src="js/script.js"></script>
-</body>
+        <h2 class="text-wrapper-2">Анастасия Пузырева</h2>
+        <h1 class="text-wrapper-3">ПРОДВИЖЕНИЕ БИЗНЕСА</h1>
+        <a href="#contact" class="div-wrapper"><span class="text-wrapper-4">Оставить заявку</span></a>
+        <p class="p">Ваши потенциальные клиенты узнают о Вас!</p>
+      </section>
+      <section class="view-3" id="services">
+        <img class="image-2" src="img/image-4.png" alt="Декоративное изображение" />
+        <img class="image-3" src="img/image-4.png" alt="Декоративное изображение" />
+        <article class="frame">
+          <h3 class="text-wrapper-5">SMM</h3>
+          <p class="text-wrapper-6">
+            Продающее оформление аккаунтов в социальных сетях. Составление контент-плана и съемка контента (г. Чита).
+            Таргетированная реклама в социальных сетях.
+          </p>
+          <a href="#" class="frame-2"><span class="text-wrapper-7">Подробнее</span></a>
+        </article>
+        <article class="frame-3">
+          <h3 class="text-wrapper-8">СОЗДАНИЕ САЙТОВ</h3>
+          <p class="text-wrapper-9">
+            Создание продающего сайта. Подготовка посадочных страниц для рекламы. Продвижение сайта. техническая
+            поддержка и обслуживание.
+          </p>
+          <a href="#" class="frame-4"><span class="text-wrapper-7">Подробнее</span></a>
+        </article>
+        <article class="frame-5">
+          <h3 class="text-wrapper-10">ОНЛАЙН-РЕКЛАМА</h3>
+          <p class="text-wrapper-11">
+            Контекстная реклама. Яндекс Директ. Работа с карточками организации в Яндекс, 2ГИС и пр. Вывод в топ страниц
+            в поиске по ключевым словам (SEO).
+          </p>
+          <a href="#" class="frame-4"><span class="text-wrapper-7">Подробнее</span></a>
+        </article>
+        <article class="frame-6">
+          <h3 class="text-wrapper-12">МАРКЕТИНГОВОЕ СОПРОВОЖДЕНИЕ</h3>
+          <p class="text-wrapper-9">
+            Комплексная услуга. Настройка CRM-систем. Скрипты. Продвижение в социальных сетях. Продвижение сайта. Работа
+            с отзывами.
+          </p>
+          <a href="#" class="frame-4"><span class="text-wrapper-7">Подробнее</span></a>
+        </article>
+        <h2 class="text-wrapper-13">УСЛУГИ</h2>
+        <article class="frame-7">
+          <h3 class="text-wrapper-14">ПРОДВИЖЕНИЕ ВКОНТАКТЕ</h3>
+          <p class="text-wrapper-15">
+            Продающее оформление группы. Создание чат-бота с возможностью рассылки среди подписчиков. Таргетированная
+            реклама ВКонтакте.
+          </p>
+          <img class="frame-8" src="img/frame-15.svg" alt="Кнопка подробнее" />
+        </article>
+      </section>
+      <section class="view-4">
+        <img class="image-4" src="img/sale.jpg" alt="Фоновое изображение акции" />
+        <p class="element">
+          <span class="span"
+            >При заказе оформления группы и таргетированной рекламы не менее, чем на 2 месяца (ВКонтакте)
+          </span>
+          <span class="text-wrapper-16">ЧАТ-БОТ В ПОДАРОК</span>
+        </p>
+        <img class="img-2" src="img/image-2.png" alt="Декоративная линия" />
+      </section>
+      <section class="view-5" id="cases">
+        <h2 class="text-wrapper-17">КЕЙСЫ</h2>
+        <article class="frame-9">
+          <img
+            class="wie-kann-man-selbst"
+            src="img/Wie-Kann-Man-Selbst-Online-Magazin-Publizieren-e1595840430242-768x512 1.png"
+            alt="Кейс агентства недвижимости"
+          />
+          <div class="rectangle"></div>
+          <p class="element-2">Повысили посещаемость сайта агентства<br />недвижимости на 45%</p>
+          <a href="#" class="text-wrapper-18">подробнее</a>
+        </article>
+        <article class="frame-10">
+          <img
+            class="wie-kann-man-selbst"
+            src="img/Wie-Kann-Man-Selbst-Online-Magazin-Publizieren-e1595840430242-768x512 1.png"
+            alt="Кейс агентства недвижимости"
+          />
+          <div class="rectangle"></div>
+          <p class="element-3">Повысили посещаемость сайта агентства<br />недвижимости на 45%</p>
+          <a href="#" class="text-wrapper-19">подробнее</a>
+        </article>
+        <article class="frame-11">
+          <div class="view-6">
+            <img
+              class="wie-kann-man-selbst-2"
+              src="img/Wie-Kann-Man-Selbst-Online-Magazin-Publizieren-e1595840430242-768x512 1.png"
+              alt="Кейс агентства недвижимости"
+            />
+            <div class="rectangle-2"></div>
+          </div>
+          <p class="element-3">Повысили посещаемость сайта агентства<br />недвижимости на 45%</p>
+          <a href="#" class="text-wrapper-19">подробнее</a>
+        </article>
+        <article class="frame-12">
+          <img
+            class="wie-kann-man-selbst"
+            src="img/Wie-Kann-Man-Selbst-Online-Magazin-Publizieren-e1595840430242-768x512 1.png"
+            alt="Кейс агентства недвижимости"
+          />
+          <div class="rectangle"></div>
+          <p class="element-3">Повысили посещаемость сайта агентства<br />недвижимости на 45%</p>
+          <a href="#" class="text-wrapper-19">подробнее</a>
+        </article>
+        <a href="#" class="text-wrapper-20">Еще больше кейсов</a>
+      </section>
+      <section class="view-7" id="contact">
+        <h2 class="text-wrapper-21">Хочу работать с вами!</h2>
+        <form class="contact-form" action="#" method="post">
+          <div class="frame-13">
+            <label for="name" class="visually-hidden">Имя</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="text-wrapper-22"
+              placeholder="Имя"
+              required
+              aria-required="true"
+            />
+          </div>
+          <div class="frame-14">
+            <label for="phone" class="visually-hidden">Телефон</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              class="text-wrapper-22"
+              placeholder="Телефон"
+              required
+              aria-required="true"
+            />
+          </div>
+          <p class="text-wrapper-23">Оставьте заявку, и получите подарок</p>
+          <div class="checkbox-wrapper">
+            <input type="checkbox" id="privacy" name="privacy" class="rectangle-3" required aria-required="true" />
+            <label for="privacy" class="div-2">
+              <span class="text-wrapper-24">Я соглашаюсь с <br /></span>
+              <a href="#" class="text-wrapper-25">политикой конфиденциальности</a>
+            </label>
+          </div>
+          <button type="submit" class="view-8"><span class="text-wrapper-4">Оставить заявку</span></button>
+        </form>
+      </section>
+      <footer class="view-9" id="footer">
+        <img class="line" src="img/line-1.svg" alt="" role="presentation" />
+        <h2 class="text-wrapper-26">Контакты</h2>
+        <p class="text-wrapper-27"><a href="tel:+79245071252">+7 924 507 12 52</a></p>
+        <p class="text-wrapper-28"><a href="mailto:nastya0000000@gmail.com">nastya0000000@gmail.com</a></p>
+        <nav class="view-10" aria-label="Социальные сети">
+          <a href="#" aria-label="ВКонтакте"><img class="img-3" src="img/vk.svg" alt="ВКонтакте" /></a>
+          <a href="#" aria-label="Telegram"><img class="img-3" src="img/telegram.svg" alt="Telegram" /></a>
+          <a href="#" aria-label="WhatsApp"><img class="img-3" src="img/whatsapp.svg" alt="WhatsApp" /></a>
+        </nav>
+        <p class="text-wrapper-29">ИП Пузырева Анастасия Александровна</p>
+        <p class="text-wrapper-30">ИНН 123456789123 ОГРНИП 123456789123456</p>
+        <img class="phone-call" src="img/phone-call.svg" alt="Иконка телефона" />
+        <img class="group-2" src="img/logof.svg" alt="Логотип" />
+      </footer>
+    </div>
+  </body>
 </html>
