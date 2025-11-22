@@ -1,0 +1,777 @@
+/* ========================================== */
+/*         ПОДКЛЮЧЕНИЕ ШРИФТОВ GILROY         */
+/* ========================================== */
+
+/* 100 - Thin */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Thin.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Thin.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Thin.ttf') format('truetype');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-ThinItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-ThinItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-ThinItalic.ttf') format('truetype');
+    font-weight: 100;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 200 - UltraLight */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-UltraLight.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-UltraLight.woff') format('woff'),
+         url('../assets/fonts/Gilroy-UltraLight.ttf') format('truetype');
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-UltraLightItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-UltraLightItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-UltraLightItalic.ttf') format('truetype');
+    font-weight: 200;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 300 - Light */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Light.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Light.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-LightItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-LightItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-LightItalic.ttf') format('truetype');
+    font-weight: 300;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 400 - Regular (Основной текст) */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Regular.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Regular.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-RegularItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-RegularItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-RegularItalic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 500 - Medium */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Medium.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Medium.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-MediumItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-MediumItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-MediumItalic.ttf') format('truetype');
+    font-weight: 500;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 600 - Semibold */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Semibold.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Semibold.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Semibold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-SemiboldItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-SemiboldItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-SemiboldItalic.ttf') format('truetype');
+    font-weight: 600;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 700 - Bold */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Bold.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Bold.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-BoldItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-BoldItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 800 - ExtraBold */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Extrabold.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Extrabold.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Extrabold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-ExtraboldItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-ExtraboldItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-ExtraboldItalic.ttf') format('truetype');
+    font-weight: 800;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* 900 - Black */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-Black.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-Black.woff') format('woff'),
+         url('../assets/fonts/Gilroy-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../assets/fonts/Gilroy-BlackItalic.woff2') format('woff2'),
+         url('../assets/fonts/Gilroy-BlackItalic.woff') format('woff'),
+         url('../assets/fonts/Gilroy-BlackItalic.ttf') format('truetype');
+    font-weight: 900;
+    font-style: italic;
+    font-display: swap;
+}
+
+
+
+/* --- ПЕРЕМЕННЫЕ (ЦВЕТА И ШРИФТЫ) --- */
+:root {
+    --font-main: 'Gilroy', sans-serif;
+    
+    --color-bg: #080808;
+    --color-accent: #FF3C00;
+    --color-text: #FFFFFF;
+    --color-text-gray: #D1C8BF;
+    --color-card-bg: rgba(42, 41, 40, 0.4);
+    
+    --container-width: 1200px;
+    --spacing-section: 80px;
+    --border-radius: 12px;
+}
+
+/* --- БАЗОВЫЕ СТИЛИ --- */
+body {
+    font-family: var(--font-main);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-x: hidden; /* Чтобы не было горизонтального скролла */
+}
+
+/* Контейнер ограничивает ширину контента по центру */
+.container {
+    width: 100%;
+    max-width: var(--container-width);
+    padding: 0 20px;
+    margin: 0 auto;
+}
+
+/* Заголовки секций */
+.section-title {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 60px;
+    text-transform: uppercase;
+}
+
+/* --- КНОПКИ --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 40px;
+    background-color: var(--color-accent);
+    color: var(--color-text);
+    font-weight: 500;
+    border-radius: 30px;
+    transition: transform 0.2s, background-color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #e63600;
+    transform: translateY(-2px);
+}
+
+.btn--small {
+    padding: 12px 28px;
+    font-size: 14px;
+    border-radius: 8px;
+}
+
+.btn--light {
+    background-color: #FFFFFF;
+    color: var(--color-accent);
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* --- HEADER --- */
+.header {
+    background-color: var(--color-accent);
+    height: 150px; /* Высота как в макете */
+    display: flex;
+    align-items: center;
+}
+
+.header__container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header__logo img {
+    height: 120px; /* Подбираем размер */
+    width: auto;
+}
+
+.nav__list {
+    display: flex;
+    gap: 40px;
+}
+
+.nav__link {
+    font-weight: 700;
+    font-size: 22px;
+    text-transform: capitalize;
+    transition: opacity 0.2s;
+}
+
+.nav__link:hover {
+    opacity: 0.7;
+}
+
+/* --- HERO SECTION --- */
+.hero {
+    position: relative;
+    min-height: 700px;
+    display: flex;
+    align-items: center;
+    padding: 60px 0;
+    
+    /* Фон */
+    background-image: url('../assets/img/hero-bg-desktop.jpg');
+    background-size: auto;
+    background-position: center top;
+    background-repeat: no-repeat;
+}
+
+.hero__container {
+    display: flex;
+    align-items: center;
+    /* Выравнивание блока по левому краю контейнера */
+    justify-content: flex-start; 
+    width: 100%;
+    height: 100%;
+}
+
+.hero__content {
+    /* Увеличиваем ширину контейнера, чтобы текст влез в одну строку */
+    max-width: 1000px; 
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.hero__subtitle {
+    font-family: 'Gilroy';
+    /* Уменьшили размер шрифта с 36px до 24px */
+    font-size: 50px; 
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #FFFFFF;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-transform: capitalize; /* Опционально: можно добавить, если хочется как на логотипе */
+    letter-spacing: 1px; /* Чуть разрядим буквы для красоты */
+}
+
+.hero__title {
+    font-family: 'Gilroy', 'Montserrat', sans-serif;
+    font-size: 60px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0 0 0px 0;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    /* Запрещаем перенос строки на больших экранах */
+    white-space: nowrap; 
+}
+
+.hero__description {
+    font-family: 'Gilroy';
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 40px;
+    color: #FFFFFF;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* --- СТИЛИЗАЦИЯ КНОПКИ (БЕЛАЯ) --- */
+.hero__btn {
+    background-color: #FFFFFF; /* Белый фон */
+    color: #FF3C00; /* Оранжевый текст */
+    font-weight: 700;
+    font-size: 24px;
+    padding: 10px 60px; /* Большая кнопка */
+    border-radius: 25   px; /* Овальная форма (Pill shape) */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s;
+    text-decoration: none;
+}
+
+.hero__btn:hover {
+    background-color: #f2f2f2; /* Чуть серый при наведении */
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* --- SERVICES --- */
+/* 1. Важно: добавляем позиционирование родительской секции */
+.services {
+    position: relative;
+    overflow: hidden; /* Обрезает картинки, если они вылезают за ширину экрана */
+    z-index: 1; /* Создаем контекст наложения */
+}
+
+/* 2. Общие стили для декора */
+.services__decor {
+    position: absolute;
+    z-index: -1; /* Убираем НА ЗАДНИЙ план, под карточки */
+    pointer-events: none; /* Чтобы сквозь них можно было кликать, и они не мешали */
+    width: auto;
+    height: auto;
+    max-width: 400px; /* Ограничиваем размер, чтобы не были гигантскими */
+    opacity: 0.8; /* Можно чуть приглушить, если слишком яркие */
+}
+
+/* 3. Позиция левого огня */
+.services__decor--left {
+    top: 40%; /* Опускаем пониже (центр-низ) */
+    left: 0; /* Сдвигаем влево за край экрана */
+}
+
+/* 4. Позиция правого огня */
+.services__decor--right {
+    top: 10%; /* Поднимаем повыше (верх) */
+    right: 0; /* Сдвигаем вправо за край */
+}
+
+.services__title {
+    color: #FFFFFF;
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 50px;
+    text-align: center;
+}
+
+.services__grid {
+    /* Делаем список вертикальным (одна колонка) */
+    display: flex;
+    flex-direction: column;
+    gap: 30px; /* Отступ между карточками */
+    
+    /* Ограничиваем ширину списка, чтобы на широких экранах 
+       строки не были бесконечно длинными (так удобнее читать) */
+    max-width: 1150px; 
+    margin: 0 auto; /* Центрируем саму колонку */
+}
+
+.service-card {
+    /* Темный фон, чуть светлее основного фона сайта (#080808) */
+    background-color: #141414; 
+    /* Скругление углов */
+    border-radius: 12px;
+    /* Внутренние отступы */
+    padding: 25px;
+    /* Едва заметная обводка для контраста */
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Весь контент прижат влево */
+    
+    /* Плавность при наведении */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    /* При наведении рамка становится чуть светлее */
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Специфичный класс для первой карточки больше не нужен, 
+   так как все карточки теперь одинаковые по ширине. 
+   Но если класс остался в HTML, сбросим его влияние: */
+.service-card--featured {
+    grid-column: auto;
+    background: #141414; /* Возвращаем такой же цвет как у всех */
+}
+
+.service-card__title {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 40px; /* Крупный заголовок */
+    font-weight: 600;
+    margin: 0 0 0 0;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    line-height: 1.2;
+}
+
+.service-card__text {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 30px; /* Текст крупнее для читаемости */
+    font-weight: 400;
+    color: #FFFFFF; /* Почти белый цвет, как на скрине */
+    line-height: 1.2;
+    margin-top: 5px;
+    margin-bottom: 20px; /* Отступ до кнопки */
+    max-width: 90%; /* Чтобы текст не прилипал к правому краю */
+}
+
+/* Кнопка "Подробнее" */
+.service-card__btn {
+    background-color: #FF3C00; /* Наш фирменный оранжевый */
+    color: #FFFFFF;
+    padding: 10px 40px; /* Размер кнопки */
+    font-size: 30px;
+    font-weight: 300;
+    border-radius: 6px; /* Чуть скругленные углы (не овал) */
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s, transform 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.service-card__btn:hover {
+    background-color: #e63600; /* Чуть темнее при наведении */
+    transform: translateY(-2px);
+}
+
+/* --- PROMO (Баннер акции) --- */
+.promo {
+    margin: var(--spacing-section) 0;
+    background: linear-gradient(90deg, #d93600 0%, #ff6b00 100%);
+    padding: 40px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.promo__container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.promo__content {
+    max-width: 800px;
+}
+
+.promo__text {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.promo__highlight {
+    display: block;
+    font-size: 40px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-top: 10px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* --- PORTFOLIO (CASES) --- */
+.portfolio {
+    padding-bottom: var(--spacing-section);
+}
+
+.portfolio__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 колонки */
+    gap: 40px;
+    margin-bottom: 50px;
+}
+
+.case-card {
+    background: #111;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+}
+
+.case-card__image-wrapper {
+    height: 320px;
+    overflow: hidden;
+}
+
+.case-card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s;
+}
+
+.case-card:hover .case-card__img {
+    transform: scale(1.05);
+}
+
+.case-card__info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    text-align: center;
+}
+
+.case-card__desc {
+    font-size: 18px;
+    margin: 0 0 10px 0;
+}
+
+.case-card__link {
+    color: var(--color-accent);
+    text-transform: uppercase;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.portfolio__actions {
+    text-align: center;
+}
+
+.link-more {
+    color: var(--color-text);
+    text-decoration: underline;
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+.link-more:hover {
+    color: var(--color-accent);
+}
+
+/* --- CONTACT FORM --- */
+.contact__container {
+    display: flex;
+    justify-content: center;
+}
+
+.contact__content {
+    background-color: #D93600; /* Цвет плашки формы */
+    border-radius: 20px;
+    padding: 60px;
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(217, 54, 0, 0.2);
+}
+
+.contact__title {
+    font-size: 40px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+}
+
+.contact__subtitle {
+    font-size: 18px;
+    margin-bottom: 40px;
+}
+
+.contact__form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form__group {
+    width: 100%;
+}
+
+.form__input {
+    width: 100%;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    outline: none;
+}
+
+.form__input:focus {
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+}
+
+.form__checkbox-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.form__checkbox {
+    margin-top: 4px;
+    accent-color: #000;
+}
+
+.form__link {
+    text-decoration: underline;
+}
+
+/* --- FOOTER --- */
+.footer {
+    padding: 60px 0 20px;
+    background-color: #000;
+    border-top: 1px solid #222;
+}
+
+.footer__container {
+    position: relative;
+}
+
+.footer__top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-bottom: 40px;
+}
+
+.footer__logo {
+    width: 50px;
+    margin-bottom: 20px;
+}
+
+.footer__contacts {
+    text-align: center;
+}
+
+.footer__title {
+    color: var(--color-accent);
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.footer__link {
+    display: block;
+    color: var(--color-accent);
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.footer__link--phone {
+    font-weight: 700;
+    font-size: 22px;
+}
+
+.socials {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.socials__link img {
+    width: 30px;
+    height: 30px;
+    transition: transform 0.2s;
+}
+
+.socials__link:hover img {
+    transform: scale(1.1);
+}
+
+.footer__legal {
+    text-align: center;
+    color: var(--color-text-gray);
+    font-size: 14px;
+    border-top: 1px solid #222;
+    padding-top: 20px;
+}
+
+.footer__decor-icon {
+    position: absolute;
+    right: 0;
+    bottom: 80px;
+    width: 60px;
+    opacity: 0.5;
+}
+
