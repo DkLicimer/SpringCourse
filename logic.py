@@ -12,28 +12,26 @@ from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
+# --- ИЗМЕНЕНИЕ: Импортируем 3 группы вместо одной ---
 from config import (SMTP_SERVER, SMTP_PORT, SENDER_EMAIL, SENDER_PASSWORD,
-                    RECIPIENT_EMAIL, admin_group_id)
+                    RECIPIENT_EMAIL, GROUP_AIR_ID, GROUP_GARBAGE_CP_ID, GROUP_GARBAGE_UD_ID)
 from keyboards import get_confirmation_kb
 from states import ReportForm
 
 
 def escape_html(text: str) -> str:
-    # ... (код без изменений) ...
     if not isinstance(text, str):
         return ""
-    return text.replace("&", "&").replace("<", "<").replace(">", ">")
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def send_email_sync(msg: MIMEMultipart):
-    # ... (код без изменений) ...
     with smtplib.SMTP_SSL(SMTP_SERVER, int(SMTP_PORT)) as server:
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.send_message(msg)
 
 
 async def send_email_notification(data: dict, file_content: BytesIO | None, file_name: str | None):
-    # ... (код без изменений) ...
     if not all([SMTP_SERVER, SMTP_PORT, SENDER_EMAIL, SENDER_PASSWORD, RECIPIENT_EMAIL]):
         logging.warning("Настройки SMTP для отправки email не сконфигурированы в .env. Письмо не будет отправлено.")
         return
@@ -101,7 +99,6 @@ async def send_email_notification(data: dict, file_content: BytesIO | None, file
 
 
 async def show_confirmation_summary(message_or_call, state: FSMContext, bot: Bot):
-    # ... (код без изменений) ...
     await state.set_state(ReportForm.awaiting_confirmation)
     data = await state.get_data()
     chat_id = None
@@ -249,6 +246,23 @@ async def send_final_report(call: CallbackQuery, state: FSMContext, bot: Bot) ->
     caption = "\n\n".join(caption_parts)
 
     try:
+        # --- ЛОГИКА ВЫБОРА ГРУППЫ ---
+        category = data.get('category')
+        target_group_id = 0
+
+        if category == 'air':
+            target_group_id = GROUP_AIR_ID
+        elif category == 'garbage_cp':
+            target_group_id = GROUP_GARBAGE_CP_ID
+        elif category == 'garbage_ud':
+            target_group_id = GROUP_GARBAGE_UD_ID
+
+        # Если группа не определена или равна 0 (не настроена)
+        if not target_group_id:
+            logging.critical(f"Целевая группа для категории '{category}' не найдена или равна 0!")
+            return False
+        # ---------------------------
+
         file_content_for_email = None
         file_name_for_email = None
         media_type = data.get('media_type')
@@ -266,21 +280,22 @@ async def send_final_report(call: CallbackQuery, state: FSMContext, bot: Bot) ->
             file_name_for_email = file_info.file_path.split('/')[-1]
             file_content_for_email = await bot.download_file(file_info.file_path, BytesIO())
 
-        logging.info(f"Отправка заявки в группу {admin_group_id}")
+        logging.info(f"Отправка заявки в группу {target_group_id} (Категория: {category})")
 
+        # Используем target_group_id вместо admin_group_id
         if media_type == 'photo':
-            await bot.send_photo(chat_id=admin_group_id, photo=file_id, caption=caption)
+            await bot.send_photo(chat_id=target_group_id, photo=file_id, caption=caption)
         elif media_type == 'video':
-            await bot.send_video(chat_id=admin_group_id, video=file_id, caption=caption)
+            await bot.send_video(chat_id=target_group_id, video=file_id, caption=caption)
         elif media_type == 'video_note':
-            await bot.send_video_note(chat_id=admin_group_id, video_note=file_id)
-            await bot.send_message(chat_id=admin_group_id, text=caption)
+            await bot.send_video_note(chat_id=target_group_id, video_note=file_id)
+            await bot.send_message(chat_id=target_group_id, text=caption)
         else:
-            await bot.send_message(chat_id=admin_group_id, text=caption)
+            await bot.send_message(chat_id=target_group_id, text=caption)
 
         if data.get('latitude'):
             await bot.send_location(
-                chat_id=admin_group_id,
+                chat_id=target_group_id,
                 latitude=data.get('latitude'),
                 longitude=data.get('longitude')
             )
@@ -290,7 +305,6 @@ async def send_final_report(call: CallbackQuery, state: FSMContext, bot: Bot) ->
         return True  # <<< ВОЗВРАЩАЕМ УСПЕХ
 
     except Exception as e:
-        logging.error(f"Не удалось отправить заявку в группу {admin_group_id}: {e}")
-        # --- Сообщение пользователю и очистка FSM удалены отсюда ---
+        logging.error(f"Не удалось отправить заявку в группу: {e}")
         return False  # <<< ВОЗВРАЩАЕМ НЕУДАЧУ
 # --- ⬆️ КОНЕЦ ИЗМЕНЕННОГО БЛОКА ⬆️ ---

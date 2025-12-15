@@ -6,7 +6,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from config import BOT_TOKEN, admin_group_id
+# --- ИЗМЕНЕНИЕ 1: Убрали admin_group_id из импорта ---
+from config import BOT_TOKEN
 from handlers import router as main_router
 
 # Настройка логирования
@@ -14,9 +15,9 @@ logging.basicConfig(level=logging.INFO)
 
 # Главная функция для запуска бота
 async def main():
-    # Проверка наличия обязательных переменных окружения
-    if not BOT_TOKEN or not admin_group_id:
-        logging.critical("!!! ОШИБКА: BOT_TOKEN или GROUP_ID не установлены в .env файле. Бот не может запуститься.")
+    # --- ИЗМЕНЕНИЕ 2: Убрали проверку группы (проверяем только токен) ---
+    if not BOT_TOKEN:
+        logging.critical("!!! ОШИБКА: BOT_TOKEN не установлен в .env файле. Бот не может запуститься.")
         return
 
     # Инициализация бота и диспетчера

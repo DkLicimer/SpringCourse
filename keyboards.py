@@ -150,3 +150,17 @@ def get_edit_kb(is_garbage_report: bool = False) -> InlineKeyboardMarkup:
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+
+
+
+# Добавляем новую функцию:
+def get_garbage_subtype_kb() -> InlineKeyboardMarkup:
+    """Клавиатура выбора подтипа мусора"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📦 Контейнерная площадка", callback_data="garbage_sub:container")],
+            [InlineKeyboardButton(text="🚫 Несанкционированная свалка", callback_data="garbage_sub:dump")],
+            [InlineKeyboardButton(text="⬅️ Назад", callback_data="go_to_start")]
+        ]
+    )
+

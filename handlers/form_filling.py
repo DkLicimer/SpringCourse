@@ -3,13 +3,16 @@ from aiogram import F, Router, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from config import (PHONE_REGEX, EMAIL_REGEX, MAX_VIDEO_SIZE_BYTES,
-                    MAX_VIDEO_NOTE_SIZE_BYTES, MAX_VIDEO_SIZE_MB, MAX_VIDEO_NOTE_SIZE_MB)
+# Импортируем новую клавиатуру
 from keyboards import (get_back_cancel_kb, get_location_choice_kb,
                        get_feedback_choice_kb, get_rodents_choice_kb,
-                       get_skip_email_kb)
+                       get_skip_email_kb, get_garbage_subtype_kb)
 from states import ReportForm
 from logic import show_confirmation_summary, escape_html
+# Импортируем константы и регулярки
+from config import (MAX_VIDEO_SIZE_BYTES, MAX_VIDEO_NOTE_SIZE_BYTES,
+                    MAX_VIDEO_SIZE_MB, MAX_VIDEO_NOTE_SIZE_MB,
+                    PHONE_REGEX, EMAIL_REGEX)
 
 router = Router()
 
@@ -19,24 +22,29 @@ router = Router()
 async def process_type_callback(call: CallbackQuery, state: FSMContext):
     report_type = call.data.split(":")[1]
 
-    # --- ⬇️ ИЗМЕНЕНИЕ: Рефакторинг "магических строк" ⬇️ ---
-    is_garbage_report = (report_type == "garbage")
+    # Если выбрано "Загрязнение воздуха"
+    if report_type == "air":
+        await state.update_data(
+            complaint_type="💨 Загрязнение воздуха / Запах",
+            category="air",
+            is_garbage_report=False
+        )
+        await call.message.edit_text(
+            "📸 Понял. Теперь, пожалуйста, прикрепите <b>одно фото, видео или видео-кружок</b>, "
+            "которое фиксирует проблему.",
+            reply_markup=get_back_cancel_kb()
+        )
+        await state.set_state(ReportForm.awaiting_media)
 
-    type_text = "🗑 Скопление мусора" if is_garbage_report else "💨 Загрязнение воздуха / Запах"
+    # Если выбрано "Скопление мусора"
+    elif report_type == "garbage":
+        await call.message.edit_text(
+            "🗑 Уточните тип проблемы с мусором:",
+            reply_markup=get_garbage_subtype_kb()
+        )
+        await state.set_state(ReportForm.awaiting_garbage_subtype)
 
-    await state.update_data(
-        complaint_type=type_text,
-        is_garbage_report=is_garbage_report  # Сохраняем флаг
-    )
-    # --- ⬆️ КОНЕЦ ИЗМЕНЕНИЯ ⬆️ ---
-
-    await call.message.edit_text(
-        "📸 Понял. Теперь, пожалуйста, прикрепите <b>одно фото, видео или видео-кружок</b>, "
-        "которое фиксирует проблему.",  # <--- Изменен текст
-        reply_markup=get_back_cancel_kb()
-    )
     await call.answer()
-    await state.set_state(ReportForm.awaiting_media)
 
 
 @router.message(ReportForm.awaiting_type)
@@ -44,12 +52,44 @@ async def process_type_invalid(message: Message):
     await message.answer("Пожалуйста, <b>используйте кнопки выше</b>, чтобы выбрать тип проблемы.")
 
 
+# --- ХЭНДЛЕР: Обработка подтипа мусора ---
+@router.callback_query(ReportForm.awaiting_garbage_subtype, F.data.startswith("garbage_sub:"))
+async def process_garbage_subtype(call: CallbackQuery, state: FSMContext):
+    subtype = call.data.split(":")[1]
+
+    if subtype == "container":
+        type_text = "📦 Контейнерная площадка"
+        category = "garbage_cp"  # Container Platform
+    else:
+        type_text = "🚫 Несанкционированная свалка"
+        category = "garbage_ud"  # Unauthorized Dump
+
+    await state.update_data(
+        complaint_type=type_text,
+        category=category,
+        is_garbage_report=True
+    )
+
+    await call.message.edit_text(
+        f"Выбрано: <b>{type_text}</b>.\n\n"
+        "📸 Теперь, пожалуйста, прикрепите <b>одно фото, видео или видео-кружок</b>, "
+        "которое фиксирует проблему.",
+        reply_markup=get_back_cancel_kb()
+    )
+    await state.set_state(ReportForm.awaiting_media)
+    await call.answer()
+
+
+@router.message(ReportForm.awaiting_garbage_subtype)
+async def process_garbage_subtype_invalid(message: Message):
+    await message.answer("Пожалуйста, <b>используйте кнопки</b> для выбора типа мусора.")
+
+
 # 5. Обработчики ФОТО / ВИДЕО
 @router.message(ReportForm.awaiting_media, F.photo)
 async def process_photo(message: Message, state: FSMContext, bot: Bot):
     photo_file_id = message.photo[-1].file_id
 
-    # --- ИЗМЕНЕНИЕ: Обнуляем другие медиа ---
     await state.update_data(
         photo_id=photo_file_id,
         media_type='photo',
@@ -58,12 +98,16 @@ async def process_photo(message: Message, state: FSMContext, bot: Bot):
     )
 
     data = await state.get_data()
+    category = data.get('category')
 
-    # --- ИЗМЕНЕНО: Динамический пример на основе флага ---
-    example_text = "<i>Например: «Контейнеры переполнены уже неделю».</i>"
-    if not data.get('is_garbage_report'):  # Проверяем флаг
+    # --- ⬇️ ИЗМЕНЕНИЕ: Текст примера зависит от 3-х категорий ⬇️ ---
+    if category == 'air':
         example_text = "<i>Например: «Сильный химический запах со стороны промзоны».</i>"
-    # --- КОНЕЦ ИЗМЕНЕНИЙ ---
+    elif category == 'garbage_ud':  # Если свалка
+        example_text = "<i>Например: «Свалка строительного мусора в лесу» или «Гора покрышек у дороги».</i>"
+    else:  # Если контейнерная площадка (garbage_cp)
+        example_text = "<i>Например: «Контейнеры переполнены уже неделю, мусор разлетается».</i>"
+    # --- ⬆️ КОНЕЦ ИЗМЕНЕНИЯ ⬆️ ---
 
     if data.get("is_editing"):
         await message.answer("✅ Фото обновлено.")
@@ -79,19 +123,15 @@ async def process_photo(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(ReportForm.awaiting_media, F.video)
 async def process_video(message: Message, state: FSMContext, bot: Bot):
-    # --- ⬇️ НОВАЯ ПРОВЕРКА: Лимит размера видео ⬇️ ---
     if message.video.file_size > MAX_VIDEO_SIZE_BYTES:
         await message.answer(
             f"❗️ <b>Видео слишком большое!</b>\n\n"
-            f"Пожалуйста, прикрепите видео размером "
-            f"не более <b>{MAX_VIDEO_SIZE_MB} МБ</b>."
+            f"Пожалуйста, прикрепите видео размером не более <b>{MAX_VIDEO_SIZE_MB} МБ</b>."
         )
         return
-    # --- ⬆️ КОНЕЦ ПРОВЕРКИ ⬆️ ---
 
     video_file_id = message.video.file_id
 
-    # --- ИЗМЕНЕНИЕ: Обнуляем другие медиа ---
     await state.update_data(
         video_id=video_file_id,
         media_type='video',
@@ -100,12 +140,16 @@ async def process_video(message: Message, state: FSMContext, bot: Bot):
     )
 
     data = await state.get_data()
+    category = data.get('category')
 
-    # --- ИЗМЕНЕНО: Динамический пример на основе флага ---
-    example_text = "<i>Например: «Сброс отходов в реку».</i>"
-    if not data.get('is_garbage_report'):  # Проверяем флаг
+    # --- ⬇️ ИЗМЕНЕНИЕ: Текст примера зависит от 3-х категорий ⬇️ ---
+    if category == 'air':
         example_text = "<i>Например: «Черный дым из трубы завода».</i>"
-    # --- КОНЕЦ ИЗМЕНЕНИЙ ---
+    elif category == 'garbage_ud':
+        example_text = "<i>Например: «Грузовик выгружает мусор в поле».</i>"
+    else:
+        example_text = "<i>Например: «Кучи мусора вокруг контейнеров».</i>"
+    # --- ⬆️ КОНЕЦ ИЗМЕНЕНИЯ ⬆️ ---
 
     if data.get("is_editing"):
         await message.answer("✅ Видео обновлено.")
@@ -119,22 +163,17 @@ async def process_video(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(ReportForm.awaiting_description)
 
 
-# --- ⬇️ НОВЫЙ ХЭНДЛЕР: Видео-кружок ⬇️ ---
 @router.message(ReportForm.awaiting_media, F.video_note)
 async def process_video_note(message: Message, state: FSMContext, bot: Bot):
-    # --- НОВАЯ ПРОВЕРКА: Лимит размера кружка ---
     if message.video_note.file_size > MAX_VIDEO_NOTE_SIZE_BYTES:
         await message.answer(
             f"❗️ <b>Видео-кружок слишком большой!</b>\n\n"
-            f"Что-то пошло не так, кружок не должен превышать "
-            f"<b>{MAX_VIDEO_NOTE_SIZE_MB} МБ</b>. Попробуйте записать короче."
+            f"Кружок не должен превышать <b>{MAX_VIDEO_NOTE_SIZE_MB} МБ</b>."
         )
         return
-    # --- КОНЕЦ ПРОВЕРКИ ---
 
     video_note_file_id = message.video_note.file_id
 
-    # --- Обновляем состояние ---
     await state.update_data(
         video_note_id=video_note_file_id,
         media_type='video_note',
@@ -143,11 +182,16 @@ async def process_video_note(message: Message, state: FSMContext, bot: Bot):
     )
 
     data = await state.get_data()
+    category = data.get('category')
 
-    # --- Динамический пример на основе флага ---
-    example_text = "<i>Например: «Контейнеры переполнены...»</i>"
-    if not data.get('is_garbage_report'):  # Проверяем флаг
-        example_text = "<i>Например: «Сильный химический запах...»</i>"
+    # --- ⬇️ ИЗМЕНЕНИЕ: Текст примера зависит от 3-х категорий ⬇️ ---
+    if category == 'air':
+        example_text = "<i>Например: «Сильный химический запах со стороны промзоны»</i>"
+    elif category == 'garbage_ud':
+        example_text = "<i>Например: «Незаконная свалка, не вывозят мусор».</i>"
+    else:
+        example_text = "<i>Например: «Контейнеры переполнены уже неделю».</i>"
+    # --- ⬆️ КОНЕЦ ИЗМЕНЕНИЯ ⬆️ ---
 
     if data.get("is_editing"):
         await message.answer("✅ Видео-кружок обновлен.")
@@ -161,12 +205,8 @@ async def process_video_note(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(ReportForm.awaiting_description)
 
 
-# --- ⬆️ КОНЕЦ НОВОГО ХЭНДЛЕРА ⬆️ ---
-
-
 @router.message(ReportForm.awaiting_media)
 async def process_media_invalid(message: Message):
-    # --- ИЗМЕНЕНИЕ: Обновлен текст ошибки ---
     await message.answer(
         "❗️ Пожалуйста, отправьте <b>одно фото, одно видео или один видео-кружок</b>, чтобы продолжить.")
 
@@ -181,9 +221,8 @@ async def process_description(message: Message, state: FSMContext, bot: Bot):
         await message.answer("✅ Описание обновлено.")
         await show_confirmation_summary(message, state, bot)
     else:
-        # --- ⬇️ ИЗМЕНЕНИЕ: Проверка флага грызунов ⬇️ ---
         if data.get('is_garbage_report') is True:
-            # Если мусор - спрашиваем про грызунов
+            # Спрашиваем про грызунов для ЛЮБОГО типа мусора
             await message.answer(
                 "📝 Описание принято. \n\n"
                 "Уточняющий вопрос: <b>были ли замечены грызуны (крысы, мыши)</b> в месте скопления мусора?",
@@ -191,13 +230,11 @@ async def process_description(message: Message, state: FSMContext, bot: Bot):
             )
             await state.set_state(ReportForm.awaiting_rodents_choice)
         else:
-            # Если не мусор - переход к локации
             await message.answer(
                 "📝 Описание принято. Теперь укажите, <b>где это происходит</b>.",
                 reply_markup=get_location_choice_kb()
             )
             await state.set_state(ReportForm.awaiting_location_choice)
-        # --- ⬆️ КОНЕЦ ИЗМЕНЕНИЙ ⬆️ ---
 
 
 @router.message(ReportForm.awaiting_description)
@@ -205,9 +242,7 @@ async def process_description_invalid(message: Message):
     await message.answer("❗️ Пожалуйста, введите <b>описание в виде обычного текста</b>.")
 
 
-# --- (Остальная часть файла `form_filling.py` остается без изменений) ---
-
-# --- НОВЫЙ БЛОК: Обработчик ГРЫЗУНОВ ---
+# --- Обработчик ГРЫЗУНОВ ---
 @router.callback_query(ReportForm.awaiting_rodents_choice, F.data.startswith("rodents:"))
 async def process_rodents_choice(call: CallbackQuery, state: FSMContext, bot: Bot):
     has_rodents = call.data.split(":")[1] == "yes"
@@ -216,11 +251,9 @@ async def process_rodents_choice(call: CallbackQuery, state: FSMContext, bot: Bo
 
     data = await state.get_data()
     if data.get("is_editing"):
-        # Если редактируем, возвращаемся к сводке
         await call.message.edit_text("✅ Статус по грызунам обновлен.")
         await show_confirmation_summary(call, state, bot)
     else:
-        # Если заполняем, идем к выбору локации
         await call.message.edit_text(
             "Понял. Теперь укажите, <b>где это происходит</b>.",
             reply_markup=get_location_choice_kb()
@@ -231,9 +264,6 @@ async def process_rodents_choice(call: CallbackQuery, state: FSMContext, bot: Bo
 @router.message(ReportForm.awaiting_rodents_choice)
 async def process_rodents_invalid(message: Message):
     await message.answer("Пожалуйста, <b>используйте кнопки 'Да' или 'Нет'</b>, чтобы сделать выбор.")
-
-
-# --- КОНЕЦ НОВОГО БЛОКА ---
 
 
 # 7. Обработчик ВЫБОРА ЛОКАЦИИ
@@ -328,7 +358,6 @@ async def process_name(message: Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     if data.get("is_editing"):
         if data.get('wants_feedback') is True:
-            # --- ИЗМЕНЕНИЕ: Новая клавиатура и текст ---
             await message.answer(
                 f"✅ Имя обновлено, {safe_name}! \n\n"
                 "📧 Теперь, пожалуйста, введите ваш <b>email-адрес</b>."
@@ -358,11 +387,10 @@ async def process_name_invalid(message: Message):
 @router.callback_query(ReportForm.awaiting_feedback_choice, F.data == "feedback:yes")
 async def process_feedback_yes(call: CallbackQuery, state: FSMContext):
     await state.update_data(wants_feedback=True)
-    # --- ИЗМЕНЕНИЕ: Новая клавиатура и текст ---
     await call.message.edit_text(
         "📧 Принято. Пожалуйста, введите ваш <b>email-адрес</b>."
         "\n\n<i>Например: example@mail.ru\n(Можно пропустить, если у вас его нет)</i>",
-        reply_markup=get_skip_email_kb()  # Используем новую клавиатуру
+        reply_markup=get_skip_email_kb()
     )
     await call.answer()
     await state.set_state(ReportForm.awaiting_contact_email)
@@ -385,23 +413,17 @@ async def process_feedback_invalid(message: Message):
     await message.answer("Пожалуйста, <b>используйте кнопки 'Да' или 'Нет'</b>, чтобы сделать выбор.")
 
 
-# --- ⬇️ НОВЫЙ ХЭНДЛЕР ⬇️ ---
+# --- ХЭНДЛЕР ПРОПУСКА EMAIL ---
 @router.callback_query(ReportForm.awaiting_contact_email, F.data == "skip:email")
 async def process_email_skip(call: CallbackQuery, state: FSMContext):
-    """Обработчик пропуска ввода Email"""
-    await state.update_data(email=None)  # Сохраняем email как None
+    await state.update_data(email=None)
     await call.answer()
-
-    # Переходим к вводу телефона
     await call.message.edit_text(
         "📞 Email пропущен. \n\nТеперь введите ваш <b>контактный номер телефона</b> для связи."
         "\n\n<i>Например: +79991234567</i>",
-        reply_markup=get_back_cancel_kb()  # Возвращаем обычную клавиатуру
+        reply_markup=get_back_cancel_kb()
     )
     await state.set_state(ReportForm.awaiting_contact_phone)
-
-
-# --- ⬆️ КОНЕЦ НОВОГО ХЭНДЛЕРА ⬆️ ---
 
 
 # 11. Обработчик EMAIL
@@ -422,7 +444,6 @@ async def process_email(message: Message, state: FSMContext, bot: Bot):
             )
             await state.set_state(ReportForm.awaiting_contact_phone)
     else:
-        # Обычный поток
         await message.answer(
             "📞 Email принят. \n\nТеперь введите ваш <b>контактный номер телефона</b> для связи."
             "\n\n<i>Например: +79991234567</i>",
@@ -443,7 +464,6 @@ async def process_email_invalid(message: Message):
 @router.message(ReportForm.awaiting_contact_phone, F.text.regexp(PHONE_REGEX))
 async def process_phone_and_finish(message: Message, state: FSMContext, bot: Bot):
     await state.update_data(phone=message.text)
-
     await message.answer(
         "✅ Телефон принят. \n\nСпасибо! Все данные собраны. Давайте сверимся.",
         reply_markup=ReplyKeyboardRemove()

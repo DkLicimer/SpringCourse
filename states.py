@@ -3,9 +3,10 @@ from aiogram.fsm.state import State, StatesGroup
 
 class ReportForm(StatesGroup):
     awaiting_type = State()
+    awaiting_garbage_subtype = State()  # <<< НОВОЕ СОСТОЯНИЕ: Подтип мусора
     awaiting_media = State()
     awaiting_description = State()
-    awaiting_rodents_choice = State() 
+    awaiting_rodents_choice = State()
     awaiting_location_choice = State()
     awaiting_location_geo = State()
     awaiting_location_address = State()
