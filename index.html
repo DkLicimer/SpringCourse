@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анастасия Пузырева - Продвижение Бизнеса</title>
+    <meta name="description" content="Продвижение бизнеса в социальных сетях, создание сайтов, онлайн-реклама и маркетинговое сопровождение">
+    <!-- Подключаем нормализацию и основные стили -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+</head>
+<body>
+
+    <!-- ШАПКА -->
+    <header class="header">
+        <div class="container header__container">
+            <!-- Логотип -->
+            <a href="#" class="header__logo">
+                <img src="assets/img/group-3.svg" alt="Логотип">
+            </a>
+
+            <!-- Кнопка "Бургер" (Видна только на телефоне) -->
+            <button class="header__burger" id="burgerBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <!-- Навигация -->
+            <div class="menu-overlay" id="menuOverlay"></div>
+
+            <!-- Сама шторка меню -->
+            <nav class="header__nav" id="mobileMenu">
+                
+                <!-- 1. ВЕРХ: Логотип и Крестик -->
+                <div class="nav__top">
+                    <!-- Сюда положишь свой белый логотип -->
+                    <img src="assets/img/logo-white.svg" alt="Logo" class="nav__logo-mobile">
+                    
+                    <button class="menu-close" id="closeMenu">
+                        <!-- Иконка крестика (сделаем её вектором или символом) -->
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 6L18 18" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 2. ЦЕНТР: Ссылки -->
+                <ul class="nav__list">
+                    <li class="nav__item"><a href="#services" class="nav__link">Услуги</a></li>
+                    <li class="nav__item"><a href="#cases" class="nav__link">Кейсы</a></li>
+                    <li class="nav__item"><a href="#contact" class="nav__link">Оставить заявку</a></li>
+                    <li class="nav__item"><a href="#footer" class="nav__link">Контакты</a></li>
+                </ul>
+                
+                <!-- 3. НИЗ: Соцсети -->
+                <div class="nav__socials">
+                    <a href="https://vk.com/ogon_marketing" class="nav__social-link">
+                        <img src="assets/img/vk.svg" alt="VK">
+                    </a>
+                    <a href="https://t.me/anastasiia_marketing" class="nav__social-link">
+                        <img src="assets/img/telegram.svg" alt="TG">
+                    </a>
+                    <a href="https://wa.me/79245071252" class="nav__social-link">
+                        <img src="assets/img/whatsapp.svg" alt="WA">
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+        <!-- ГЛАВНЫЙ ЭКРАН (HERO) -->
+        <section class="hero">
+            <div class="container hero__container">
+                <div class="hero__content">
+                    <h2 class="hero__subtitle">Анастасия Пузырева</h2>
+                    <h1 class="hero__title">ПРОДВИЖЕНИЕ БИЗНЕСА</h1>
+                    <p class="hero__description">Ваши потенциальные клиенты узнают о Вас!</p>
+                    <a href="#contact" class="btn hero__btn">Оставить заявку</a>
+                </div>
+                <!-- Блок hero__visual удален полностью, графика уйдет в CSS -->
+            </div>
+        </section>
+
+        <!-- УСЛУГИ -->
+        <section class="services" id="services">
+            <!-- ДЕКОРАТИВНЫЕ ОГОНЬКИ -->
+            <!-- Левый огонь (чуть ниже) -->
+            <img src="assets/img/flame_left.png" alt="" class="services__decor services__decor--left">
+    
+            <!-- Правый огонь (чуть выше) -->
+            <img src="assets/img/flame_right.png" alt="" class="services__decor services__decor--right">
+            <div class="container">
+                <h2 class="section-title services__title">УСЛУГИ</h2>
+                
+                <div class="services__grid">
+                <!-- Карточка 1 -->
+                <article class="service-card">
+                    <h3 class="service-card__title">ПРОДВИЖЕНИЕ ВКОНТАКТЕ</h3>
+                    <p class="service-card__text">
+                        Продающее оформление группы. Создание чат-бота с возможностью рассылки среди подписчиков. Таргетированная реклама ВКонтакте.
+                    </p>
+                    <!-- Используем только класс service-card__btn, стили для него уже есть в CSS -->
+                    <a href="#contact" class="service-card__btn">Подробнее</a>
+                </article>
+
+                <!-- Карточка 2 -->
+                <article class="service-card">
+                    <h3 class="service-card__title">SMM</h3>
+                    <p class="service-card__text">
+                        Продающее оформление аккаунтов в социальных сетях. Составление контент-плана и съемка контента (г. Чита). Таргетированная реклама в социальных сетях.                       </p>
+                    <a href="#contact" class="service-card__btn">Подробнее</a>
+                </article>
+
+                <!-- Карточка 3 -->
+                <article class="service-card">
+                    <h3 class="service-card__title">СОЗДАНИЕ САЙТОВ</h3>
+                    <p class="service-card__text">
+                        Создание продающего сайта. Подготовка посадочных страниц для рекламы. Продвижение сайта, техподдержка.
+                    </p>
+                    <a href="#contact" class="service-card__btn">Подробнее</a>
+                </article>
+
+                <!-- Карточка 4 -->
+                <article class="service-card">
+                    <h3 class="service-card__title">ОНЛАЙН-РЕКЛАМА</h3>
+                    <p class="service-card__text">
+                        Контекстная реклама. Яндекс Директ. Работа с карточками организации в Яндекс, 2ГИС. SEO продвижение.
+                    </p>
+                    <a href="#contact" class="service-card__btn">Подробнее</a>
+                </article>
+
+                <!-- Карточка 5 -->
+                <article class="service-card">
+                    <h3 class="service-card__title">МАРКЕТИНГОВОЕ СОПРОВОЖДЕНИЕ</h3>
+                    <p class="service-card__text">
+                        Комплексная услуга. Настройка CRM-систем. Скрипты. Продвижение в социальных сетях и сайта. Работа с отзывами.
+                    </p>
+                    <a href="#contact" class="service-card__btn">Подробнее</a>
+                </article>
+            </div>
+            </div>
+        </section>
+
+        <!-- ПРОМО БАННЕР -->
+        <section class="promo">
+            <div class="container promo__container">
+                <div class="promo__content">
+                    <h2 class="promo__title">ТОЛЬКО В ФЕВРАЛЕ !</h2>
+                    <p class="promo__text">
+                        При заказе оформления группы и таргетированной рекламы не 
+                        <!-- ДОБАВИЛИ КЛАСС: -->
+                        <br class="promo__break"> 
+                        менее, чем на 2 месяца (ВКонтакте) <span class="promo__highlight">ЧАТ-БОТ В ПОДАРОК</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- КЕЙСЫ -->
+        <section class="portfolio" id="cases">
+            <div class="container">
+                <h2 class="section-title">КЕЙСЫ</h2>
+                
+                <div class="portfolio__grid">
+                    <!-- Кейс 1 -->
+                    <article class="case-card">
+                        <div class="case-card__image-wrapper">
+                            <img src="assets/img/case-realty.png" alt="Кейс недвижимость" class="case-card__img">
+                        </div>
+                        <div class="case-card__info">
+                            <p class="case-card__desc">Повысили посещаемость сайта агентства недвижимости на 45%</p>
+                            <a href="https://vk.com/ogon_marketing" class="case-card__link">подробнее</a>
+                        </div>
+                    </article>
+
+                    <!-- Кейс 2 -->
+                    <article class="case-card">
+                        <div class="case-card__image-wrapper">
+                            <img src="assets/img/case-realty.png" alt="Кейс недвижимость" class="case-card__img">
+                        </div>
+                        <div class="case-card__info">
+                            <p class="case-card__desc">Повысили посещаемость сайта агентства недвижимости на 45%</p>
+                            <a href="https://vk.com/ogon_marketing" class="case-card__link">подробнее</a>
+                        </div>
+                    </article>
+
+                    <!-- Кейс 3 -->
+                    <article class="case-card">
+                        <div class="case-card__image-wrapper">
+                            <img src="assets/img/case-realty.png" alt="Кейс недвижимость" class="case-card__img">
+                        </div>
+                        <div class="case-card__info">
+                            <p class="case-card__desc">Повысили посещаемость сайта агентства недвижимости на 45%</p>
+                            <a href="https://vk.com/ogon_marketing" class="case-card__link">подробнее</a>
+                        </div>
+                    </article>
+
+                     <!-- Кейс 4 -->
+                     <article class="case-card">
+                        <div class="case-card__image-wrapper">
+                            <img src="assets/img/case-realty.png" alt="Кейс недвижимость" class="case-card__img">
+                        </div>
+                        <div class="case-card__info">
+                            <p class="case-card__desc">Повысили посещаемость сайта агентства недвижимости на 45%</p>
+                            <a href="https://vk.com/ogon_marketing" class="case-card__link">подробнее</a>
+                        </div>
+                    </article>
+                </div>
+                
+                <div class="portfolio__actions">
+                    <a href="https://vk.com/ogon_marketing" class="link-more">Еще больше кейсов</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ФОРМА ЗАЯВКИ -->
+        <section class="contact" id="contact">
+            <div class="container contact__container">
+                <div class="contact__content">
+                    
+                    <!-- Левая колонка: Текст -->
+                    <div class="contact__text-block">
+                        <h2 class="contact__title">Хочу работать с вами!</h2>
+                        <p class="contact__subtitle">Оставьте заявку, и получите подарок</p>
+                    </div>
+                    
+                    <!-- Правая колонка: Форма -->
+                    <form class="form contact__form" action="#" method="post">
+                        <div class="form__group">
+                            <input type="text" name="name" class="form__input" placeholder="Имя" required>
+                        </div>
+                        <div class="form__group">
+                            <input type="tel" name="phone" class="form__input" placeholder="Телефон" required>
+                        </div>
+                        
+                        <div class="form__checkbox-wrapper">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" name="privacy" required>
+                                <span class="checkmark"></span>
+                            </label>
+                            <span class="form__label-text">
+                                Я согласен(а) на обработку персональных данных согласно <br>
+                                <a href="policy.html" class="form__link">политике конфиденциальности</a>
+                            </span>
+                        </div>
+                        
+                        <button type="submit" class="btn btn--light form__submit">Оставить заявку</button>
+                    </form>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ПОДВАЛ -->
+    <footer class="footer" id="footer">
+        <div class="container footer__container">
+            
+            <div class="footer__top">
+                <!-- 1. Логотип (слева) -->
+                <div class="footer__logo-wrapper">
+                    <img class="footer__logo" src="assets/img/logof.svg" alt="Логотип">
+                </div>
+                
+                <!-- 2. Контакты (центр) -->
+                <div class="footer__contacts">
+                    <h2 class="footer__title">Контакты</h2>
+                    <a href="tel:+79245071252" class="footer__link footer__link--phone">+7 924 507 12 52</a>
+                    <a href="marketing-ogon@yandex.ru" class="footer__link">marketing-ogon@yandex.ru</a>
+                    
+                    <div class="socials">
+                        <a href="https://vk.com/ogon_marketing" class="socials__link" aria-label="ВКонтакте">
+                            <!-- Вставляем картинку. Если иконки черные, мы их покрасим CSS-ом или фоном -->
+                            <img src="assets/img/vk.svg" alt="">
+                        </a>
+                        <a href="https://t.me/anastasiia_marketing" class="socials__link" aria-label="Telegram">
+                            <img src="assets/img/telegram.svg" alt="">
+                        </a>
+                        <a href="https://wa.me/79245071252" class="socials__link" aria-label="WhatsApp">
+                            <img src="assets/img/whatsapp.svg" alt="">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Юридическая информация (внизу) -->
+            <div class="footer__legal">
+                <p>ИП Пузырева Анастасия Александровна</p>
+                <p>ИНН 123456789123 ОГРНИП 123456789123456</p>
+                <p> Адрес: Забайкальский край, г. Чита, мкр. 3-й, д. 2, кв. 18</p>
+            </div>
+            
+        </div>
+    </footer>
+
+    <!-- COOKIE BANNER -->
+    <div class="cookie-banner" id="cookieBanner">
+        <div class="container cookie-banner__container">
+            <p class="cookie-banner__text">
+                Мы используем файлы cookie для улучшения работы сайта и анализа пользовательской активности. 
+                Продолжая использовать сайт, вы даете согласие на обработку файлов cookie. 
+                Подробнее в <a href="cookie-policy.html" class="cookie-banner__link">Политике использования cookie</a>.
+            </p>
+            <button class="btn btn--small cookie-banner__btn" id="acceptCookies">Принять</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/imask"></script>
+
+    <!-- Подключаем скрипт -->
+    <script src="js/main.js"></script>
+
+    <!-- ПЛАВАЮЩИЙ ВИДЖЕТ СВЯЗИ -->
+    <div class="widget" id="contactWidget">
+        <!-- Выпадающие иконки -->
+        <div class="widget__socials">
+            <a href="https://wa.me/79245071252" target="_blank" class="widget__link" aria-label="WhatsApp">
+                <img src="assets/img/whatsapp.svg" alt="WA">
+            </a>
+            <a href="https://t.me/anastasiia_marketing" target="_blank" class="widget__link" aria-label="Telegram">
+                <img src="assets/img/telegram.svg" alt="TG">
+            </a>
+            <a href="https://vk.com/ogon_marketing" target="_blank" class="widget__link" aria-label="VK">
+                <img src="assets/img/vk.svg" alt="VK">
+            </a>
+        </div>
+
+        <!-- Главная кнопка -->
+        <button class="widget__btn" id="widgetToggle">
+            <!-- Иконка трубки (видна по умолчанию) -->
+            <img src="assets/img/phone-call.svg" alt="Связь" class="widget__icon-phone">
+            <!-- Иконка крестика (появляется при открытии) -->
+            <span class="widget__icon-close">&times;</span>
+        </button>
+    </div>
+
+</body>
+</html>
