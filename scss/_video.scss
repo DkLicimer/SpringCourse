@@ -1,0 +1,77 @@
+/*==============================================
+31. VIDEO
+==============================================*/
+
+.video-intro {
+    display: flex;
+    justify-content: center;
+    margin-top: -40px;
+    #video1 {
+        width: 80%;
+        height: 576px;
+    }
+}
+
+
+video::-webkit-media-controls {
+    display: none;
+  }
+
+  .intro-video {
+    border:1px solid #C7C7C7;
+    padding: 20px;
+    > img {
+        width: 100%;
+    }
+}
+
+
+.intro-section-v2 {
+    padding: 81px 0 60px;
+    .intro-video {
+        position: relative;
+        .play-button {
+            display:inline-block;
+            position: absolute;
+            top:50%;
+            left:50%;
+            transform: translate(-50%,-50%);
+        }
+    }
+}
+
+
+//  VIDEO INTRO SECTION
+
+
+.intro-section {
+    background:rgba(247, 231, 222, 0.81);
+    padding:120px 0;
+    .sec-title {
+        margin-bottom: 71px;
+    }
+}
+
+.video-sec {
+    position: relative;
+     > img {
+        width: 100%;
+     }
+     .play-btn {
+        display: inline-block;
+        position: absolute;
+        top:50%;
+        left:50%;
+        width: 70px;
+        height: 70px;
+        border:5px solid rgba(255,255,255,0.50);
+        border-radius: 50%;
+        transform: translate(-50%,-50%) matrix(1, 0, 0, -1, 0, 0);
+        text-align: center;
+        line-height: 55px;
+        img {
+            opacity: 0.5;
+        }
+     }
+}
+

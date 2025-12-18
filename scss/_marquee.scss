@@ -1,0 +1,92 @@
+/*==============================================
+21. MARQUEE
+==============================================*/
+
+
+.marquee-section {
+    padding: 47px 0 187px;
+    border-top: 1px solid #C7C7C7;
+    margin-top: 23px;
+    &.v2 {
+        padding-bottom: 80px;
+        border:0;
+        padding-top: 0;
+        margin-top: 0;
+    }
+    &.v_5 {
+        position: relative;
+        top:100px;
+        z-index:99;
+        border-top: 0;
+        margin-top: 0;
+        padding-bottom: 0;
+        .marquee2 {
+            h2 {
+                opacity: 0.28;
+                color: #fff;
+                text-shadow: 0 0 1px #000, 0 0 1px #000, 0 0 1px #000, 0 0 1px #000, 0 0 1px #000, 0 0 1px #000;
+            }
+        }
+    }
+    .marquee {
+        h2 {
+            font-size: 79px;
+            line-height: 99px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 1px #000, 0 0 1px #000, 0 0 1px #000, 0 0 1px #000, 0 0 1px #000, 0 0 1px #000;
+        }
+    }
+    .marquee2{
+        margin-top: 100px;
+        position: relative;
+        top:-13px;
+        h2 {
+            font-size: 79px;
+            line-height: 99px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #B88669;
+            text-shadow: unset;
+        }
+    }
+}
+
+
+
+
+.web-slides {
+    padding-top: 0;
+    .marquee6 h2 {
+        font-size: 79px;
+        line-height: 99px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #B88669;
+    }
+}
+
+
+
+
+
+.marquee-section.abt {
+    padding-bottom: 0;
+    margin:0;
+    padding-top: 70px;
+    padding-bottom: 39px;
+}
+
+
+
+.marquee-section.bt-0  {
+    border-top: 0;
+}
+
+
+.marquee-section.v2.single-v {
+    padding-top: 105px;
+    margin-bottom: 120px;
+}
+

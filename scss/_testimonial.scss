@@ -1,0 +1,213 @@
+/*==============================================
+29. TESTIMONIAL
+==============================================*/
+
+
+.testimonial-section-v2 {
+    padding: 100px 0;
+    .container-full {
+        padding: 0 30px;
+        .col-lg-4 {
+            padding:0 15px;
+        }
+    }
+    .testi-v2-slider {
+        padding-bottom: 57px;
+        .slick-dots {
+            bottom: 0;
+        }
+    }
+    .testi2-slide {
+        text-align: center;
+        border:1px solid #C7C7C7;
+        padding: 64px 90px;
+        position: relative;
+        &:before {
+            content: '';
+            position: absolute;
+            top: 42px;
+            left:62px;
+            width:112px;
+            height: 86px;
+            background-image: url(../images/quote.png);
+            background-repeat: no-repeat;
+        }
+        p {
+            color: #3E3E3E;
+            font-size: 20px;
+            line-height: 38px;
+            font-style: italic;
+            margin-bottom: 31px;
+        }
+        .testi2-info {
+            > img {
+                border-radius: 50%;
+                max-width: 87px;
+                margin:0 auto 15px;
+            }
+            h4 {
+                color: #000000;
+                font-size: 13px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+        }
+    }
+}
+
+
+
+.testimonial-section.v2 {
+    padding:0 0 103px;
+    .testimonial-slider {
+        max-width: 1170px;
+        border: 1px solid #C7C7C7;
+        margin-bottom: 60px;
+        .slick-dots {
+            bottom: -75px;
+        }
+        .testi-slide {
+            padding: 82px 150px 44px;
+            &:before {
+                top: 70px;
+                left:100px;
+            }
+            p {
+                color: #3E3E3E;
+                font-size:20px;
+                line-height: 38px;
+                font-weight:400;
+                margin-bottom: 49px;
+            }
+        }
+    }
+}
+
+
+//  TESTIMONIAL SECTION V3
+
+.testimonials-v3 {
+    padding: 55px 0 164px;
+    background-image: url(https://placehold.co/715x820);
+    background-repeat:no-repeat;
+    background-position: left;
+    .sec-title {
+        text-align: center;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: 0;
+        margin-bottom: 99px;
+    }
+    .testimonial-content-v3 {
+        display: flex;
+    }
+    .testimonial-slider-v3 {
+        max-width: 1570px;
+        margin-left: auto;
+        .slick-slide {
+            margin:0 5px;
+        }
+        .slick-list {
+            margin:0 -5px;
+        }
+        .slick-dots {
+            bottom: -62px;
+        }
+        .testimonial-slide-v3 {
+            width: 506px;
+            background-color:#F8F8F8;
+            padding: 112px 40px 82px;
+            text-align: center;
+            border:1px solid transparent;
+            &.slick-center {
+                border-color:#B88669;
+            }
+            p {
+                color: #3E3E3E;
+                font-size: 20px;
+                line-height: 38px;
+                margin-bottom: 27px;
+                font-style: italic;
+                position:relative;
+                &:before {
+                    content: '';
+                    position: absolute;
+                    top:-30px;
+                    left:-30px;
+                    background-image: url(../images/quote.png);
+                    background-repeat: no-repeat;
+                    width: 112px;
+                    height: 86px;
+                }
+            }
+            h4 {
+                font-family: var(--text-font);
+                font-size:#000000;
+                font-size: 13px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+        }
+    }
+}
+
+
+.testimonial-section {
+    padding: 130px 0 127px;
+    background-color: #ffffff;
+    .sec-title {
+        margin-bottom: 119px;
+    }
+}
+
+.testimonial-slider {
+    max-width: 840px;
+    margin:0 auto;
+    padding: 15px;
+}
+
+.testi-slide {
+    width: 100%;
+    text-align: center;
+    position: relative;
+    padding-left: 10px;
+    padding-top: 10px;
+    &:before {
+        content: '';
+        position: absolute;
+        top:0;
+        left:5px;
+        width: 112px;
+        height: 86px;
+        background-image: url(../images/icons/quotes.png);
+        background-repeat: no-repeat;
+    }
+    p {
+        color: #3E3E3E;
+        font-size: 30px;
+        line-height: 45px;
+        font-weight: 500;
+        font-style: italic;
+        margin-bottom: 32px;
+    }
+    .testi-footer {
+        > img {
+            border-radius: 50%;
+            max-width: 103px;
+            margin-bottom: 19px;
+            display: inline-block;
+        }
+        h4 {
+            color: #000000;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+    }
+}
+.slick-dots {
+    bottom: -2px;
+    margin-left: -10px;
+}
+

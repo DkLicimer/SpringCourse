@@ -1,0 +1,49 @@
+/*==============================================
+27. TEAM
+==============================================*/
+
+.team-section-page {
+    padding: 139px 0 154px;
+    background-color: #F8F8F8;
+    .sec-title {
+        margin-bottom: 55px;
+    }
+    .container {
+        max-width: 100%;
+        padding: 0 110px;
+    }
+    .teams {
+        margin:0 -5px;
+        .col-lg-2 {
+            max-width: 20%;
+            flex:0 0 20%;
+            padding: 0 5px;
+        }
+        .team-column {
+            .team-img-v2 {
+                margin-bottom: 20px;
+                > img {
+                    width: 100%;
+                }
+            }
+            .team-info-v2 {
+                text-align: center;
+                h3 {
+                    color: #000000;
+                    font-size: 16px;
+                    line-height: 30px;
+                    font-weight: 500;
+                    text-transform: uppercase;
+                    margin-bottom: -2px;
+                }
+                span {
+                    display: block;
+                    color: #909090;
+                    font-size: 16px;
+                    text-transform: capitalize;
+                    font-weight: 400;
+                }
+            }
+        }
+    }
+}

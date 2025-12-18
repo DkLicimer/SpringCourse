@@ -1,0 +1,124 @@
+/*==============================================
+06. FOOTER
+==============================================*/
+
+footer {
+    .container-fluid {
+        max-width: 1620px;
+    }
+}
+.main-footer {
+    padding: 135px 0 115px;
+    position: relative;
+    .section-bg-title {
+        position: absolute;
+        bottom: -35px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: rgba(0,0,0,0.02);
+        font-size: 19.53vw;
+        font-weight: 600;
+        text-transform: uppercase;
+        z-index: -1;
+    }
+    .footer-widgets {
+        display: flex;
+        flex-wrap: wrap;
+        .widget {
+            max-width: 22%;
+            flex:0 0 22%;
+        }
+        .widget-title {
+            color: #000000;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            padding-right: 10px;
+        }
+        .wd-links {
+            li {
+                margin-bottom: 15px;
+                &:last-child {
+                    margin-bottom: 0;
+                }
+                a {
+                    display: inline-block;
+                    color: #262626;
+                    font-size: 15px;
+                    &:hover {
+                        color: #B88669;
+                        padding-left: 5px;
+                    }
+                }
+            }
+        }
+        .widget-newsletter {
+            flex:0 0 34%;
+            max-width: 34%;
+            margin-left: auto;
+            p {
+                color: #262626;
+                font-size: 15px;
+                font-weight: 300;
+                margin-bottom: 3px;
+            }
+            form {
+                position: relative;
+                input {
+                    width: 100%;
+                    background:transparent;
+                    color: #666666;
+                    font-size: 12px;
+                    font-weight: 500;
+                    border:0;
+                    border-bottom: 1px solid rgba(0,0,0,0.30);
+                    margin-bottom: 29px;
+                    padding: 10px 25px 8px;
+                }
+                button.theme-btn {
+                    width: 100%;
+                    font-family: var(--title-font);
+                    background:transparent;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    &:before {
+                        content: '';
+                        position: absolute;
+                        top:0;
+                        left:0;
+                        width: 100%;
+                        height: 100%;
+                        background:linear-gradient(90deg, #C98663 27.92%, #B88689 109.42%);
+                        opacity: 0;
+                        visibility: hidden;
+                        transition: all 0.3s ease;
+                        border-radius: 30px;
+                        z-index: -1;
+                    }
+                    &:hover {
+                        &:before {
+                           opacity: 1;
+                            visibility: visible;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+.bottom-footer {
+    background:#F9F9F9;
+    padding: 23px 0 19px;
+    .copyright {
+        text-align: center;
+        p {
+            color: #767676;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+    }
+}

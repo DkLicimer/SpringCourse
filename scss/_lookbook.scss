@@ -1,0 +1,50 @@
+/*==============================================
+19. LOOKBOOK
+==============================================*/
+
+.lookbook-section-v2 {
+    margin-bottom: 150px;
+    .container {
+        max-width: 100%;
+        padding: 0 110px;
+    }
+    .row {
+        margin:0 -4px;
+        .col-lg-3 {
+            padding: 0 4px;
+        }
+    }
+    .lookbook-inner {
+        > img {
+            width: 100%;
+        }
+    }
+}
+
+//  LOOKBOOK SECTION
+
+.lookbook-section {
+    padding:0 0 100px;
+    .lookboo-glance {
+        position: relative;
+        .lookbook {
+            position: relative;
+            img {
+                width: 100%;
+                max-height: 502px;
+            }
+        }
+    }
+}
+
+.pb-text {
+    position: absolute;
+    bottom: -62px;
+    left: 0;
+    color: rgba(0, 0, 0, 0.25);
+    font-size: 150px;
+    text-transform: uppercase;
+    text-align: center;
+    width: 100%;
+    font-weight: 600;
+}

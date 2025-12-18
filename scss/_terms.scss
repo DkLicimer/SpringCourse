@@ -1,0 +1,58 @@
+/*==============================================
+28. TERMS
+==============================================*/
+
+.terms-banner {
+    padding: 110px 0 20px;
+    .terms-content {
+        text-align: center;
+        max-width: 1060px;
+        margin:0 auto;
+        .terms-img {
+            margin-bottom: -50px;
+        }
+        h2 {
+            color: #000000;
+            font-size: 70px;
+            line-height: 90px;
+            font-weight: 700;
+            margin-bottom: 21px;
+            text-transform: uppercase;
+        }
+        p {
+            color: #3E3E3E;
+            font-size: 14px;
+            line-height: 25px;
+            max-width: 760px;
+            margin:0 auto;
+        }
+    }
+}
+
+
+.terms-conditions-section {
+    padding: 100px 0;
+    .terms-col {
+        text-align: center;
+        background: #FDFDFD;
+        border: 1px solid rgba(199, 199, 199, 0.35);
+        padding: 60px;
+        margin-bottom: 30px;
+        .term-icon {
+            height: 80px;
+            margin-bottom: 37px;
+        }
+        h3 {
+            color: #000000;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+        p {
+            color: #3E3E3E;
+            font-size: 14px;
+            line-height: 25px;
+            margin-bottom: 30px;
+        }
+    }
+}

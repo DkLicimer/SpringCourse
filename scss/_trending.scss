@@ -1,0 +1,297 @@
+/*==============================================
+30. TRENDING
+==============================================*/
+
+.trending-section-v2 {
+    padding-bottom: 0;
+    margin-bottom: -36px;
+    .container {
+        max-width: 1428px;
+        padding: 0 15px;
+    }
+}
+
+.trending-slide {
+    position: relative;
+    padding-bottom: 140px;
+    .trending-img-v2 {
+        text-align: center;
+        width: fit-content;
+        position: absolute;
+        bottom: -10px;
+        left:50%;
+        transform: scale(1) translateX(-50%);
+        transition: all 0.7s ease;
+        .featured-hover {
+            top:40px;
+            left:50px;
+            width: fit-content;
+            &.v2 {
+                left: 50%;
+                top:50px;
+                margin-left: 30px;
+            }
+            &.v3 {
+                left: 50%;
+                top: 120px;
+                margin-left: -40px;
+            }
+            &.v4 {
+                right: 50px;
+                left: auto;
+                top:25px;
+            }
+            &.v5 {
+                top:180px;
+                left:auto;
+                right: 100px;
+            }
+        }
+    }
+    .trending-img {
+        position: relative;
+        > img {
+            width: 100%;
+        }
+        .trending-caption-v2 {
+            position: absolute;
+            top:54px;
+            right: 35px;
+            background:#FFFFFF;
+            border-radius: 20px;
+            padding: 20px 20px 41px 20px;
+            transition: all 0.4s ease;
+            z-index: 99;
+            .trending-thumb {
+                margin-bottom: 21px;
+                > img {
+                    width: 100%;
+                }
+            }
+            h3 {
+                color: #000000;
+                font-size: 20px;
+                line-height: 30px;
+                font-weight: 600;
+                font-family: var(--text-font);
+            }
+            p {
+                color: #000000;
+                font-size: 15px;
+                margin-bottom: 6px;
+            }
+            .price {
+                margin:0;
+                display: flex;
+                > span {
+                    color: #B88669;
+                    font-size: 22px;
+                    font-weight: 500;
+                    del {
+                        display: inline-block;
+                        color: #808080;
+                        font-size: 22px;
+                        margin-left: 15px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.brand-section.v2 {
+    padding-top: 0;
+    padding-bottom: 100px;
+    .container {
+        max-width: 1230px;
+    }
+}
+
+
+// TRENDING SECTION
+
+.trending-section-v3 {
+    padding: 96px 0;
+}
+
+
+
+
+//  TRENDING PRODUCTS
+
+.trending-section {
+    padding: 100px 0;
+    .container-fluid {
+        max-width: 1776px;
+    }
+}
+.trending-products {
+    position: relative;
+    &:hover {
+        .tp-title {
+            z-index: -1;
+        }
+    }
+    .tp-title {
+        color: rgba(0,0,0,0.10);
+        font-size: 120px;
+        font-weight: 600;
+        text-transform: uppercase;
+        position: absolute;
+        top:50%;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        transform: translateY(-50%);
+        z-index: 9;
+        margin-top: -60px;
+    }
+}
+.trending-product {
+    position: relative;
+    height: 428px;
+    &.center {
+        height:1000px;
+    }
+    &:hover {
+        z-index: 99;
+        .trending-product-hover {
+            opacity:1;
+            visibility: visible;
+        }
+        .trending-caption {
+            opacity: 0;
+            visibility: hidden;
+        }
+    }
+    > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .trending-caption {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        width: 80%;
+        margin:0 auto;
+        padding: 16px 26px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        background:#fff;
+        transform: translateX(-50%);
+        transition: all 0.3s ease;    
+        h3 {
+            color: #222222;
+            font-size: 15px;
+            text-transform: capitalize;
+            font-weight: 500;
+            font-family: var(--text-font);
+        }
+    }
+    .trending-product-hover {
+        position: absolute;
+        top:0;
+        left:0;
+        width:100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 999;
+        .cart-product {
+            display: inline-block;
+            position: absolute;
+            top:30px;
+            right: 30px;
+            background: #B88669;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+        }
+        &:before {
+            content:'';
+            position: absolute;
+            top:0;
+            left:0;
+            width: 100%;
+            height: 100%;
+            background:linear-gradient(0deg, rgba(254, 254, 254, 0.95), rgba(254, 254, 254, 0.95));
+            z-index: -1;
+        }
+        h3 {
+            color: #000000;
+            font-size: 18px;
+            line-height: 27px;
+            font-weight: 400;
+            text-transform: capitalize;
+            margin-bottom: -2px;
+        }
+        .price {
+            color: #B88669;
+            font-size: 15px;
+            font-weight: 500;
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 22px;
+        }
+        .pd-btns {
+            width: 246px;
+            margin:0 auto;
+            li {
+                width: 100%;
+                display: block;
+                margin-bottom: 10px;
+                &:last-child {
+                    margin-bottom: 0;
+                }
+                a {
+                    width: 100%;
+                    text-align: center;
+                    display: block;
+                    border:1px solid #B88669;
+                    border-radius: 50px;
+                    color: #000000;
+                    font-size: 12px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    font-family: var(--title-font);
+                    height: 52px;
+                    line-height: 52px;
+                    position: relative;
+                    z-index: 1;
+                    &:before {
+                        content: '';
+                        position: absolute;
+                        top:0;
+                        left:0;
+                        width: 100%;
+                        height: 100%;
+                        background:linear-gradient(90deg, #C98663 27.92%, #B88689 109.42%);
+                        transition: all 0.3s ease;
+                        opacity:0;
+                        visibility: hidden;
+                        border-radius: 50px;
+                        z-index: -1;
+                    }
+                    &:hover{
+                        &:before {
+                            opacity:1;
+                            visibility: visible;
+                        }
+                        border-color: transparent;
+                        color: #fff;
+                    }
+                }
+            }
+        }
+    }
+
+}

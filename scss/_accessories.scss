@@ -1,0 +1,73 @@
+/*==============================================
+08. ACCESSORIES
+==============================================*/
+
+.accessories-section.prod-section {
+    margin-bottom: -80px;
+    .prod-col {
+        .prod-caption {
+            padding: 0 30px;
+        }
+    }
+    .arriavls-items-column {
+        padding-left: 10px;
+        .sec-title {
+            margin-bottom: 46px;
+            h2 {
+                margin-bottom: 0;
+                position: relative;
+                top:7px;
+            }
+        }
+    }
+    .acc-slider {
+        .slick-prev,
+        .slick-next {
+            top:-84px;
+            bottom: auto;
+            transform:unset;
+        }
+        .slick-prev {
+            left:0;
+            right: auto;
+        }
+        .slick-next {
+            right: 0;
+        }
+        .slick-slide {
+            margin:0 25px;
+        }
+        .slick-list {
+            margin:0 -25px;
+        }
+        .acc-slide {
+            padding: 35px 35px 27px 35px;
+            border:1px solid #C7C7C7;
+            .acc-img {
+                margin-bottom: 7px;
+                img {
+                    width: 100%;
+                }
+            }
+            .acc-info {
+                display: flex;
+                align-items: center;
+                padding:0 10px;
+                > h4 {
+                    font-family: var(--text-font);
+                    font-size: 15px;
+                    line-height: 22px;
+                    font-weight: 500;
+                    color: #222;
+                }
+                .acc-price {
+                    display: inline-block;
+                    margin-left: auto;
+                    color: #B88669;
+                    font-size: 15px;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+}

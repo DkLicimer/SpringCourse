@@ -1,0 +1,83 @@
+/*==============================================
+17. FAQS
+==============================================*/
+
+.faqs-section-page {
+    background: #FFFCF3;
+    padding: 120px 0 160px;
+    .container {
+        max-width: 1390px;
+        padding: 0 15px;
+    }
+    .sec-title {
+        margin-bottom: 103px;
+        h2 {
+            font-size: 60px;
+            line-height: 70px;
+            font-weight: 700;
+            margin-bottom: 33px;
+        }
+        p {
+            max-width: 751px;
+            margin:0 auto;
+        }
+    }
+    .accordion-header {
+        button {
+            margin-bottom: 0;
+            &.collapsed {
+                margin-bottom: 20px;
+            }
+        }
+    }
+    .accordion-item {
+        border:0;
+    }
+    .accordion-button {
+        color: #000;
+        font-size: 18px;
+        font-weight: 700;
+        background: #F8F4EB;
+        overflow: none;
+        padding: 11px 76px;
+        border:1px solid #DEDEDE;
+        border-radius: 0;
+        box-shadow: unset;
+        &:after {
+            background:transparent;
+            content: '-';
+            color: #444;
+            font-size: 48px;
+            font-weight: 400;
+            top:50%;
+            transform: translateY(-50%);
+            position: absolute;
+            width: unset;
+            height: unset;
+            left:auto;
+            right:60px;
+            height: fit-content;
+            margin-top: -7px;
+        }
+        &.collapsed {
+            &:after {
+                content: '+';
+            }
+        }
+    }
+    .accordion-body {
+        border:1px solid #DEDEDE;
+        margin-bottom: 20px;
+        background:#F8F4EB;
+        padding: 30px 76px;
+        p {
+            color: #3E3E3E;
+            font-size: 16px;
+            line-height: 30px;
+            margin-bottom: 20px;
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}

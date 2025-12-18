@@ -1,0 +1,76 @@
+/*==============================================
+16. CONTACT
+==============================================*/
+
+.contact-page-section {
+    padding: 100px 0;
+    .container {
+        max-width: 1550px;
+    }
+}
+
+
+.contact-links-info {
+    display: flex;
+    justify-content: center;
+    padding-top: 52px;
+    li {
+        width: 33.33%;
+        max-width: 230px;
+        .ct-icon {
+            height: 50px;
+            margin-bottom: 15px;
+        }
+        p, a {
+            color: #000000;
+            font-size: 14px;
+            line-height: 25px;
+            display: block;
+            margin-bottom: 0;
+        }
+    }
+}
+
+.map-section-full {
+    .container {
+        max-width: 1690px;
+    }
+}
+
+.contact-form-section {
+    padding: 110px 0 0;
+    .contact_form {
+        max-width: 880px;
+        margin:0 auto;
+        .form-group {
+            margin-bottom: 15px;
+            label {
+                display: block;
+                color: #000000;
+                font-size: 12px;
+                font-weight: 400;
+                text-transform: capitalize;
+                padding:0 10px;
+            }
+            input,
+            textarea {
+                width: 100%;
+                background: #F8F8F8;
+                height: 52px;
+                padding: 0 10px;
+                vertical-align: middle;
+            }
+            textarea {
+                padding: 10px;
+                height: 167px;
+            }
+        }
+        .form-submit {
+            text-align: center;
+            margin-top: 25px;
+            .theme-btn {
+                min-width: 245px;
+            }
+        }
+    }
+}

@@ -1,0 +1,37 @@
+$flaticon_mycollection-font: "flaticon_mycollection";
+
+@font-face {
+    font-family: $flaticon_mycollection-font;
+    src: url("./flaticon_mycollection.ttf?9aa1bc077fea09b2077a361d4d3c0aa9") format("truetype"),
+url("./flaticon_mycollection.woff?9aa1bc077fea09b2077a361d4d3c0aa9") format("woff"),
+url("./flaticon_mycollection.woff2?9aa1bc077fea09b2077a361d4d3c0aa9") format("woff2"),
+url("./flaticon_mycollection.eot?9aa1bc077fea09b2077a361d4d3c0aa9#iefix") format("embedded-opentype"),
+url("./flaticon_mycollection.svg?9aa1bc077fea09b2077a361d4d3c0aa9#flaticon_mycollection") format("svg");
+}
+
+i[class^="flaticon-"]:before, i[class*=" flaticon-"]:before {
+    font-family: flaticon_mycollection !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+$flaticon_mycollection-map: (
+    "search-interface-symbol": "\f101",
+    "share": "\f102",
+    "shopping-cart": "\f103",
+);
+
+.flaticon-search-interface-symbol:before {
+    content: map-get($flaticon_mycollection-map, "search-interface-symbol");
+}
+.flaticon-share:before {
+    content: map-get($flaticon_mycollection-map, "share");
+}
+.flaticon-shopping-cart:before {
+    content: map-get($flaticon_mycollection-map, "shopping-cart");
+}

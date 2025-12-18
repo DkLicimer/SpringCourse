@@ -1,0 +1,124 @@
+/*==============================================
+09. ACCOUNT
+==============================================*/
+
+.account-section {
+    padding: 110px 0 30px;
+}
+
+.account-sidebar {
+    .account-user {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        .account-user-img {
+            position: relative;
+            .edit {
+                display: inline-block;
+                position: absolute;
+                top:10px;
+                left:20px;
+                width: 23px;
+                height: 23px;
+                background-color: #fff;
+                border:1px solid #B88669;
+                border-radius: 50%;
+                text-align: center;
+                line-height: 20px;
+            }
+        }
+        .account-user-info {
+            padding-left: 30px;
+            h3 {
+                color: #000000;
+                font-size: 20px;
+                font-weight: 700;
+                text-transform: uppercase;
+                margin-bottom: 3px;
+            }
+            span {
+                display: block;
+                color: #3E3E3E;
+                font-size: 14px;
+            }
+        }
+    }
+    .account-list {
+        margin-top: 100px;
+        li {
+            display:flex;
+            align-items: center;
+            margin-bottom: 47px;
+            &:last-child {
+                margin-bottom: 0;
+            }
+            .ac-icon {
+                width: 50px;
+                margin-right: 13px;
+            }
+            h4 {
+                color: #000000;
+                font-size: 16px;
+                font-weight: 500;
+                text-transform: capitalize;
+                font-family: var(--text-font);
+                &:hover {
+                    color: #B88669;
+                }
+            }
+        }
+    }
+}
+.personal-information-column {
+    .personal-information {
+        margin-bottom: 133px;
+        h3 {
+            color: #000000;
+            font-size: 40px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        p {
+            color: #3E3E3E;
+            font-size: 14px;
+            line-height: 25px;
+        }
+    }
+    .user_info {
+        background: #FDFDFD;
+        border: 1px solid rgba(199, 199, 199, 0.35);
+        padding: 30px 30px 23px 30px;
+        position: relative;
+        margin-bottom: 50px;
+        .us-icon {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+        }
+        h4 {
+            color: #000000;
+            font-size: 16px;
+            font-weight: 500;
+            text-transform: capitalize;
+            font-family: var(--text-font);
+            margin-bottom: 7px;
+        }
+        span {
+            display: block;
+            font-size:16px;
+            color: #919191;
+            font-weight: 500;
+        }
+    }
+    .user-details {
+        margin:0 -25px;
+        .col-lg-6,
+        .col-lg-12 {
+            padding: 0 25px;
+        }
+        .full-button {
+            margin-top:0;
+        }
+    }
+}

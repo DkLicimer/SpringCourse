@@ -1,0 +1,93 @@
+/* Glance | HTML Template
+
+Template Name: Glance
+Version: 1.0.0
+License: copyright commercial
+
+/************ TABLE OF CONTENTS ***************
+01. Header
+02. Section Title
+03. Banner
+04. About 
+05. Products
+06. Footer
+07. 404
+08. Accessories
+09. Account
+11. Blog
+12. Brands
+13. Cart
+14. Categories
+15. Collection
+16. Contact
+17. FAQs
+18. Login
+19. Lookbook
+20. Main Slider
+21. Marquee
+22. Pagination
+23. Popups
+24. Preloader
+25. Shop Single
+26. Shop
+27. Team
+28. Terms
+29. Testimonials
+30. Trending
+31. Video
+**********************************************/
+
+@import "common/root.scss";
+@import "common/mixing.scss";
+@import "common/loader.scss";
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@import url('animate.css');
+@import url('jquery.fancybox.min.css');
+@import url('all.min.css');
+@import url('flaticon.css');
+
+// import SCSS components one by one
+@import "reset.scss";
+@import "header.scss";
+@import "section-title.scss";
+@import "banner.scss";
+@import "about.scss";
+@import "products.scss";
+@import "footer.scss";
+@import "404.scss";
+@import "accessories.scss";
+@import "account.scss";
+@import "banner.scss";
+@import "blog.scss";
+@import "brands.scss";
+@import "cart.scss";
+@import "categories.scss";
+@import "collection.scss";
+@import "contact.scss";
+@import "faqs.scss";
+@import "login.scss";
+@import "lookbook.scss";
+@import "main-slider.scss";
+@import "marquee.scss";
+@import "pagination.scss";
+@import "popups.scss";
+@import "preloader.scss";
+@import "shop-single.scss";
+@import "shop.scss";
+@import "team.scss";
+@import "terms.scss";
+@import "testimonial.scss";
+@import "trending.scss";
+@import "video.scss";
+@import "index_4.scss";
+@import "index_5.scss";
+@import "responsive.scss";
+@import "responsive_2.scss";
+
+
+
+
+
+

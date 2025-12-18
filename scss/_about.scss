@@ -1,0 +1,208 @@
+/*==============================================
+04. ABOUT
+==============================================*/
+
+.about-section {
+    padding:120px 0;
+}
+.about-text {
+    padding-right: 70px;
+    .title {
+        font-size: 38px;
+        line-height: 50px;
+        font-weight: 700;
+        margin-bottom: 28px;
+        span {
+            color: var(--theme-color2);
+        }
+    }
+    p {
+        color: #3E3E3E;
+        font-size: 14px;
+        line-height: 25px;
+        margin-bottom: 44px;
+    }
+}
+
+.about-images {
+    .row {
+        margin:0 -5px;
+    }
+    .col-lg-4 {
+        padding:0 5px;
+    }
+    .abt-img {
+        position: relative;
+        img {
+            width: 100%;
+        }
+    }
+}
+
+.about-section-v2 {
+    padding: 129px 0 120px;
+    .container {
+        max-width: 1550px;
+    }
+}
+
+.about-content-v2 {
+    text-align: center;
+    > h2 {
+        color: #000;
+        font-size: 60px;
+        line-height: 90px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 57px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+        img {
+            margin:0 15px;
+        }
+    }
+    p {
+        color: #3E3E3E;
+        font-size: 14px;
+        line-height: 25px;
+        max-width: 623px;
+        margin:0 auto 44px;
+    }
+}
+
+.about-section-v3 {
+    padding-bottom: 82px;
+    .container-fluid {
+        max-width: 100%;
+        padding: 0;
+    }
+    .images-slider-v3 {
+        .image-slide-v3 {
+            margin: 0 10px;
+        }
+    }
+    .about-content-v3 {
+        max-width: 830px;
+        margin: 72px auto 0;
+        text-align: center;
+        p {
+            color: #3E3E3E;
+            font-size: 14px;
+            line-height: 25px;
+            margin-bottom: 42px;
+        }
+    }
+}
+
+
+// ABOUT PAGE
+
+
+.page-content {
+    padding: 141px 0 112px;
+    .container-fluid {
+        padding:0 108px;
+        max-width: 100%;
+    }
+    .about-top {
+        margin-bottom: 105px;
+    }
+    .text-column {
+        h2 {
+            color: #000000;
+            font-size: 80px;
+            line-height: 90px;
+            font-weight: 700;
+            text-transform: uppercase;
+            span {
+                display: inline-block;
+                color: #B88669;
+            }
+        }
+    }
+    .text-para {
+        p {
+            padding-left: 134px;
+            color: #3E3E3E;
+            font-size: 14px;
+            line-height: 25px;
+            padding-right: 80px;
+        }
+    }
+    .images-row {
+        align-items: center;
+        margin-top: 103px;
+        .row {
+            margin:0 -5px;
+            .col-lg-4 {
+                padding: 0 5px;
+            }
+        }
+        .image {
+            img {
+                width: 100%;
+                object-fit: cover;
+            }
+        }
+    }
+    .title-column {
+        .inner-column {
+            padding-left: 38px;
+        }
+        h2 {
+            color: #000000;
+            font-size: 38px;
+            line-height: 50px;
+            font-weight: 700;
+            margin-bottom: 46px;
+            span {
+                display: inline-block;
+                color: #B88669;
+            }
+        }
+        p {
+            color: #3E3E3E;
+            font-size: 20px;
+            line-height: 38px;
+            font-weight: 500;
+            font-style: italic;
+            position: relative;
+            padding-left: 20px;
+            padding-top: 16px;
+            &:before {
+                content: '';
+                position: absolute;
+                top:0;
+                left: 0;
+                width: 112px;
+                height: 86px;
+                background-image: url(../images/quote.png);
+                background-repeat: no-repeat;
+            }
+        }
+    }
+    .about-bottom {
+        padding: 109px 55px 0 55px;
+        h2 {
+            color:#000;
+            font-size: 38px;
+            line-height: 50px;
+            text-transform: uppercase;
+            margin-bottom: 39px;
+            max-width: 931px;
+        }
+        p {
+            color: #3E3E3E;
+            font-size: 14px;
+            line-height: 25px;
+            padding-right: 45px;
+        }
+    }
+}
+
+
+
+
+

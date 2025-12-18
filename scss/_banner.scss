@@ -1,0 +1,99 @@
+
+/*==============================================
+03. BANNER
+==============================================*/
+
+.glance-banner {
+    .video-intro #video1 {
+        width: 100%;
+    }
+    .video-intro {
+        margin:0;
+        video {
+            width: 100%;
+            source {
+                width: 100%;
+            }
+        }
+    }
+}
+
+
+
+//  SHOP CATEGORY PAGE
+
+.page-banner {
+    background-image: url(https://placehold.co/1920x470);
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding:100px 0;
+    height: 470px;
+    .page-banner-content {
+        padding-top: 100px;
+        .page-title {
+            font-size: 80px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            -webkit-text-stroke-width: 1px;
+            -webkit-text-stroke-color: #fff;
+            color: transparent;
+        }
+        p {
+            color: #FFFFFF;
+            font-size: 18px;
+            line-height: 25px;
+        }        
+    }
+}
+
+
+//  FULL BANNER
+
+.full-banner {
+    > img {
+        width: 100%;
+    }
+}
+
+.sml-banner {
+    position: relative;
+    overflow: hidden;
+    > img {
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    &:hover {
+        > img {
+            transform: scale(1.2);
+        }
+    }
+    .banner-caption {
+        position: absolute;
+        top:50%;
+        left:50%;
+        transform: translate(-50%,-50%);
+        text-align: center;
+        h3 {
+            color: #FFFFFF;
+            font-size: 30px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        p {
+            font-size: 15px;
+            line-height: 22px;
+            color: rgba(255,255,255,0.78);
+            margin-bottom: 26px;
+            font-weight: 400;
+        }
+        .theme-btn {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--title-font);
+            background-color: rgba(0, 0, 0, 0.14);;
+        }
+    }
+}

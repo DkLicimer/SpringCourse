@@ -1,0 +1,29 @@
+@font-face {
+    font-family: "flaticon_mycollection";
+    src: url("./flaticon_mycollection.ttf?9aa1bc077fea09b2077a361d4d3c0aa9") format("truetype"),
+url("./flaticon_mycollection.woff?9aa1bc077fea09b2077a361d4d3c0aa9") format("woff"),
+url("./flaticon_mycollection.woff2?9aa1bc077fea09b2077a361d4d3c0aa9") format("woff2"),
+url("./flaticon_mycollection.eot?9aa1bc077fea09b2077a361d4d3c0aa9#iefix") format("embedded-opentype"),
+url("./flaticon_mycollection.svg?9aa1bc077fea09b2077a361d4d3c0aa9#flaticon_mycollection") format("svg");
+}
+
+i[class^="flaticon-"]:before, i[class*=" flaticon-"]:before {
+    font-family: flaticon_mycollection !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.flaticon-search-interface-symbol:before {
+    content: "\f101";
+}
+.flaticon-share:before {
+    content: "\f102";
+}
+.flaticon-shopping-cart:before {
+    content: "\f103";
+}

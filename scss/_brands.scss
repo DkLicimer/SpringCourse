@@ -1,0 +1,158 @@
+/*==============================================
+12. BRANDS
+==============================================*/
+
+
+.flex-container {
+    height:689px;
+    display: -webkit-flex;
+    /* Safari */
+    display: flex;
+    overflow: hidden;
+  }
+  @media screen and (max-width: 768px) {
+    .flex-container {
+      flex-direction: column;
+    }
+  }
+  
+  .flex-slide {
+    -webkit-flex: 1;
+    /* Safari 6.1+ */
+    -ms-flex: 1;
+    /* IE 10 */
+    flex: 1;
+    background-size: cover;
+    background-position: top;
+    background-repeat: no-repeat;
+    height: 100%;
+    cursor: pointer;
+    -webkit-transition: all 500ms ease;
+    -moz-transition: all 500ms ease;
+    -ms-transition: all 500ms ease;
+    -o-transition: all 500ms ease;
+    transition: all 500ms ease;
+  }
+  @media screen and (max-width: 768px) {
+    .flex-slide {
+      overflow: auto;
+      overflow-x: hidden;
+    }
+  }
+  
+
+  
+  .flex-slide:hover {
+    -webkit-flex-grow: 3;
+    flex-grow: 3;
+  }
+  @media screen and (min-width: 768px) {
+    .flex-slide {
+      -moz-animation: aboutFlexSlide;
+      -moz-animation-duration: 3s;
+      -moz-animation-iteration-count: 1;
+      -moz-animation-delay: 0s;
+      -webkit-animation: aboutFlexSlide;
+      -webkit-animation-duration: 3s;
+      -webkit-animation-iteration-count: 1;
+      -webkit-animation-delay: 0s;
+      animation: aboutFlexSlide;
+      animation-duration: 3s;
+      animation-iteration-count: 1;
+      animation-delay: 0s;
+    }
+  }
+  
+  @keyframes aboutFlexSlide {
+    0% {
+      -webkit-flex-grow: 1;
+      flex-grow: 1;
+    }
+    50% {
+      -webkit-flex-grow: 3;
+      flex-grow: 3;
+    }
+    100% {
+      -webkit-flex-grow: 1;
+      flex-grow: 1;
+    }
+  }
+ 
+  
+  .accessories {
+    background-image: url(https://placehold.co/681x689);
+  }
+  .fashion {
+    background-image: url(https://placehold.co/681x689);
+  }
+  .sneekers {
+    background-image: url(https://placehold.co/681x689);
+  }
+  .blazer {
+    background-image: url(https://placehold.co/681x689);
+  }
+  .polo {
+    background-image: url(https://placehold.co/681x689);
+  }
+  .bag {
+    background-image: url(https://placehold.co/681x689);
+  }
+  
+
+  // BRAND SECTION
+
+.brand-section {
+    padding: 119px 0 120px;
+    .container {
+        max-width: 1435px;
+    }
+}
+
+.brands {
+    margin:0;
+    border:1px solid #C7C7C7;
+    border-right: 0;
+    .col-lg-3 {
+        padding:0;
+    }
+}
+.brand-col {
+    border-right:1px solid #C7C7C7;
+    padding:21px 34px 26px;
+    height: 100%;
+    .brand-head {
+        display: flex;
+        align-items: center;
+        margin-bottom: 14px;
+        height: 34px;
+        img {
+            margin-right: 18px;
+        }
+        h3 {
+            color: #000000;
+            font-size: 17px;
+            line-height: 26px;
+            font-weight: 500;
+            font-family: var(--text-font);
+            text-transform: capitalize;
+        }
+    }
+    p {
+        color: #3E3E3E;
+        font-size: 14px;
+        line-height: 25px;
+        margin-bottom: 0;
+    }
+}
+
+.pt-logos {
+    margin-top: 55px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .pt-logo {
+        max-width: 20%;
+        flex:0 0 20%;
+        text-align: center;
+    }
+}
