@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FinControl"
+rootProject.name = "NeShkola"
 include(":app")
  
