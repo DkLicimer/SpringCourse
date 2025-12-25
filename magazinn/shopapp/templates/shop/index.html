@@ -1,0 +1,123 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+
+<!-- ===== БАННЕР / ХИТЫ ===== -->
+<div class="banner">
+    <div class="banner-right">
+        <ul id="flexiselDemo2">
+            <li>
+                <div class="banner-grid">
+                    <h2>Хиты продаж</h2>
+                    <div class="wome">
+                        <a href="#">
+                            <img class="img-responsive" src="{% static 'images/bi1.jpg' %}" alt="">
+                        </a>
+                        <div class="women">
+                            <h6>Модная куртка</h6>
+                            <p class="ba-price">
+                                <del>10 000 ₽</del>
+                                <em class="item_price">7 000 ₽</em>
+                            </p>
+                            <a href="#" class="but-hover1">В корзину</a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <li>
+                <div class="banner-grid">
+                    <h2>Новинки</h2>
+                    <div class="wome">
+                        <a href="#">
+                            <img class="img-responsive" src="{% static 'images/bi.jpg' %}" alt="">
+                        </a>
+                        <div class="women">
+                            <h6>Стильная обувь</h6>
+                            <p class="ba-price">
+                                <del>8 500 ₽</del>
+                                <em class="item_price">6 000 ₽</em>
+                            </p>
+                            <a href="#" class="but-hover1">В корзину</a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+<!-- ===== КОНЕЦ БАННЕРА ===== -->
+
+
+<!-- ===== КОНТЕНТ ===== -->
+<div class="content">
+
+    <!-- Блок категорий -->
+    <div class="content-head">
+        <div class="col-md-6 col-m1">
+            <div class="col-1">
+                <div class="col-md-6 col-2">
+                    <img src="{% static 'images/pi3.jpg' %}" class="img-responsive" alt="">
+                </div>
+                <div class="col-md-6 col-p">
+                    <h5>Женская одежда</h5>
+                    <p>Новая коллекция сезона</p>
+                    <a href="#" class="shop">Перейти в каталог</a>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-m2">
+            <img src="{% static 'images/bb.png' %}" class="img-responsive" alt="">
+            <a href="#" class="shop-2">Смотреть все</a>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+
+    <!-- ===== ТОВАРЫ ===== -->
+    <div class="content-top">
+
+        <div class="col-sm-4 item-grid">
+            <div class="grid-pro">
+                <img src="{% static 'images/pr1.jpg' %}" class="img-responsive" alt="">
+                <div class="women">
+                    <h6>Футболка</h6>
+                    <p><em>2 500 ₽</em></p>
+                    <a href="#" class="but-hover1">В корзину</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-4 item-grid">
+            <div class="grid-pro">
+                <img src="{% static 'images/pr3.jpg' %}" class="img-responsive" alt="">
+                <div class="women">
+                    <h6>Куртка</h6>
+                    <p><em>12 000 ₽</em></p>
+                    <a href="#" class="but-hover1">В корзину</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-4 item-grid">
+            <div class="grid-pro">
+                <img src="{% static 'images/pr5.jpg' %}" class="img-responsive" alt="">
+                <div class="women">
+                    <h6>Кроссовки</h6>
+                    <p><em>9 500 ₽</em></p>
+                    <a href="#" class="but-hover1">В корзину</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+
+</div>
+<!-- ===== КОНЕЦ КОНТЕНТА ===== -->
+
+{% endblock %}

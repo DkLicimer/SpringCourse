@@ -1,0 +1,116 @@
+{% extends "shop/base.html" %}
+{% load static %}
+
+{% block title %}Мужская одежда{% endblock %}
+
+{% block content %}
+
+<div class="banner-top">
+    <div class="container">
+        <h2 class="animated wow fadeInLeft">Мужская одежда</h2>
+        <h3 class="animated wow fadeInRight">
+            <a href="{% url 'shopapp:index' %}">Главная</a>
+            <label>/</label>Мужское
+        </h3>
+    </div>
+</div>
+
+<div class="product">
+    <div class="container">
+
+        <!-- БОКОВАЯ ПАНЕЛЬ -->
+        <div class="col-md-3 product-bottom">
+
+            <div class="categories">
+                <h3>Категории</h3>
+                <ul class="cate">
+                    <li><a href="#">Куртки</a></li>
+                    <li><a href="#">Худи</a></li>
+                    <li><a href="#">Джинсы</a></li>
+                    <li><a href="#">Рубашки</a></li>
+                    <li><a href="#">Обувь</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- ТОВАРЫ -->
+        <div class="col-md-9">
+
+            <div class="mens-toolbar">
+                <p>Показано 1–9 из 12 товаров</p>
+            </div>
+
+            <div class="mid-popular">
+
+                <!-- КАРТОЧКА ТОВАРА -->
+                <div class="col-sm-4 item-grid simpleCart_shelfItem">
+                    <div class="grid-pro">
+                        <div class="grid-product">
+                            <a href="{% url 'shopapp:single' %}">
+                                <img src="{% static 'shopapp:images/pr6.jpg' %}" class="img-responsive">
+                            </a>
+                        </div>
+                        <div class="women">
+                            <h6>
+                                <a href="{% url 'shopapp:single' %}">Мужская классическая куртка</a>
+                            </h6>
+                            <p>
+                                <del>$120</del>
+                                <em class="item_price">$90</em>
+                            </p>
+                            <a href="#" class="but-hover1 item_add">Добавить в корзину</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-4 item-grid simpleCart_shelfItem">
+                    <div class="grid-pro">
+                        <div class="grid-product">
+                            <a href="{% url 'shopapp:single' %}">
+                                <img src="{% static 'images/pr7.jpg' %}" class="img-responsive">
+                            </a>
+                        </div>
+                        <div class="women">
+                            <h6>
+                                <a href="{% url 'shopapp:single' %}">Мужское худи</a>
+                            </h6>
+                            <p>
+                                <del>$80</del>
+                                <em class="item_price">$60</em>
+                            </p>
+                            <a href="#" class="but-hover1 item_add">Добавить в корзину</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-4 item-grid simpleCart_shelfItem">
+                    <div class="grid-pro">
+                        <div class="grid-product">
+                            <a href="{% url 'shopapp:single' %}">
+                                <img src="{% static 'images/pr8.jpg' %}" class="img-responsive">
+                            </a>
+                        </div>
+                        <div class="women">
+                            <h6>
+                                <a href="{% url 'shopapp:single' %}">Мужские джинсы</a>
+                            </h6>
+                            <p>
+                                <del>$100</del>
+                                <em class="item_price">$75</em>
+                            </p>
+                            <a href="#" class="but-hover1 item_add">Добавить в корзину</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+
+    <title>{% block title %}Classic Style{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/animate.min.css' %}">
+
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap-3.1.1.min.js' %}"></script>
+    <script src="{% static 'js/wow.min.js' %}"></script>
+
+    <script>
+        new WOW().init();
+    </script>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+<div class="header">
+    <div class="header-grid">
+        <div class="container">
+            <div class="header-left">
+                <ul>
+                    <li><i class="glyphicon glyphicon-headphones"></i> 24x7 поддержка</li>
+                    <li><i class="glyphicon glyphicon-envelope"></i> info@example.com</li>
+                    <li><i class="glyphicon glyphicon-earphone"></i> +1234 567 892</li>
+                </ul>
+            </div>
+
+            <div class="header-right">
+                <ul>
+                    <li>
+                        <i class="glyphicon glyphicon-log-in"></i>
+                        <a href="{% url 'shopapp:login' %}">Вход</a>
+                    </li>
+                    <li>
+                        <i class="glyphicon glyphicon-book"></i>
+                        <a href="{% url 'shopapp:register' %}">Регистрация</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="clearfix"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <nav class="navbar navbar-default">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{% url 'shopapp:index' %}">
+                    Classic<span>Style</span>
+                </a>
+            </div>
+
+            <ul class="nav navbar-nav">
+                <li><a href="{% url 'shopapp:index' %}">Главная</a></li>
+                <li><a href="{% url 'shopapp:contact' %}">Контакты</a></li>
+                <li><a href="{% url 'shopapp:men_clothing' %}">Мужская одежда</a></li>
+                <li><a href="{% url 'shopapp:women_clothing' %}">Женская одежда</a></li>
+                <li><a href="{% url 'shopapp:checkout' %}">Корзина</a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+<!-- =============== END HEADER =============== -->
+
+{% block content %}{% endblock %}
+
+<!-- ================= FOOTER ================= -->
+<div class="footer">
+    <div class="container">
+        <div class="footer-grids">
+            <div class="col-md-4 footer-grid">
+                <h3>О нас</h3>
+                <p>Описание магазина</p>
+            </div>
+
+            <div class="col-md-4 footer-grid">
+                <h3>Контакты</h3>
+                <p>info@example.com</p>
+            </div>
+
+            <div class="col-md-4 footer-grid">
+                <h3>Подписка</h3>
+                <form>
+                    <input type="text" placeholder="Email">
+                    <input type="submit" value="Отправить">
+                </form>
+            </div>
+        </div>
+        <div class="clearfix"></div>
+    </div>
+</div>
+<!-- =============== END FOOTER =============== -->
+
+</body>
+</html>
