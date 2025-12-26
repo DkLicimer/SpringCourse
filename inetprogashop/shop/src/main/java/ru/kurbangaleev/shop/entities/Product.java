@@ -2,6 +2,7 @@ package ru.kurbangaleev.shop.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -14,5 +15,10 @@ public class Product {
     private String name;
     private String description;
     private Double price;
-    private String imageUrl;
+
+    // Изменяем на список ссылок
+    @ElementCollection
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url")
+    private List<String> imageUrls;
 }

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -30,17 +29,29 @@ public class JwtFilter extends OncePerRequestFilter {
         String role = null;
         String jwt = null;
 
+        // Если это OPTIONS запрос (CORS), пропускаем сразу
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response); // Просто идем дальше
-            return;
+        // Проверяем наличие заголовка Authorization
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7);
+            try {
+                // ВОТ ЭТОГО У ТЕБЯ НЕ ХВАТАЛО: извлекаем данные из JWT
+                username = jwtCore.getNameFromJwt(jwt);
+                role = jwtCore.getRoleFromJwt(jwt);
+            } catch (Exception e) {
+                // Если токен невалиден или просрочен - просто логируем или игнорируем,
+                // SecurityContext останется пустым, и Spring выдаст 403
+                logger.error("Ошибка парсинга JWT: " + e.getMessage());
+            }
         }
 
+        // Если данные получены и пользователь еще не аутентифицирован в контексте
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // Создаем authority на основе роли из токена
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
 
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
@@ -48,8 +59,11 @@ public class JwtFilter extends OncePerRequestFilter {
                     null,
                     List.of(authority)
             );
+
+            // Записываем пользователя в контекст Spring Security
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
+
         filterChain.doFilter(request, response);
     }
 }

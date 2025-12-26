@@ -19,7 +19,10 @@ public class Order {
 
     private Double totalPrice;
     private LocalDateTime createdAt;
-    private String status; // Например: PENDING, COMPLETED
+    private String status;
+
+    // НОВОЕ ПОЛЕ:
+    private String address;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> items;

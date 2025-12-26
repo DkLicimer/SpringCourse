@@ -27,7 +27,8 @@ public class OrderController {
     }
 
     @PostMapping("/checkout")
-    public Order checkout(@RequestHeader("Authorization") String token) {
+    public Order checkout(@RequestHeader("Authorization") String token,
+                          @RequestParam String address) { // Принимаем адрес
         User user = getUser(token);
         List<CartItem> cartItems = cartRepository.findAllByUser(user);
 
@@ -38,7 +39,8 @@ public class OrderController {
         Order order = new Order();
         order.setUser(user);
         order.setCreatedAt(LocalDateTime.now());
-        order.setStatus("COMPLETED");
+        order.setStatus("PAID"); // Статус "Оплачено" (имитация)
+        order.setAddress(address); // Сохраняем адрес
 
         double total = 0;
         List<OrderItem> orderItems = new ArrayList<>();
@@ -57,10 +59,7 @@ public class OrderController {
         order.setTotalPrice(total);
         order.setItems(orderItems);
 
-        // Сохраняем заказ (OrderItem сохранятся каскадом)
         Order savedOrder = orderRepository.save(order);
-
-        // Очищаем корзину
         cartRepository.deleteAll(cartItems);
 
         return savedOrder;
