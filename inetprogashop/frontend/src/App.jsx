@@ -21,7 +21,7 @@ function Navigation() {
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2 text-indigo-600 font-black text-xl tracking-tight">
           <Store size={28} />
-          <span>MY_SHOP</span>
+          <span>MY SNEAKERS</span>
         </Link>
         
         <div className="flex items-center space-x-8">
@@ -89,7 +89,6 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             
-            {/* Защищенные роуты */}
             <Route path="/cart" element={
               <ProtectedRoute>
                 <CartPage />

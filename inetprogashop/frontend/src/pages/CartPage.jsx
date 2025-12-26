@@ -74,7 +74,7 @@ const CartPage = () => {
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             {cartItems.map((item) => (
               <div key={item.id} className="flex items-center p-6 border-b last:border-0 hover:bg-gray-50/50 transition-colors">
-                <img src={item.product.imageUrl} alt="" className="w-20 h-20 object-cover rounded-2xl border" />
+                <img src={item.product.imageUrls && item.product.imageUrls[0]}  alt="" className="w-20 h-20 object-cover rounded-2xl border" />
                 <div className="ml-6 flex-grow">
                   <h3 className="font-bold text-lg">{item.product.name}</h3>
                   <p className="text-gray-400 text-sm">Количество: {item.quantity}</p>

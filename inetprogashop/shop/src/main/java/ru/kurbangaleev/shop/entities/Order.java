@@ -24,6 +24,6 @@ public class Order {
     // НОВОЕ ПОЛЕ:
     private String address;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> items;
 }
