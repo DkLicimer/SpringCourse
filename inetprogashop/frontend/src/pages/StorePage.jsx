@@ -40,7 +40,9 @@ const StorePage = () => {
             {/* Картинка (теперь берем первую из списка) */}
             <div className="relative overflow-hidden rounded-[24px] mb-5 h-60 bg-gray-50 flex items-center justify-center">
               <img 
-                src={product.imageUrls[0]} 
+                src={product.imageUrls && product.imageUrls.length > 0 
+                    ? product.imageUrls[0] 
+                    : 'https://via.placeholder.com/300'} 
                 alt="" 
                 className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
               />

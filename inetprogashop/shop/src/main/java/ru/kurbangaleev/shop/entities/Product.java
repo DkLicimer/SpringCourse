@@ -16,8 +16,7 @@ public class Product {
     private String description;
     private Double price;
 
-    // Изменяем на список ссылок
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "image_url")
     private List<String> imageUrls;
