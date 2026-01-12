@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "first_name": "Алексей",
+    "last_name": "Иванов",
+    "email": "alexey.ivanov@example.com",
+    "phone_number": "+7 (911) 123-45-67",
+    "city": "Москва"
+  },
+  {
+    "id": 2,
+    "first_name": "Елена",
+    "last_name": "Петрова",
+    "email": "elena.petrova@example.com",
+    "phone_number": "+7 (921) 987-65-43",
+    "city": "Санкт-Петербург"
+  },
+  {
+    "id": 3,
+    "first_name": "Дмитрий",
+    "last_name": "Смирнов",
+    "email": "dmitry.smirnov@example.com",
+    "phone_number": "+7 (931) 555-55-55",
+    "city": "Новосибирск"
+  },
+  {
+    "id": 4,
+    "first_name": "Ольга",
+    "last_name": "Кузнецова",
+    "email": "olga.kuznetsova@example.com",
+    "phone_number": "+7 (941) 111-11-11",
+    "city": "Казань"
+  },
+  {
+    "id": 5,
+    "first_name": "Сергей",
+    "last_name": "Попов",
+    "email": "sergei.popov@example.com",
+    "phone_number": "+7 (951) 222-22-22",
+    "city": "Самара"
+  },
+  {
+    "id": 6,
+    "first_name": "Наталья",
+    "last_name": "Васильева",
+    "email": "natalya.vasilyeva@example.com",
+    "phone_number": "+7 (961) 333-33-33",
+    "city": "Краснодар"
+  },
+  {
+    "id": 7,
+    "first_name": "Андрей",
+    "last_name": "Соловьев",
+    "email": "andrey.solovyev@example.com",
+    "phone_number": "+7 (971) 444-44-44",
+    "city": "Ростов-на-Дону"
+  },
+  {
+    "id": 8,
+    "first_name": "Марина",
+    "last_name": "Федорова",
+    "email": "marina.fedorova@example.com",
+    "phone_number": "+7 (981) 555-55-55",
+    "city": "Омск"
+  },
+  {
+    "id": 9,
+    "first_name": "Михаил",
+    "last_name": "Николаев",
+    "email": "michael.nikolaev@example.com",
+    "phone_number": "+7 (991) 666-66-66",
+    "city": "Волгоград"
+  },
+  {
+    "id": 10,
+    "first_name": "Светлана",
+    "last_name": "Антонова",
+    "email": "svetlana.antonova@example.com",
+    "phone_number": "+7 (901) 777-77-77",
+    "city": "Хабаровск"
+  },
+  {
+    "id": 11,
+    "first_name": "Кирилл",
+    "last_name": "Зайцев",
+    "email": "kirill.zaytsev@example.com",
+    "phone_number": "+7 (912) 888-88-88",
+    "city": "Иркутск"
+  },
+  {
+    "id": 12,
+    "first_name": "Анна",
+    "last_name": "Ковалёва",
+    "email": "anna.kovaleva@example.com",
+    "phone_number": "+7 (922) 999-99-99",
+    "city": "Нижний Новгород"
+  },
+  {
+    "id": 13,
+    "first_name": "Роман",
+    "last_name": "Леонов",
+    "email": "roman.leonov@example.com",
+    "phone_number": "+7 (932) 123-45-67",
+    "city": "Владивосток"
+  },
+  {
+    "id": 14,
+    "first_name": "Виктория",
+    "last_name": "Гордеева",
+    "email": "victoria.gordeeva@example.com",
+    "phone_number": "+7 (942) 987-65-43",
+    "city": "Тула"
+  },
+  {
+    "id": 15,
+    "first_name": "Артём",
+    "last_name": "Сергеев",
+    "email": "artem.sergeev@example.com",
+    "phone_number": "+7 (952) 555-55-55",
+    "city": "Саратов"
+  }
+]
