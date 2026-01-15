@@ -1,0 +1,53 @@
+services:
+  # Сервис базы данных PostgreSQL
+  db:
+    image: postgres:15
+    container_name: zabgu-db
+    restart: always
+    environment:
+      - POSTGRES_USER=zabgu_user
+      - POSTGRES_PASSWORD=strong_password
+      - POSTGRES_DB=zabgu_db
+    volumes:  # это тот файл который нам нужен
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Сервис Spring Boot приложения
+  app:
+    build: .
+    container_name: zabgu-app
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      # --- Подключение к базе данных ---
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/zabgu_db
+      - SPRING_DATASOURCE_USERNAME=zabgu_user
+      - SPRING_DATASOURCE_PASSWORD=strong_password
+
+      # --- Директория для загрузки файлов ---
+      - FILE_UPLOAD_DIR=/app/uploads
+
+      # --- Настройки почты ---
+      - SPRING_MAIL_HOST=mail.zabgu.ru
+      - SPRING_MAIL_PORT=465
+      - SPRING_MAIL_USERNAME=space   # логин от почты
+      - SPRING_MAIL_PASSWORD=Bj9N1eRBjxmM     # обязательно поменяй в Zimbra
+
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_TRUST=mail.zabgu.ru
+      - SPRING_MAIL_DEFAULT_ENCODING=UTF-8
+
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads_data:
