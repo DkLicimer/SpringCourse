@@ -10,6 +10,7 @@
         <module name="discovery-server" />
         <module name="gateway-service" />
         <module name="finance-service" />
+        <module name="remo-backend" />
         <module name="marketplace-service" />
         <module name="chat-service" />
         <module name="user-service" />

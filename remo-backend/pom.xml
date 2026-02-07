@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>ru.remo</groupId>
+    <artifactId>remo-backend</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.2</version>
+    </parent>
+
+    <modules>
+        <module>discovery-server</module>
+        <module>gateway-service</module>
+        <module>auth-service</module>
+        <module>user-service</module>
+        <module>finance-service</module>
+        <module>project-service</module>
+        <module>marketplace-service</module>
+        <module>chat-service</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <lombok.version>1.18.30</lombok.version>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
