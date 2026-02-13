@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme.dart';
-import 'presentation/screens/main_screen.dart';
+import 'presentation/screens/navigation_hub.dart'; // Импортируем Хаб
 
 void main() {
   runApp(const RemoApp());
@@ -15,7 +15,7 @@ class RemoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Remo.ru',
       theme: RemoTheme.darkTheme,
-      home: const MainScreen(),
+      home: const NavigationHub(), // Теперь здесь NavigationHub
     );
   }
 }
