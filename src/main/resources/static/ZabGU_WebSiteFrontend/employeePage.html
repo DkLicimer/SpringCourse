@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ЗабГУ Пространства - Оставить заявку</title>
+        <!-- ВАЖНО: Подключаем новый CSS-файл -->
+        <link rel="stylesheet" href="/ZabGU_WebSiteFrontend/css/style.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    </head>
+    <body class="page-employee">
+        <div class="wrapper">
+            <header class="header-container">
+                <!-- Ваш код хедера остается здесь -->
+                <div class="zabguSpace">
+                    <a href="/">
+                        <svg viewBox="0 0 757.341 100" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                            <defs>
+                                <linearGradient x1="378.670471" y1="0.000000" x2="378.670471" y2="100.000000" id="paint_linear_193_120_0" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#D0FF00"/>
+                                <stop offset="0.511450" stop-color="#6DBE00"/>
+                                </linearGradient>
+                            </defs>
+                            <rect id="Прямоугольник 3" rx="50.000000" width="100%" height="100%" fill="url(#paint_linear_193_120_0)" fill-opacity="1.000000"/>
+                            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Montserrat Alternates" font-size="54" fill="#FFFFFF" font-weight="Medium">ЗабГУ Пространства</text>
+                        </svg>
+                    </a>
+                </div>
+                <div class="logoutButton">
+                    <a href="/" id="logout-button">
+                        <svg viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="70.000000" height="70.000000" fill="none">
+                            <rect id="Выход 1" width="70.000000" height="70.000000" x="0.000000" y="0.000000" />
+                            <path id="Форма 1" d="M34.9879 8.75L8.75 8.75L8.75 61.25L35 61.25" fill-rule="nonzero" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+                            <path id="Форма 2" d="M48.125 48.125L61.25 35L48.125 21.875" fill-rule="nonzero" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+                            <path id="Форма 3" d="M23.333 34.9878L61.2497 34.9878" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+                        </svg>
+                    </a>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- БЛОК ВХОДА В СИСТЕМУ (виден по умолчанию) -->
+                <div id="login-form-container">
+                    <h1 class="mainText">Вход для сотрудника</h1>
+                    <div class="form-wrapper">
+                        <form id="login-form" class="application-form">
+                            <div class="form-field">
+                                <input type="text" id="login" name="login" required placeholder=" ">
+                                <label for="login">Логин</label>
+                            </div>
+                            <div class="form-field">
+                                <input type="password" id="password" name="password" required placeholder=" ">
+                                <label for="password">Пароль</label>
+                            </div>
+                            <button type="submit" class="submit-button">Войти</button>
+                            <p id="login-error" class="error-message" style="color: red; grid-column: 1 / -1;"></p>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- АДМИН-ПАНЕЛЬ (изначально скрыта) -->
+                <div id="admin-panel" style="display: none;">
+
+                    <!-- 1. Навигация по разделам -->
+                    <nav class="admin-nav">
+                        <button class="admin-nav-btn active" data-section="applications">Заявки</button>
+                        <button class="admin-nav-btn" data-section="calendar">Календарь</button>
+                        <button class="admin-nav-btn" data-section="analytics">Аналитика</button>
+                        <button class="admin-nav-btn" data-section="rooms">Помещения</button>
+                    </nav>
+
+                    <!-- 2. Контейнер для контента разделов -->
+                    <div class="admin-content">
+
+                        <!-- 2.1. РАЗДЕЛ "ЗАЯВКИ" -->
+                        <section id="section-applications" class="admin-section active">
+                            <!-- Фильтры остаются здесь -->
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-status="">Все заявки</button>
+                                <button class="filter-btn" data-status="APPROVED">Одобренные</button>
+                                <button class="filter-btn" data-status="REJECTED">Отклоненные</button>
+                                <button class="filter-btn" data-status="PENDING">Ожидают</button>
+                            </div>
+
+                            <!-- Список заявок -->
+                            <div class="application-list">
+                                <!-- Заголовок таблицы с новым полем "Время" -->
+                                <header class="list-header">
+                                    <span>Номер</span>
+                                    <span>Название мероприятия</span>
+                                    <span>Помещение</span>
+                                    <span>Время</span>
+                                    <span>Статус</span>
+                                </header>
+                                <div id="application-list-content">
+                                    <!-- Сюда JavaScript будет вставлять заявки -->
+                                </div>
+                            </div>
+                            <div id="pagination-controls" class="pagination-container">
+                                <!-- Сюда JavaScript будет вставлять кнопки "Назад", "1", "2", "3", "Вперед" -->
+                            </div>
+                        </section>
+
+                        <!-- 2.2. РАЗДЕЛ "КАЛЕНДАРЬ" -->
+                        <section id="section-calendar" class="admin-section">
+                            <div class="calendar-container">
+                                <header class="calendar-header">
+                                    <button id="prev-month-btn" class="month-nav-btn">&lt;</button>
+                                    <h2 id="current-month-display" class="current-month"></h2>
+                                    <button id="next-month-btn" class="month-nav-btn">&gt;</button>
+                                </header>
+                                <div class="calendar-weekdays">
+                                    <span>Пн</span>
+                                    <span>Вт</span>
+                                    <span>Ср</span>
+                                    <span>Чт</span>
+                                    <span>Пт</span>
+                                    <span>Сб</span>
+                                    <span>Вс</span>
+                                </div>
+                                <div id="calendar-grid" class="calendar-grid">
+                                    <!-- Дни будут генерироваться здесь с помощью JavaScript -->
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 2.3. РАЗДЕЛ "АНАЛИТИКА" -->
+                        <section id="section-analytics" class="admin-section">
+                            <div id="analytics-dashboard" class="analytics-dashboard">
+                                <!-- KPI-карточки -->
+                                <div class="kpi-grid">
+                                    <div class="kpi-card">
+                                        <h3 class="kpi-title">Всего заявок</h3>
+                                        <p id="kpi-total" class="kpi-value">...</p>
+                                    </div>
+                                    <div class="kpi-card approved">
+                                        <h3 class="kpi-title">Одобрено</h3>
+                                        <p id="kpi-approved" class="kpi-value">...</p>
+                                    </div>
+                                    <div class="kpi-card rejected">
+                                        <h3 class="kpi-title">Отклонено</h3>
+                                        <p id="kpi-rejected" class="kpi-value">...</p>
+                                    </div>
+                                </div>
+                                <!-- Графики -->
+                                <div class="charts-grid">
+                                    <div class="chart-container">
+                                        <h4>Популярность помещений</h4>
+                                        <canvas id="room-popularity-chart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h4>Активность за 30 дней</h4>
+                                        <canvas id="booking-activity-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 2.4. РАЗДЕЛ "ПОМЕЩЕНИЯ"  -->
+                        <section id="section-rooms" class="admin-section">
+                            <div class="section-header">
+                                <h2 class="section-title">Управление помещениями</h2>
+                                <button id="add-room-btn" class="btn-add-new">Добавить помещение</button>
+                            </div>
+                            <div id="rooms-list-container" class="rooms-list-container">
+                                <!-- Сюда JavaScript будет вставлять карточки помещений -->
+                            </div>
+                        </section>
+
+                    </div>
+                </div>
+            </main>
+
+            <!-- Модальное окно для создания/редактирования помещения -->
+            <div id="room-edit-modal" class="modal-overlay">
+                <div class="modal-content room-edit-modal-content">
+                    <h3 id="room-modal-title">Добавить новое помещение</h3>
+                    <form id="room-edit-form">
+                        <input type="hidden" id="room-id-input">
+                        <div class="form-field">
+                            <input type="text" id="room-name" required placeholder=" ">
+                            <label for="room-name">Название</label>
+                        </div>
+                        <div class="form-field">
+                            <input type="text" id="room-address" required placeholder=" ">
+                            <label for="room-address">Адрес</label>
+                        </div>
+                        <div class="form-field">
+                            <textarea id="room-capacity" required placeholder=" " rows="3"></textarea>
+                            <label for="room-capacity">Вместимость и описание (используйте | для переноса строки)</label>
+                        </div>
+                        <div class="form-field">
+                            <label for="room-image-file">Изображение (оставьте пустым, чтобы не менять)</label>
+                            <input type="file" id="room-image-file" accept="image/png, image/jpeg, image/jpg">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="cancel-room-edit-btn" class="btn-cancel">Отмена</button>
+                            <button type="submit" class="btn-save">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="reason-modal" class="modal-overlay">
+                <div class="modal-content reason-modal-content">
+                    <h3 id="reason-modal-title">Укажите причину</h3>
+                    <form id="reason-form">
+                        <input type="hidden" id="reason-app-id">
+                        <input type="hidden" id="reason-app-action">
+                        <div class="form-field">
+                            <textarea id="reason-text-input" required rows="5" placeholder=" "></textarea>
+                            <label for="reason-text-input">Причина</label>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="cancel-reason-btn" class="btn-cancel">Отмена</button>
+                            <button type="submit" class="btn-save">Подтвердить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Модальное окно для подтверждения удаления -->
+            <div id="delete-confirm-modal" class="modal-overlay">
+                <div class="modal-content delete-confirm-modal-content">
+                    <h4>Подтвердите удаление</h4>
+                    <p>Вы уверены, что хотите удалить это помещение? Это действие необратимо.</p>
+                    <div class="modal-actions">
+                        <button id="cancel-delete-btn" class="btn-cancel">Отмена</button>
+                        <button id="confirm-delete-btn" class="btn-delete">Удалить</button>
+                    </div>
+                </div>
+            </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="/ZabGU_WebSiteFrontend/scripts/employeeScript.js"></script>
+    </body>
+</html>
