@@ -32,11 +32,15 @@ class MASPlatform:
         
         print("Все агенты успешно развернуты и подключены к EventBus.\n" + "="*50)
 
-    def run_simulation(self):
+    def run_simulation(self, sleep_time=0.0, max_rows=None, progress_callback=None):
         print(f"Загрузка результатов детектирования: {self.results_path}")
         df = pd.read_csv(self.results_path)
         
-        print("Запуск симуляции потока данных (быстрая перемотка)...\n")
+        if max_rows:
+            df = df.head(max_rows)
+            
+        total_rows = len(df)
+        print("Запуск симуляции потока данных...\n")
         
         # Проходим по каждой строке (моменту времени)
         for index, row in df.iterrows():
@@ -44,15 +48,17 @@ class MASPlatform:
             
             # Передаем данные соответствующим агентам мониторинга
             for idx, sensor in enumerate(config.SENSOR_NAMES):
-                # Название колонки в CSV, например 'temperature_sensor_1_is_anomaly'
                 anomaly_col_name = f"{sensor}_is_anomaly" 
                 is_anomaly = row[anomaly_col_name]
-                
-                # Агент обрабатывает точку данных
                 self.sensor_agents[idx].process_data_point(timestamp, is_anomaly)
                 
-            # Имитация задержки (раскомментируйте, если хотите смотреть в реальном времени)
-            # time.sleep(0.01) 
+            # Обновляем прогресс-бар в UI, если он передан
+            if progress_callback:
+                progress_callback(index + 1, total_rows)
+                
+            # Задержка для визуализации в интерфейсе
+            if sleep_time > 0:
+                time.sleep(sleep_time) 
 
 if __name__ == "__main__":
     platform = MASPlatform()
