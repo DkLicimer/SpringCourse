@@ -25,9 +25,9 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, isIncome }
             alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
             <div style={{ background: '#fff', padding: '24px', borderRadius: '14px', width: '300px' }}>
-                <h3 style={{ marginBottom: '16px' }}>{isIncome ? "Пополнить баланс" : "Новый платеж"}</h3>
+                <h3 style={{ marginBottom: '16px' }}>{isIncome ? "Внесение наличных" : "Новый платеж"}</h3>
                 <form onSubmit={handleSubmit}>
-                    <input required placeholder="Название (напр. Зарплата)" value={name} onChange={e => setName(e.target.value)}
+                    <input required placeholder="Название (напр. Взнос)" value={name} onChange={e => setName(e.target.value)}
                            style={{ width: '100%', padding: '8px', marginBottom: '12px', boxSizing: 'border-box' }} />
                     <input required type="number" min="0.01" step="0.01" placeholder="Сумма" value={amount} onChange={e => setAmount(e.target.value)}
                            style={{ width: '100%', padding: '8px', marginBottom: '16px', boxSizing: 'border-box' }} />

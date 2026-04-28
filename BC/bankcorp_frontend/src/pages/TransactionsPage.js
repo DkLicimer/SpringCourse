@@ -1,12 +1,21 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 import TransactionsTable from "../components/TransactionsTable";
 
 export default function TransactionsPage() {
-    const USER_ID = 1;
+    const { id } = useParams();
+
+    if (!id) {
+        return (
+            <div className="page-body">
+                <h3>Пожалуйста, выберите клиента из списка</h3>
+            </div>
+        );
+    }
 
     return (
         <div className="page-body">
-            <TransactionsTable userId={USER_ID} />
+            <TransactionsTable />
         </div>
     );
 }

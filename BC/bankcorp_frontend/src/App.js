@@ -18,11 +18,14 @@ export default function App() {
                     <Header />
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
+                        <Route path="/client/:id" element={<Dashboard />} />
                         <Route path="/clients" element={<ClientsPage />} />
-                        {/* Разделы "Счета" и "Карты" пока ведут на одну страницу для наглядности */}
                         <Route path="/accounts" element={<CardsPage />} />
+                        <Route path="/client/:id/accounts" element={<CardsPage />} />
                         <Route path="/cards" element={<CardsPage />} />
+                        <Route path="/client/:id/cards" element={<CardsPage />} />
                         <Route path="/transactions" element={<TransactionsPage />} />
+                        <Route path="/client/:id/transactions" element={<TransactionsPage />} />
                         <Route path="/reports" element={<ReportsPage />} />
                     </Routes>
                 </div>

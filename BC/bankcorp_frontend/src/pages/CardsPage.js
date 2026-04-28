@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 export default function CardsPage() {
+    const { id } = useParams();
     const [balance, setBalance] = useState("Загрузка...");
 
     useEffect(() => {
-        fetch(`http://localhost:8080/api/dashboard/1/stats`)
+        if (!id) return;
+        fetch(`http://localhost:8080/api/dashboard/${id}/stats`)
             .then(res => res.json())
-            .then(data => setBalance(data[0].value)) // Берем значение "Баланс" из статистики
+            .then(data => {
+                if (data && data.length > 0) {
+                    setBalance(data[0].value);
+                }
+            })
             .catch(err => console.error(err));
-    }, []);
+    }, [id]);
+
+    if (!id) {
+        return (
+            <div className="page-body">
+                <h3>Пожалуйста, выберите клиента из списка</h3>
+            </div>
+        );
+    }
 
     return (
         <div className="page-body">
-            <h3 style={{ marginBottom: '20px' }}>Мои карты</h3>
+            <h3 style={{ marginBottom: '20px' }}>Продукты клиента</h3>
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                {/* Карточка 1 */}
                 <div style={{
                     width: '320px', height: '200px', borderRadius: '16px', padding: '24px',
                     background: 'linear-gradient(135deg, #4f6ef7 0%, #2a41a8 100%)',
@@ -34,7 +48,6 @@ export default function CardsPage() {
                     </div>
                 </div>
 
-                {/* Кнопка "Выпустить новую" */}
                 <div style={{
                     width: '320px', height: '200px', borderRadius: '16px', border: '2px dashed #cbd5e1',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',

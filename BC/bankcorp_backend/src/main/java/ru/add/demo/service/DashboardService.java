@@ -33,7 +33,6 @@ public class DashboardService {
 
         List<Transaction> transactions = transactionRepository.findByUserIdOrderByDateDesc(userId);
 
-        // Считаем реальные доходы и расходы
         BigDecimal income = transactions.stream()
                 .filter(Transaction::isPositive)
                 .map(Transaction::getAmount)
@@ -58,7 +57,6 @@ public class DashboardService {
 
         return transactions.stream().map(t -> {
             TransactionDTO dto = new TransactionDTO();
-            // Форматируем ID с нулями: 1 -> #00001
             dto.setId(String.format("#%05d", t.getId()));
             dto.setName(t.getName());
             dto.setCategory(t.getCategory());
@@ -71,7 +69,6 @@ public class DashboardService {
         }).collect(Collectors.toList());
     }
 
-    // Красивое форматирование денег: 124530 -> 124 530 ₽
     private String formatMoney(BigDecimal amount) {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator(' ');
@@ -84,7 +81,6 @@ public class DashboardService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
-        // Обновляем баланс пользователя
         if (dto.isPositive()) {
             user.setBalance(user.getBalance().add(dto.getAmount()));
         } else {
@@ -92,18 +88,27 @@ public class DashboardService {
         }
         userRepository.save(user);
 
-        // Сохраняем транзакцию
         Transaction t = new Transaction();
         t.setUser(user);
         t.setName(dto.getName());
         t.setCategory(dto.getCategory());
         t.setAmount(dto.getAmount());
         t.setPositive(dto.isPositive());
-        t.setDate(LocalDate.now()); // Ставим текущую дату
+        t.setDate(LocalDate.now());
 
         transactionRepository.save(t);
     }
+
     public List<User> getAllClients() {
         return userRepository.findAll();
+    }
+
+    @Transactional
+    public void createClient(String fullName) {
+        User user = new User();
+        user.setFullName(fullName);
+        user.setBalance(BigDecimal.ZERO);
+        user.setSavings(BigDecimal.ZERO);
+        userRepository.save(user);
     }
 }

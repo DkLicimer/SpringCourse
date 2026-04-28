@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import "./TransactionsTable.css";
 
-export default function TransactionsTable({ userId, refreshKey}) {
+export default function TransactionsTable({ refreshKey }) {
+  const { id } = useParams();
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
-    if (!userId) return;
-
-    fetch(`http://localhost:8080/api/dashboard/${userId}/transactions`)
+    if (!id) return;
+    fetch(`http://localhost:8080/api/dashboard/${id}/transactions`)
         .then((res) => res.json())
         .then((data) => setTransactions(data))
-        .catch((err) => console.error("Ошибка загрузки транзакций:", err));
-  }, [userId, refreshKey]);
+        .catch((err) => console.error(err));
+  }, [id, refreshKey]);
+
+  if (!id) return null;
 
   return (
       <div className="table-card">
@@ -32,9 +35,9 @@ export default function TransactionsTable({ userId, refreshKey}) {
                 <td className="td-id">{t.id}</td>
                 <td>{t.name}</td>
                 <td>
-                <span className={`category-badge ${t.positive ? "income" : "expense"}`}>
-                  {t.category}
-                </span>
+                        <span className={`category-badge ${t.positive ? "income" : "expense"}`}>
+                          {t.category}
+                        </span>
                 </td>
                 <td className="td-date">{t.date}</td>
                 <td className={`td-amount ${t.positive ? "positive" : "negative"}`}>
@@ -44,7 +47,7 @@ export default function TransactionsTable({ userId, refreshKey}) {
           ))}
           {transactions.length === 0 && (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>Загрузка...</td>
+                <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>Нет транзакций</td>
               </tr>
           )}
           </tbody>

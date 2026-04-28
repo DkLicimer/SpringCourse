@@ -1,6 +1,5 @@
 package ru.add.demo.controller;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.add.demo.dto.NewTransactionDTO;
 import ru.add.demo.dto.StatDTO;
@@ -12,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = "http://localhost:3000") // Разрешаем запросы от нашего React-фронтенда
+@CrossOrigin(origins = "http://localhost:3000")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -39,5 +38,10 @@ public class DashboardController {
     @GetMapping("/clients")
     public List<User> getClients() {
         return dashboardService.getAllClients();
+    }
+
+    @PostMapping("/clients")
+    public void createClient(@RequestBody User user) {
+        dashboardService.createClient(user.getFullName());
     }
 }
