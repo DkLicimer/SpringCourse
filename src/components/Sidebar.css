@@ -1,0 +1,94 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f0f2f5;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Логотип */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+}
+
+.sidebar-logo-icon {
+  font-size: 26px;
+  color: #3b82f6;
+}
+
+.sidebar-logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.3px;
+}
+
+/* Навигационный блок */
+.sidebar-nav {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Пункт меню */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+  background-color: #f1f5ff;
+}
+
+/* Активный пункт */
+.sidebar-nav-item.active {
+  background-color: #eff6ff;
+}
+
+.sidebar-nav-item.active .sidebar-nav-icon {
+  color: #3b82f6;
+}
+
+.sidebar-nav-item.active .sidebar-nav-label {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Иконка */
+.sidebar-nav-icon {
+  font-size: 20px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+/* Текст */
+.sidebar-nav-label {
+  font-size: 15px;
+  color: #374151;
+  font-weight: 400;
+}

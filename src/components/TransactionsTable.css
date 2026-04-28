@@ -1,0 +1,75 @@
+.table-card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.table-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 16px;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transactions-table th {
+  text-align: left;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f1f3f7;
+}
+
+.transactions-table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #f1f3f7;
+}
+
+.transactions-table tr:last-child td {
+  border-bottom: none;
+}
+
+.td-id {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.td-date {
+  color: #6b7280;
+}
+
+.td-amount.positive {
+  color: #059669;
+  font-weight: 600;
+}
+
+.td-amount.negative {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.category-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.category-badge.income {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.category-badge.expense {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
