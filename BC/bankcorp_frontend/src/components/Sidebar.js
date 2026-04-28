@@ -1,18 +1,12 @@
 import React from "react";
-import { NavLink } from "react-router-dom"; // Импортируем компонент для ссылок
+import { NavLink, useLocation } from "react-router-dom";
 import "./Sidebar.css";
 
-// Добавили пути (path) для каждой страницы
-const menuItems = [
-    { path: "/", icon: "bi-house-door", label: "Главная" },
-    { path: "/clients", icon: "bi-people", label: "Клиенты" },
-    { path: "/accounts", icon: "bi-wallet2", label: "Счета" },
-    { path: "/cards", icon: "bi-credit-card", label: "Карты" },
-    { path: "/transactions", icon: "bi-arrow-left-right", label: "Транзакции" },
-    { path: "/reports", icon: "bi-bar-chart", label: "Отчёты" },
-];
-
 export default function Sidebar() {
+    const location = useLocation();
+    const match = location.pathname.match(/\/client\/(\d+)/);
+    const clientId = match ? match[1] : null;
+
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
@@ -20,19 +14,34 @@ export default function Sidebar() {
                 <span className="sidebar-logo-text">BankCorp</span>
             </div>
             <nav className="sidebar-nav">
-                {menuItems.map((item, i) => (
-                    <NavLink
-                        key={i}
-                        to={item.path}
-                        // NavLink автоматически дает класс 'active', если путь совпадает
-                        className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`}
-                        style={{ textDecoration: 'none' }} // Убираем подчеркивание ссылок
-                    >
-                        <i className={`bi ${item.icon} sidebar-nav-icon`}></i>
-                        <span className="sidebar-nav-label">{item.label}</span>
-                    </NavLink>
-                ))}
+                <NavLink to="/clients" className={({ isActive }) => `sidebar-nav-item ${isActive || location.pathname === "/" ? "active" : ""}`} style={{ textDecoration: 'none' }}>
+                    <i className="bi bi-people sidebar-nav-icon"></i>
+                    <span className="sidebar-nav-label">База клиентов</span>
+                </NavLink>
+                <NavLink to="/reports" className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`} style={{ textDecoration: 'none' }}>
+                    <i className="bi bi-bar-chart sidebar-nav-icon"></i>
+                    <span className="sidebar-nav-label">Аналитика банка</span>
+                </NavLink>
+
+                {clientId && (
+                    <>
+                        <div className="sidebar-divider">Управление клиентом</div>
+                        <NavLink to={`/client/${clientId}`} end className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`} style={{ textDecoration: 'none' }}>
+                            <i className="bi bi-person-badge sidebar-nav-icon"></i>
+                            <span className="sidebar-nav-label">Сводка клиента</span>
+                        </NavLink>
+                        <NavLink to={`/client/${clientId}/accounts`} className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`} style={{ textDecoration: 'none' }}>
+                            <i className="bi bi-wallet2 sidebar-nav-icon"></i>
+                            <span className="sidebar-nav-label">Счета и продукты</span>
+                        </NavLink>
+                        <NavLink to={`/client/${clientId}/transactions`} className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`} style={{ textDecoration: 'none' }}>
+                            <i className="bi bi-arrow-left-right sidebar-nav-icon"></i>
+                            <span className="sidebar-nav-label">История операций</span>
+                        </NavLink>
+                    </>
+                )}
             </nav>
         </aside>
     );
 }
+
