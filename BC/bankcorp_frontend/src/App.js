@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -6,55 +6,36 @@ import StatsCard from "./components/StatsCard";
 import QuickActions from "./components/QuickActions";
 import TransactionsTable from "./components/TransactionsTable";
 
-const stats = [
-  {
-    icon: "bi-wallet2",
-    label: "Баланс",
-    value: "124 530 ₽",
-    change: "+2.4%",
-    positive: true,
-  },
-  {
-    icon: "bi-arrow-down-circle",
-    label: "Доходы",
-    value: "38 200 ₽",
-    change: "+5.1%",
-    positive: true,
-  },
-  {
-    icon: "bi-arrow-up-circle",
-    label: "Расходы",
-    value: "14 870 ₽",
-    change: "-1.3%",
-    positive: false,
-  },
-  {
-    icon: "bi-piggy-bank",
-    label: "Накопления",
-    value: "52 000 ₽",
-    change: "+8.0%",
-    positive: true,
-  },
-];
-
 export default function App() {
+  const [stats, setStats] = useState([]);
+  const USER_ID = 1; // Запрашиваем данные для пользователя ID=1
+
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/dashboard/${USER_ID}/stats`)
+        .then((res) => res.json())
+        .then((data) => setStats(data))
+        .catch((err) => console.error("Ошибка загрузки статистики:", err));
+  }, []);
+
   return (
-    <div className="app-layout">
-      <Sidebar />
-      <div className="main-content">
-        <Header />
-        <div className="page-body">
-          <div className="stats-grid">
-            {stats.map((s, i) => (
-              <StatsCard key={i} {...s} />
-            ))}
-          </div>
-          <div className="bottom-section">
-            <QuickActions />
-            <TransactionsTable />
+      <div className="app-layout">
+        <Sidebar />
+        <div className="main-content">
+          <Header />
+          <div className="page-body">
+            <div className="stats-grid">
+              {stats.length > 0 ? (
+                  stats.map((s, i) => <StatsCard key={i} {...s} />)
+              ) : (
+                  <p>Загрузка данных...</p>
+              )}
+            </div>
+            <div className="bottom-section">
+              <QuickActions />
+              <TransactionsTable userId={USER_ID} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }

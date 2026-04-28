@@ -1,55 +1,23 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./TransactionsTable.css";
 
-const transactions = [
-  {
-    id: "#00123",
-    name: "Зарплата",
-    category: "Доход",
-    date: "01.06.2025",
-    amount: "+38 200 ₽",
-    positive: true,
-  },
-  {
-    id: "#00124",
-    name: "Продукты",
-    category: "Расход",
-    date: "02.06.2025",
-    amount: "-3 400 ₽",
-    positive: false,
-  },
-  {
-    id: "#00125",
-    name: "Аренда",
-    category: "Расход",
-    date: "03.06.2025",
-    amount: "-18 000 ₽",
-    positive: false,
-  },
-  {
-    id: "#00126",
-    name: "Фриланс",
-    category: "Доход",
-    date: "04.06.2025",
-    amount: "+12 000 ₽",
-    positive: true,
-  },
-  {
-    id: "#00127",
-    name: "Кафе",
-    category: "Расход",
-    date: "05.06.2025",
-    amount: "-1 200 ₽",
-    positive: false,
-  },
-];
+export default function TransactionsTable({ userId }) {
+  const [transactions, setTransactions] = useState([]);
 
-export default function TransactionsTable() {
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`http://localhost:8080/api/dashboard/${userId}/transactions`)
+        .then((res) => res.json())
+        .then((data) => setTransactions(data))
+        .catch((err) => console.error("Ошибка загрузки транзакций:", err));
+  }, [userId]);
+
   return (
-    <div className="table-card">
-      <div className="table-title">Последние операции</div>
-      <table className="transactions-table">
-        <thead>
+      <div className="table-card">
+        <div className="table-title">Последние операции</div>
+        <table className="transactions-table">
+          <thead>
           <tr>
             <th>ID</th>
             <th>Название</th>
@@ -57,25 +25,30 @@ export default function TransactionsTable() {
             <th>Дата</th>
             <th>Сумма</th>
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           {transactions.map((t, i) => (
-            <tr key={i}>
-              <td className="td-id">{t.id}</td>
-              <td>{t.name}</td>
-              <td>
+              <tr key={i}>
+                <td className="td-id">{t.id}</td>
+                <td>{t.name}</td>
+                <td>
                 <span className={`category-badge ${t.positive ? "income" : "expense"}`}>
                   {t.category}
                 </span>
-              </td>
-              <td className="td-date">{t.date}</td>
-              <td className={`td-amount ${t.positive ? "positive" : "negative"}`}>
-                {t.amount}
-              </td>
-            </tr>
+                </td>
+                <td className="td-date">{t.date}</td>
+                <td className={`td-amount ${t.positive ? "positive" : "negative"}`}>
+                  {t.amount}
+                </td>
+              </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+          {transactions.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>Загрузка...</td>
+              </tr>
+          )}
+          </tbody>
+        </table>
+      </div>
   );
 }
