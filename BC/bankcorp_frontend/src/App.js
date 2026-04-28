@@ -1,41 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
-import StatsCard from "./components/StatsCard";
-import QuickActions from "./components/QuickActions";
-import TransactionsTable from "./components/TransactionsTable";
+import Dashboard from "./pages/Dashboard";
+import ClientsPage from "./pages/ClientsPage";
+import CardsPage from "./pages/CardsPage";
+import TransactionsPage from "./pages/TransactionsPage";
+import ReportsPage from "./pages/ReportsPage";
 
 export default function App() {
-  const [stats, setStats] = useState([]);
-  const USER_ID = 1; // Запрашиваем данные для пользователя ID=1
-
-  useEffect(() => {
-    fetch(`http://localhost:8080/api/dashboard/${USER_ID}/stats`)
-        .then((res) => res.json())
-        .then((data) => setStats(data))
-        .catch((err) => console.error("Ошибка загрузки статистики:", err));
-  }, []);
-
-  return (
-      <div className="app-layout">
-        <Sidebar />
-        <div className="main-content">
-          <Header />
-          <div className="page-body">
-            <div className="stats-grid">
-              {stats.length > 0 ? (
-                  stats.map((s, i) => <StatsCard key={i} {...s} />)
-              ) : (
-                  <p>Загрузка данных...</p>
-              )}
+    return (
+        <Router>
+            <div className="app-layout">
+                <Sidebar />
+                <div className="main-content">
+                    <Header />
+                    <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/clients" element={<ClientsPage />} />
+                        {/* Разделы "Счета" и "Карты" пока ведут на одну страницу для наглядности */}
+                        <Route path="/accounts" element={<CardsPage />} />
+                        <Route path="/cards" element={<CardsPage />} />
+                        <Route path="/transactions" element={<TransactionsPage />} />
+                        <Route path="/reports" element={<ReportsPage />} />
+                    </Routes>
+                </div>
             </div>
-            <div className="bottom-section">
-              <QuickActions />
-              <TransactionsTable userId={USER_ID} />
-            </div>
-          </div>
-        </div>
-      </div>
-  );
+        </Router>
+    );
 }

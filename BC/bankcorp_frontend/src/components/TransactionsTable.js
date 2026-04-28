@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./TransactionsTable.css";
 
-export default function TransactionsTable({ userId }) {
+export default function TransactionsTable({ userId, refreshKey}) {
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
@@ -11,7 +11,7 @@ export default function TransactionsTable({ userId }) {
         .then((res) => res.json())
         .then((data) => setTransactions(data))
         .catch((err) => console.error("Ошибка загрузки транзакций:", err));
-  }, [userId]);
+  }, [userId, refreshKey]);
 
   return (
       <div className="table-card">
