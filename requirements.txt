@@ -1,8 +1,0 @@
-# Список основных зависимостей Python для нашего проекта
-numpy
-pandas
-scikit-learn
-tensorflow 
-matplotlib
-seaborn
-streamlit
