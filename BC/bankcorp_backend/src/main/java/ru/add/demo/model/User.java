@@ -26,16 +26,20 @@ public class User {
     private String passportSeriesNumber;
     private LocalDate passportIssueDate;
     private String passportIssuedBy;
+    private String departmentCode; // Код подразделения (НОВОЕ)
+
+    @Column(unique = true)
+    private String snils; // СНИЛС (НОВОЕ)
+
     private String registrationAddress;
 
     private String photoUrl; // Путь к сохраненному скану/фото
     private boolean isVerified; // Прошел ли KYC
 
-    // Оставляем для совместимости с дашбордом
     private BigDecimal balance = BigDecimal.ZERO;
     private BigDecimal savings = BigDecimal.ZERO;
 
     public String getFullName() {
-        return lastName + " " + firstName + (middleName != null ? " " + middleName : "");
+        return lastName + " " + firstName + (middleName != null && !middleName.isBlank() ? " " + middleName : "");
     }
 }

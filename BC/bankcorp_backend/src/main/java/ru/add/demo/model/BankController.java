@@ -3,6 +3,8 @@ package ru.add.demo.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.add.demo.dto.RegistrationRequest;
@@ -11,7 +13,9 @@ import ru.add.demo.model.Contract;
 import ru.add.demo.service.ProductLifecycleService;
 import ru.add.demo.service.RegistrationService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bank")
@@ -29,12 +33,27 @@ public class BankController {
             @RequestParam("documentPhoto") MultipartFile file) {
         try {
             return ResponseEntity.ok(registrationService.registerClient(request, file));
+        } catch (IllegalArgumentException e) {
+            // Ошибки бизнес-логики (например, возраст < 14 или дубликат)
+            return ResponseEntity.badRequest().body(Map.of("general", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("general", "Внутренняя ошибка сервера: " + e.getMessage()));
         }
     }
 
-    // 2. Инициация открытия продукта (получение договора)
+    // Обработчик ошибок валидации DTO (@Valid)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+    // 2. Инициация открытия продукта
     @PostMapping("/products/{userId}/init")
     public Contract initProduct(@PathVariable Long userId, @RequestParam String productType) {
         return productLifecycleService.generateContract(userId, productType);
