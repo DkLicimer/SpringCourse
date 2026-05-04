@@ -24,9 +24,15 @@ public class DemoApplication {
 		return args -> {
 			if (userRepo.count() == 0) {
 				User c1 = new User();
-				c1.setFullName("Алексей Петрович Смирнов");
+				// ЗАМЕНИЛИ setFullName на 3 отдельных поля:
+				c1.setLastName("Смирнов");
+				c1.setFirstName("Алексей");
+				c1.setMiddleName("Петрович");
 				c1.setBalance(new BigDecimal("150000"));
 				c1.setSavings(new BigDecimal("50000"));
+				// Для демо-данных добавим обязательные поля KYC
+				c1.setPassportSeriesNumber("1234 567890");
+				c1.setRegistrationAddress("г. Москва, ул. Пушкина, д. 10");
 				userRepo.save(c1);
 
 				Transaction t1 = new Transaction();
@@ -48,9 +54,14 @@ public class DemoApplication {
 				transRepo.save(t2);
 
 				User c2 = new User();
-				c2.setFullName("Елена Васильевна Ковалева");
+				// ЗАМЕНИЛИ setFullName на 3 отдельных поля:
+				c2.setLastName("Ковалева");
+				c2.setFirstName("Елена");
+				c2.setMiddleName("Васильевна");
 				c2.setBalance(new BigDecimal("25000"));
 				c2.setSavings(new BigDecimal("0"));
+				c2.setPassportSeriesNumber("0987 654321");
+				c2.setRegistrationAddress("г. Санкт-Петербург, Невский пр-т, д. 1");
 				userRepo.save(c2);
 
 				Transaction t3 = new Transaction();

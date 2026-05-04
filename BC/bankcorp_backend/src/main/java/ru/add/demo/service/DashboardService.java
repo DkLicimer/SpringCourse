@@ -106,7 +106,18 @@ public class DashboardService {
     @Transactional
     public void createClient(String fullName) {
         User user = new User();
-        user.setFullName(fullName);
+
+        // Исправление: разбиваем переданную строку на Фамилию, Имя и Отчество
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            String[] parts = fullName.trim().split("\\s+");
+            user.setLastName(parts.length > 0 ? parts[0] : "");
+            user.setFirstName(parts.length > 1 ? parts[1] : "");
+            user.setMiddleName(parts.length > 2 ? parts[2] : "");
+        } else {
+            user.setLastName("Неизвестно");
+            user.setFirstName("Неизвестно");
+        }
+
         user.setBalance(BigDecimal.ZERO);
         user.setSavings(BigDecimal.ZERO);
         userRepository.save(user);
