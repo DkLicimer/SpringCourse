@@ -1,6 +1,7 @@
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -121,6 +122,6 @@ class UploadReceiptView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    class BookingRetrieveView(generics.RetrieveAPIView):
-        queryset = Booking.objects.all()
-        serializer_class = BookingCreateSerializer
+class BookingRetrieveView(generics.RetrieveAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = BookingCreateSerializer

@@ -46,7 +46,7 @@ class Booking(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking_number = models.CharField(
-        max_digits=12, unique=True, verbose_name="Номер бронирования", db_index=True
+        max_length=12, unique=True, verbose_name="Номер бронирования", db_index=True
     )
     
     # К какому домику привязана бронь
@@ -156,7 +156,7 @@ class PaymentReceipt(models.Model):
         Booking, on_delete=models.CASCADE, related_name='receipt', verbose_name="Бронирование"
     )
     # По ТЗ поддерживаются форматы: PDF, PNG, JPEG. Валидацию сделаем на уровне формы/сериализатора.
-    file = models.FileField(upload_path=secure_receipt_upload_path, verbose_name="Файл чека")
+    file = models.FileField(upload_to=secure_receipt_upload_path, verbose_name="Файл чека")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Загружен")
     user_comment = models.TextField(blank=True, null=True, verbose_name="Комментарий пользователя")
     admin_comment = models.TextField(blank=True, null=True, verbose_name="Причина отклонения (для админа)")

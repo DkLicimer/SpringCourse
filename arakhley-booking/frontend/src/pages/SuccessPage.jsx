@@ -3,22 +3,19 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 
 export default function SuccessPage() {
-  const { id } = useParams(); // Получаем UUID брони из URL
+  const { id } = useParams();
   const [booking, setBooking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Состояние формы загрузки чека
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [file, setFile] = useState(null);
   const [comment, setComment] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Таймер обратного отсчета в секундах
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Загрузка данных о бронировании при монтировании
   useEffect(() => {
     fetchBookingDetails();
   }, [id]);
@@ -26,14 +23,10 @@ export default function SuccessPage() {
   const fetchBookingDetails = async () => {
     setIsLoading(true);
     try {
-      // Делаем запрос к эндпоинту получения деталей бронирования
-      // Примечание: предполагается, что бэкенд отдает бронь по GET /api/bookings/<id>/
       const response = await fetch(`/api/bookings/${id}/`);
       if (!response.ok) throw new Error("Бронирование не найдено.");
       const data = await response.json();
       setBooking(data);
-
-      // Инициализируем таймер
       calculateTimeLeft(data.expires_at);
     } catch (err) {
       setError(err.message || "Ошибка загрузки деталей бронирования.");
@@ -42,7 +35,6 @@ export default function SuccessPage() {
     }
   };
 
-  // Расчет оставшегося времени на оплату
   const calculateTimeLeft = (expiresAtString) => {
     const difference = +new Date(expiresAtString) - +new Date();
     if (difference > 0) {
@@ -52,7 +44,6 @@ export default function SuccessPage() {
     }
   };
 
-  // Секундомер обратного отсчета по ТЗ (Страница 11)
   useEffect(() => {
     if (timeLeft <= 0) return;
 
@@ -60,7 +51,6 @@ export default function SuccessPage() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // По истечении времени перезагружаем статус брони, чтобы зафиксировать отмену
           fetchBookingDetails();
           return 0;
         }
@@ -71,7 +61,6 @@ export default function SuccessPage() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  // Форматирование секунд в формат ЧЧ:ММ:СС
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -79,14 +68,12 @@ export default function SuccessPage() {
     return `${h}:${m}:${s}`;
   };
 
-  // Обработка загрузки файла
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
 
-  // Отправка чека на бэкенд
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
     if (!file) {
@@ -99,7 +86,6 @@ export default function SuccessPage() {
       await api.uploadReceipt(id, file, comment);
       setUploadSuccess(true);
       setShowUploadForm(false);
-      // Обновляем информацию, чтобы получить новый статус "Чек загружен"
       fetchBookingDetails();
     } catch (err) {
       alert(err.response?.data?.error || "Произошла ошибка при загрузке чека. Пожалуйста, попробуйте снова.");
@@ -132,7 +118,6 @@ export default function SuccessPage() {
     );
   }
 
-  // Определяем статус брони
   const isCancelled = booking.status === 'CANCELLED';
   const isPending = booking.status === 'PENDING';
   const isReceiptUploaded = booking.status === 'RECEIPT_UPLOADED';
@@ -141,9 +126,9 @@ export default function SuccessPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
-      {/* 1. Блок Главного статуса по ТЗ (Страница 11) */}
+      {/* 1. Блок Главного статуса по ТЗ */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm text-center">
-        {isPending && timeLeft > 0 && (
+        {isPending && (
           <>
             <span className="text-4xl">🎉</span>
             <h1 className="text-2xl font-extrabold text-gray-900 mt-3">Бронирование успешно создано!</h1>
@@ -151,16 +136,25 @@ export default function SuccessPage() {
               Номер вашей брони: <span className="font-mono font-bold text-gray-950 bg-gray-100 px-2 py-0.5 rounded">{booking.booking_number}</span>
             </p>
             
-            {/* 2. Таймер обратного отсчета по ТЗ */}
-            <div className="mt-6 max-w-sm mx-auto bg-amber-50 border border-amber-200 p-4 rounded-xl">
-              <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">Осталось времени на оплату</span>
-              <span className="text-3xl font-black text-amber-600 font-mono tracking-widest block mt-1">
-                {formatTime(timeLeft)}
-              </span>
-              <p className="text-xxs text-amber-700 mt-2">
-                Для подтверждения бронирования необходимо совершить платеж и прикрепить чек в течение 1 часа.
-              </p>
-            </div>
+            {/* 2. Таймер (показываем его, если время еще есть) */}
+            {timeLeft > 0 ? (
+              <div className="mt-6 max-w-sm mx-auto bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">Осталось времени на оплату</span>
+                <span className="text-3xl font-black text-amber-600 font-mono tracking-widest block mt-1">
+                  {formatTime(timeLeft)}
+                </span>
+                <p className="text-xxs text-amber-700 mt-2">
+                  Для подтверждения бронирования необходимо совершить платеж и прикрепить чек в течение 1 часа.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 max-w-sm mx-auto bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">Оплата бронирования</span>
+                <p className="text-xs text-amber-700 mt-2">
+                  Пожалуйста, оплатите бронь и загрузите чек как можно скорее, чтобы избежать автоматической отмены.
+                </p>
+              </div>
+            )}
           </>
         )}
 
@@ -221,8 +215,8 @@ export default function SuccessPage() {
         </div>
       </div>
 
-      {/* 4. Банковские реквизиты по ТЗ (Страница 11) */}
-      {isPending && timeLeft > 0 && (
+      {/* 4. Банковские реквизиты */}
+      {isPending && (
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
           <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">Реквизиты для оплаты</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
@@ -241,19 +235,17 @@ export default function SuccessPage() {
             </div>
           </div>
 
-          {/* Кнопка активации формы "Я оплатил" по ТЗ (Страница 12) */}
           {!showUploadForm && (
             <button
               onClick={() => setShowUploadForm(true)}
-              className="w-full py-3 bg-natural-blue text-white rounded-xl font-bold hover:bg-opacity-90 transition shadow-md"
+              className="w-full py-3 bg-natural-blue text-white rounded-xl font-bold hover:bg-opacity-90 transition shadow-md animate-fade-in"
             >
               🙋‍♂️ Я оплатил, прикрепить чек
             </button>
           )}
 
-          {/* 5. Форма подтверждения оплаты (ТЗ Страница 12) */}
           {showUploadForm && (
-            <form onSubmit={handleUploadSubmit} className="border-t border-gray-100 pt-6 space-y-4 animate-slide-down">
+            <form onSubmit={handleUploadSubmit} className="border-t border-gray-100 pt-6 space-y-4">
               <h4 className="font-bold text-gray-900 text-sm">Подтверждение факта оплаты</h4>
               
               <div>
