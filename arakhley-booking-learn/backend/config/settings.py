@@ -1,10 +1,16 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Базовая директория проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Секретный ключ для разработки (в продакшене должен быть скрыт в .env)
+# Автоматическая загрузка переменных окружения из файла .env, если он существует
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+
+# Секретный ключ для разработки
 SECRET_KEY = 'django-insecure-mvp-secret-key-for-arakhley-booking'
 
 DEBUG = True
@@ -16,7 +22,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.arakhleybazezabgu.ru',
 ]
 
-# Приложения проекта
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -62,20 +67,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# База данных. Для MVP по умолчанию используем встроенную SQLite. 
-# Вы можете легко переключить её на PostgreSQL в будущем.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'arakhley_db'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.getenv('POSTGRES_HOST', 'db'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+# Автоматическое переключение: SQLite для локальных тестов, PostgreSQL для продакшена
+POSTGRES_HOST = os.getenv('POSTGRES_HOST')
+if POSTGRES_HOST:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'arakhley_db'),
+            'USER': os.getenv('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+            'HOST': POSTGRES_HOST,
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
-# Валидация паролей
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -85,19 +97,29 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Локализация
 LANGUAGE_CODE = 'ru-ru'
-TIME_ZONE = 'Asia/Yakutsk' # Часовой пояс Забайкальского края (озера Арахлей)
+TIME_ZONE = 'Asia/Yakutsk' # Часовой пояс Забайкальского края
 USE_I18N = True
 USE_TZ = True
 
-# Статические файлы
 STATIC_URL = 'static/'
-
-# Настройки медиа-файлов (загружаемые чеки)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Настройка почтового сервера для MVP (вывод писем в консоль терминала)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@university.ru'
+# Интеллектуальная настройка отправки писем через SMTP / Console
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    # Локальный тестовый режим отправки в консоль (если данные почты не указаны в .env)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'projectsddm@zabgu.ru'
+else:
+    # Режим реальной отправки писем через SMTP
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.yandex.ru')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 465))
+    EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'True') == 'True'
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'False') == 'True'
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)

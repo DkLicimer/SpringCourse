@@ -8,6 +8,8 @@ export default function SuccessPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [rulesAgreed, setRulesAgreed] = useState(false);
+
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [file, setFile] = useState(null);
   const [comment, setComment] = useState('');
@@ -81,6 +83,11 @@ export default function SuccessPage() {
       return;
     }
 
+    if (!rulesAgreed) {
+      alert("Необходимо подтвердить ознакомление с правилами выезда.");
+      return;
+    }
+
     setIsUploading(true);
     try {
       await api.uploadReceipt(id, file, comment);
@@ -123,35 +130,37 @@ export default function SuccessPage() {
   const isReceiptUploaded = booking.status === 'RECEIPT_UPLOADED';
   const isConfirmed = booking.status === 'CONFIRMED' || booking.status === 'PAYMENT_CONFIRMED';
 
+  // Вывод домиков (проверяем, забронирован ли один или два домика)
+  const cabinNumbers = `№${booking.cabin_number}` + (booking.second_cabin_number ? ` и №${booking.second_cabin_number}` : '');
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
-      {/* 1. Блок Главного статуса по ТЗ */}
+      {/* Блок главного статуса */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm text-center">
         {isPending && (
           <>
             <span className="text-4xl">🎉</span>
             <h1 className="text-2xl font-extrabold text-gray-900 mt-3">Бронирование успешно создано!</h1>
             <p className="text-sm text-gray-500 mt-2">
-              Номер вашей брони: <span className="font-mono font-bold text-gray-950 bg-gray-100 px-2 py-0.5 rounded">{booking.booking_number}</span>
+              Номер брони: <span className="font-mono font-bold text-gray-950 bg-gray-100 px-2 py-0.5 rounded">{booking.booking_number}</span>
             </p>
             
-            {/* 2. Таймер (показываем его, если время еще есть) */}
             {timeLeft > 0 ? (
               <div className="mt-6 max-w-sm mx-auto bg-amber-50 border border-amber-200 p-4 rounded-xl">
                 <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">Осталось времени на оплату</span>
                 <span className="text-3xl font-black text-amber-600 font-mono tracking-widest block mt-1">
                   {formatTime(timeLeft)}
                 </span>
-                <p className="text-xxs text-amber-700 mt-2">
-                  Для подтверждения бронирования необходимо совершить платеж и прикрепить чек в течение 1 часа.
+                <p className="text-[11px] text-amber-700 mt-2 leading-relaxed">
+                  Для сохранения вашего бронирования оплатите его и прикрепите снимок или PDF чека в течение 1 часа.
                 </p>
               </div>
             ) : (
               <div className="mt-6 max-w-sm mx-auto bg-amber-50 border border-amber-200 p-4 rounded-xl">
                 <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">Оплата бронирования</span>
                 <p className="text-xs text-amber-700 mt-2">
-                  Пожалуйста, оплатите бронь и загрузите чек как можно скорее, чтобы избежать автоматической отмены.
+                  Пожалуйста, оплатите бронь и загрузите чек как можно быстрее, чтобы избежать автоматического аннулирования.
                 </p>
               </div>
             )}
@@ -173,7 +182,7 @@ export default function SuccessPage() {
             <span className="text-4xl">✅</span>
             <h1 className="text-2xl font-extrabold text-emerald-600 mt-3">Бронирование подтверждено!</h1>
             <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-              Оплата успешно подтверждена администрацией. Путевка и правила заселения отправлены на вашу почту. Желаем отличного отдыха на озере Арахлей!
+              Оплата успешно подтверждена администрацией ЗабГУ. Путевка и правила заселения отправлены на вашу почту. Желаем отличного отдыха на озере Арахлей!
             </p>
           </div>
         )}
@@ -183,7 +192,7 @@ export default function SuccessPage() {
             <span className="text-4xl">⏰</span>
             <h1 className="text-2xl font-extrabold text-red-600 mt-3">Бронирование отменено</h1>
             <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-              Время, отведенное на оплату (1 час), истекло. Выбранные даты и домик №{booking.cabin_number || booking.cabin} снова свободны для общего бронирования.
+              Время, отведенное на оплату (1 час), истекло. Выбранные даты и домики снова свободны для бронирования другими пользователями.
             </p>
             <Link to="/booking" className="mt-4 inline-block text-xs font-bold text-natural-blue hover:underline">
               Попробовать забронировать заново →
@@ -192,20 +201,20 @@ export default function SuccessPage() {
         )}
       </div>
 
-      {/* 3. Детали заезда */}
+      {/* Детализация заезда */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
         <h3 className="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">Детализация заезда</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
           <div>
             <span className="text-gray-400 block text-xs uppercase font-semibold">Объект размещения</span>
-            <span className="font-bold text-gray-900">Домик №{booking.cabin_number || booking.cabin}</span>
+            <span className="font-bold text-gray-900">Гостевой дом(а) {cabinNumbers}</span>
           </div>
           <div>
             <span className="text-gray-400 block text-xs uppercase font-semibold">Сумма к оплате</span>
             <span className="font-extrabold text-natural-blue text-lg">{booking.total_price} руб.</span>
           </div>
           <div>
-            <span className="text-gray-400 block text-xs uppercase font-semibold">Даты заезда и выезда</span>
+            <span className="text-gray-400 block text-xs uppercase font-semibold">Даты проживания</span>
             <span className="font-semibold">{booking.start_date} — {booking.end_date}</span>
           </div>
           <div>
@@ -215,41 +224,114 @@ export default function SuccessPage() {
         </div>
       </div>
 
-      {/* 4. Банковские реквизиты */}
+      {/* Реквизиты и Инструкция по оплате ЗабГУ */}
       {isPending && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-          <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">Реквизиты для оплаты</h3>
-          <p className="text-xs text-gray-600 leading-relaxed">
-            Пожалуйста, переведите точную сумму <span className="font-bold text-gray-900">{booking.total_price} руб.</span> по указанным ниже реквизитам университета. В назначении платежа обязательно укажите слово <b>«Арахлей»</b>.
-          </p>
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+          
+          <div className="space-y-4">
+            <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">Реквизиты ФГБОУ ВО «Забайкальский государственный университет»</h3>
+            
+            <div className="bg-gray-50 p-5 rounded-xl font-mono text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed border border-gray-200/50">
+              <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Получатель платежа</span>УФК по Приморскому краю (ФГБОУ ВО «ЗабГУ» л/с 20916X16810)</div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">ИНН</span>7534000257</div>
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">КПП</span>753601001</div>
+              </div>
 
-          <div className="bg-gray-50 p-4 rounded-xl font-mono text-xs sm:text-sm text-gray-800 space-y-2.5">
-            <div><span className="text-gray-400 select-none">Получатель:</span> ФГБОУ ВО "Университет"</div>
-            <div><span className="text-gray-400 select-none">ИНН/КПП:</span> 7536000000 / 753601001</div>
-            <div><span className="text-gray-400 select-none">Расчетный счет:</span> 03214643000000019100</div>
-            <div><span className="text-gray-400 select-none">Банк получателя:</span> ОТДЕЛЕНИЕ ЧИТА БАНКА РОССИИ // УФК по Забайкальскому краю</div>
-            <div><span className="text-gray-400 select-none">БИК:</span> 017601329</div>
-            <div className="pt-2 border-t border-gray-200 font-sans">
-              <span className="text-gray-400 select-none block text-xs uppercase font-semibold mb-0.5">Назначение платежа</span>
-              <span className="font-bold text-red-700 bg-red-50 border border-red-100 px-2 py-0.5 rounded">Арахлей, бронь №{booking.booking_number}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">ОКТМО</span>76701000</div>
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">УИН</span>не заполнять, пропустить</div>
+              </div>
+
+              <div className="pt-2">
+                <span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Банк получателя</span>
+                ОКЦ № 1 ДГУ Банка России//УФК по Приморскому краю, г Владивосток
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">БИК</span>010507002</div>
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Счет банка (ЕКС)</span>40102810545370000012</div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Счет получателя</span>03214643000000012009</div>
+                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">КБК</span>00000000000000000130</div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 font-sans">
+                <span className="text-red-700 block text-xs uppercase font-extrabold mb-1">Назначение платежа</span>
+                <span className="font-bold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded inline-block">
+                  Арахлей, бронь №{booking.booking_number}
+                </span>
+              </div>
             </div>
           </div>
 
-          {!showUploadForm && (
-            <button
-              onClick={() => setShowUploadForm(true)}
-              className="w-full py-3 bg-natural-blue text-white rounded-xl font-bold hover:bg-opacity-90 transition shadow-md animate-fade-in"
-            >
-              🙋‍♂️ Я оплатил, прикрепить чек
-            </button>
-          )}
+          <div className="p-5 bg-blue-50/50 rounded-xl border border-blue-100">
+            <h3 className="text-base font-bold text-natural-blue pb-2 border-b border-blue-100/50 mb-3 uppercase text-xs tracking-wider">
+              📱 Инструкция по оплате через приложение банка:
+            </h3>
+            <ol className="list-decimal pl-5 text-xs text-gray-700 space-y-2">
+              <li>Откройте приложение вашего банка на мобильном устройстве.</li>
+              <li>Перейдите в раздел меню <b>«Платежи»</b> → выберите <b>«Оплата по реквизитам»</b>.</li>
+              <li>В строке поиска или ввода ИНН укажите ИНН университета: <span className="font-bold text-gray-900 font-mono bg-white px-1.5 py-0.5 border border-gray-200 rounded">7534000257</span>.</li>
+              <li>В списке найденных услуг выберите тип платежа <b>«Оплата общежития»</b> (это официальный зачисляемый счет за услуги баз отдыха).</li>
+              <li>Укажите ваши полные ФИО в качестве плательщика.</li>
+              <li>В поле <b>«Назначение платежа»</b> обязательно напишите: <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded">Арахлей, бронь №{booking.booking_number}</span>.</li>
+              <li>Выберите документ удостоверения личности <b>«Паспорт РФ»</b>, на следующей странице корректно введите серию и номер вашего паспорта.</li>
+            </ol>
+          </div>
 
-          {showUploadForm && (
+          {/* Предупреждение о правилах выезда и документах */}
+          <div className="p-5 bg-red-50 rounded-xl border border-red-100 space-y-3">
+            <h4 className="font-bold text-red-800 text-sm">⚠️ Важные условия и правила нахождения на базе отдыха:</h4>
+            <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
+              <li><b>Правило расчетного часа:</b> Освободить домик необходимо строго до <b>12:00</b> в день выезда. Пребывание на территории базы возможно до конца дня. В случае задержки отдыхающего в домике после 12:00, автоматически взимается оплата за еще одни полные сутки.</li>
+              <li><b>Документы при заселении:</b> При въезде на базу отдыха необходимо в обязательном порядке предоставить оригинал паспорта на каждого взрослого и свидетельство о рождении на каждого ребенка.</li>
+              <li><b>Запрет на животных:</b> Нахождение на территории базы отдыха с любыми домашними животными категорически запрещено.</li>
+            </ul>
+            
+            {/* Чекбокс обязательного ознакомления */}
+            <div className="flex items-start gap-2.5 pt-3 border-t border-red-200/50">
+              <input
+                id="rules-agree"
+                type="checkbox"
+                required
+                checked={rulesAgreed}
+                onChange={(e) => setRulesAgreed(e.target.checked)}
+                className="w-4 h-4 mt-0.5 text-red-600 border-red-300 rounded focus:ring-red-500 cursor-pointer"
+              />
+              <label htmlFor="rules-agree" className="text-xs text-red-800 font-semibold leading-tight cursor-pointer select-none">
+                Я подтверждаю, что ознакомлен со всеми правилами пребывания, временем выезда до 12:00 и списком обязательных документов для заселения на базу отдыха.
+              </label>
+            </div>
+          </div>
+
+          {/* Форма загрузки подтверждения */}
+          {!showUploadForm ? (
+            <button
+              onClick={() => {
+                if (!rulesAgreed) {
+                  alert("Пожалуйста, сначала ознакомьтесь с правилами нахождения на базе отдыха и отметьте галочку согласия.");
+                  return;
+                }
+                setShowUploadForm(true);
+              }}
+              className={`w-full py-3.5 rounded-xl font-bold transition duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+                rulesAgreed
+                  ? 'bg-natural-blue text-white shadow-lg hover:bg-opacity-95'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <span>🙋‍♂️ Я оплатил, прикрепить чек</span>
+            </button>
+          ) : (
             <form onSubmit={handleUploadSubmit} className="border-t border-gray-100 pt-6 space-y-4">
-              <h4 className="font-bold text-gray-900 text-sm">Подтверждение факта оплаты</h4>
+              <h4 className="font-bold text-gray-900 text-sm">Подтверждение факта совершения платежа</h4>
               
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Загрузить чек (PDF, PNG, JPG)</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Загрузить квитанцию / чек (PDF, PNG, JPG)</label>
                 <input
                   type="file"
                   required
@@ -263,7 +345,7 @@ export default function SuccessPage() {
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Комментарий к платежу (необязательно)</label>
                 <textarea
                   rows="2"
-                  placeholder="Например: Оплачено с карты Сбербанка на имя Иванова И.И."
+                  placeholder="Например: Перевод из приложения Сбербанк от Иванова И.И."
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-natural-blue"
@@ -274,14 +356,14 @@ export default function SuccessPage() {
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className="flex-grow py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1"
+                  className="flex-grow py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  {isUploading ? "Загрузка..." : "📤 Отправить подтверждение оплаты"}
+                  {isUploading ? "Загрузка..." : "📤 Отправить квитанцию на проверку"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowUploadForm(false)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition"
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition cursor-pointer"
                 >
                   Отмена
                 </button>
