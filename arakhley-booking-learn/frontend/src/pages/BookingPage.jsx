@@ -42,6 +42,12 @@ export default function BookingPage() {
     return new Date().toISOString().split('T')[0];
   }, []);
 
+  // Ограничение бронирования концом августа текущего года
+  const maxDateStr = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return `${currentYear}-08-31`;
+  }, []);
+
   // Сброс выбора домиков и чекбокса при смене роли или дат
   useEffect(() => {
     setSelectedCabins([]);
@@ -169,7 +175,7 @@ export default function BookingPage() {
     return parts.length >= 2;
   };
 
-  // Обработка отправки формы (Исправлена на ОДИН единый запрос)
+  // Обработка отправки формы
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -220,10 +226,8 @@ export default function BookingPage() {
 
     setIsSubmitting(true);
 
-    // СТРОИМ ОДИН ЕДИНЫЙ ПАКЕТ ДАННЫХ ДЛЯ БЭКЕНДА
     const bookingPayload = {
       cabin: cabins.find(c => c.number === selectedCabins[0])?.id,
-      // Передаем ID второго домика только если выбрано 2 объекта
       second_cabin: selectedCabins.length > 1 ? cabins.find(c => c.number === selectedCabins[1])?.id : undefined,
       user_role: role,
       num_beds_booked: role === 'STAFF' ? 4 : numBeds,
@@ -243,7 +247,6 @@ export default function BookingPage() {
     };
 
     try {
-      // ОТПРАВЛЯЕМ РОВНО ОДИН ЗАПРОС К API
       const response = await api.createBooking(bookingPayload);
       navigate(`/booking-success/${response.id}`);
     } catch (err) {
@@ -324,6 +327,7 @@ export default function BookingPage() {
                   type="date"
                   required
                   min={todayDateStr}
+                  max={maxDateStr}
                   value={startDate}
                   onChange={(e) => {
                     setStartDate(e.target.value);
@@ -341,6 +345,7 @@ export default function BookingPage() {
                   required
                   disabled={!startDate}
                   min={startDate ? new Date(new Date(startDate).getTime() + 86400000).toISOString().split('T')[0] : todayDateStr}
+                  max={maxDateStr}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-natural-blue bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"

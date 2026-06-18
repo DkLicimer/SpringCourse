@@ -48,7 +48,6 @@ class CabinAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    # Заменено cabin на cabin_info
     list_display = [
         'booking_number', 'contact_name', 'user_role', 'cabin_info', 
         'start_date', 'end_date', 'total_price', 'status_badge', 'receipt_thumbnail', 'created_at'
@@ -102,7 +101,6 @@ class BookingAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    # Отображение информации о домиках в списке
     def cabin_info(self, obj):
         if obj.second_cabin:
             return f"Домики №{obj.cabin.number}, №{obj.second_cabin.number}"
@@ -133,6 +131,7 @@ class BookingAdmin(admin.ModelAdmin):
             if booking.status in [Booking.Status.PENDING_PAYMENT, Booking.Status.RECEIPT_UPLOADED]:
                 booking.status = Booking.Status.REJECTED
                 booking.save()
+                send_booking_notification(booking, "REJECTED")
                 messages.error(
                     request, 
                     format_html("Оплата по бронированию <b>{0}</b> успешно отклонена.", booking.booking_number)
@@ -229,6 +228,7 @@ class BookingAdmin(admin.ModelAdmin):
             if booking.status in [Booking.Status.PENDING_PAYMENT, Booking.Status.RECEIPT_UPLOADED]:
                 booking.status = Booking.Status.REJECTED
                 booking.save()
+                send_booking_notification(booking, "REJECTED")
                 count += 1
         self.message_user(request, f"Отклонено бронирований: {count}.")
     reject_payment_action.short_description = "🔴 Отклонить оплату"

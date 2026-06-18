@@ -125,22 +125,22 @@ def generate_voucher_pdf(booking) -> bytes:
 
     # 7. Даты заезда и выезда (с векторными разделителями)
     # Заезд
-    p.drawString(54, height - 470, "Дата заезда: «")
-    p.line(135, height - 472, 155, height - 472) # Линия числа
-    p.drawString(158, height - 470, "»")
-    p.line(175, height - 472, 285, height - 472) # Линия месяца
-    p.drawString(290, height - 470, "20")
-    p.line(305, height - 472, 335, height - 472) # Линия года
-    p.drawString(340, height - 470, "г.")
+    p.drawString(54, height - 460, "Дата заезда: «")
+    p.line(135, height - 462, 155, height - 462) # Линия числа
+    p.drawString(158, height - 460, "»")
+    p.line(175, height - 462, 285, height - 462) # Линия месяца
+    p.drawString(290, height - 460, "20")
+    p.line(305, height - 462, 335, height - 462) # Линия года
+    p.drawString(340, height - 460, "г.")
 
     # Выезд
-    p.drawString(54, height - 500, "Дата выезда: «")
-    p.line(135, height - 502, 155, height - 502)
-    p.drawString(158, height - 500, "»")
-    p.line(175, height - 502, 285, height - 502)
-    p.drawString(290, height - 500, "20")
-    p.line(305, height - 502, 335, height - 502)
-    p.drawString(340, height - 500, "г.")
+    p.drawString(54, height - 490, "Дата выезда: «")
+    p.line(135, height - 492, 155, height - 492)
+    p.drawString(158, height - 490, "»")
+    p.line(175, height - 492, 285, height - 492)
+    p.drawString(290, height - 490, "20")
+    p.line(305, height - 492, 335, height - 492)
+    p.drawString(340, height - 490, "г.")
 
     # Наложение дат заезда/выезда
     start_day, start_month, start_year = format_russian_date_parts(booking.start_date)
@@ -148,54 +148,65 @@ def generate_voucher_pdf(booking) -> bytes:
 
     p.setFillColorRGB(*navy_blue)
     # Отрендерить заезд
-    p.drawCentredString(145, height - 468, start_day)
-    p.drawCentredString(230, height - 468, start_month)
-    p.drawCentredString(320, height - 468, start_year[-2:])
+    p.drawCentredString(145, height - 458, start_day)
+    p.drawCentredString(230, height - 458, start_month)
+    p.drawCentredString(320, height - 458, start_year[-2:])
     # Отрендерить выезд
-    p.drawCentredString(145, height - 498, end_day)
-    p.drawCentredString(230, height - 498, end_month)
-    p.drawCentredString(320, height - 498, end_year[-2:])
+    p.drawCentredString(145, height - 488, end_day)
+    p.drawCentredString(230, height - 488, end_month)
+    p.drawCentredString(320, height - 488, end_year[-2:])
     p.setFillColorRGB(0, 0, 0)
 
-    # 8. Цена путевки
-    p.drawString(54, height - 540, "Цена путёвки:")
-    p.line(145, height - 542, width - 54, height - 542)
+    # 8. Номер дома (Новая строка)
+    p.drawString(54, height - 525, "Номер дома:")
+    p.line(145, height - 527, width - 54, height - 527)
     
     p.setFillColorRGB(*navy_blue)
-    p.drawString(155, height - 538, f"{booking.total_price} руб.")
+    cabin_text = f"Дом №{booking.cabin.number}"
+    if booking.second_cabin:
+        cabin_text += f", Дом №{booking.second_cabin.number}"
+    p.drawString(155, height - 523, cabin_text)
     p.setFillColorRGB(0, 0, 0)
 
-    # 9. Подпись выдающего (Без статических подчеркиваний)
-    p.drawString(54, height - 590, "Подпись выдающего: ")
-    p.drawString(235, height - 590, "/ Сидоренко Н.Л., врио проректора по МиСП")
+    # 9. Цена путевки
+    p.drawString(54, height - 555, "Цена путёвки:")
+    p.line(145, height - 557, width - 54, height - 557)
+    
+    p.setFillColorRGB(*navy_blue)
+    p.drawString(155, height - 553, f"{booking.total_price} руб.")
+    p.setFillColorRGB(0, 0, 0)
+
+    # 10. Подпись выдающего (Без статических подчеркиваний)
+    p.drawString(54, height - 595, "Подпись выдающего: ")
+    p.drawString(235, height - 595, "/ Сидоренко Н.Л., врио проректора по МиСП")
     
     # Путь к загруженной картинке подписи
     sig_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'signature.png')
     
     if os.path.exists(sig_path):
         # Накладываем подпись ровно поверх нарисованной векторной линии
-        p.drawImage(sig_path, 175, height - 600, width=40, height=40, mask='auto')
+        p.drawImage(sig_path, 175, height - 605, width=40, height=40, mask='auto')
     else:
         p.setFillColorRGB(*navy_blue)
         p.setFont(FONT_NAME, 9)
-        p.drawString(195, height - 588, "[подпись]")
+        p.drawString(195, height - 593, "[подпись]")
         p.setFillColorRGB(0, 0, 0)
         p.setFont(FONT_NAME, 11)
 
-    # 10. Дата выдачи путевки (с векторными разделителями)
-    p.drawString(54, height - 640, "Дата выдачи: «")
-    p.line(135, height - 642, 155, height - 642)
-    p.drawString(158, height - 640, "»")
-    p.line(175, height - 642, 285, height - 642)
-    p.drawString(290, height - 640, "20")
-    p.line(305, height - 642, 335, height - 642)
-    p.drawString(340, height - 640, "г.")
+    # 11. Дата выдачи путевки (с векторными разделителями)
+    p.drawString(54, height - 635, "Дата выдачи: «")
+    p.line(135, height - 637, 155, height - 637)
+    p.drawString(158, height - 635, "»")
+    p.line(175, height - 637, 285, height - 637)
+    p.drawString(290, height - 635, "20")
+    p.line(305, height - 637, 335, height - 637)
+    p.drawString(340, height - 635, "г.")
     
     today_day, today_month, today_year = format_russian_date_parts(timezone.now().date())
     p.setFillColorRGB(*navy_blue)
-    p.drawCentredString(145, height - 638, today_day)
-    p.drawCentredString(230, height - 638, today_month)
-    p.drawCentredString(320, height - 638, today_year[-2:])
+    p.drawCentredString(145, height - 633, today_day)
+    p.drawCentredString(230, height - 633, today_month)
+    p.drawCentredString(320, height - 633, today_year[-2:])
 
     p.showPage()
     p.save()
@@ -211,6 +222,7 @@ def send_booking_notification(booking, event_type: str):
     body = ""
     attachments = []
 
+    # Рекомендуется заменить localhost на ваш домен в настройках
     payment_link = f"http://localhost:5173/booking-success/{booking.id}/"
 
     if event_type == "CREATED":
@@ -239,6 +251,11 @@ def send_booking_notification(booking, event_type: str):
             f"Здравствуйте, {booking.contact_name}!\n\n"
             f"Ваша оплата успешно подтверждена администрацией ЗабГУ. Бронирование активно!\n"
             f"Сгенерированная путевка прикреплена к этому письму.\n\n"
+            f"⚠️ ВАЖНОЕ НАПОМИНАНИЕ:\n"
+            f"При заселении на базу отдыха необходимо в обязательном порядке предоставить:\n"
+            f"- Оригинал паспорта на каждого взрослого гостя;\n"
+            f"- Оригинал свидетельства о рождении на каждого ребенка.\n"
+            f"Без предъявления документов заселение не производится.\n\n"
             f"Желаем вам хорошего отдыха!"
         )
         pdf_content = generate_voucher_pdf(booking)
@@ -250,6 +267,20 @@ def send_booking_notification(booking, event_type: str):
             f"Здравствуйте, {booking.contact_name}!\n\n"
             f"Время на подтверждение оплаты бронирования {booking.booking_number} истекло. "
             f"Заявка была аннулирована автоматически.\n"
+        )
+
+    elif event_type == "REJECTED":
+        decline_reason = ""
+        if hasattr(booking, 'receipt') and booking.receipt.admin_comment:
+            decline_reason = f"\nПричина отклонения: {booking.receipt.admin_comment}\n"
+            
+        subject = f"Оплата бронирования {booking.booking_number} отклонена"
+        body = (
+            f"Здравствуйте, {booking.contact_name}!\n\n"
+            f"К сожалению, оплата по вашему бронированию {booking.booking_number} не была подтверждена администратором.{decline_reason}\n"
+            f"Ваша заявка переведена в статус 'Оплата отклонена'.\n"
+            f"Для выяснения причин или повторного оформления свяжитесь с администрацией по адресу projectsddm@zabgu.ru.\n\n"
+            f"С уважением, Администрация базы отдыха ЗабГУ."
         )
 
     email = EmailMessage(

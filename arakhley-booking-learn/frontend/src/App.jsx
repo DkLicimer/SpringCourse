@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import BookingPage from './pages/BookingPage';
 import SuccessPage from './pages/SuccessPage';
 
 function App() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyEmail = (e) => {
+    e.preventDefault();
+    navigator.clipboard.writeText("projectsddm@zabgu.ru");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-gray-50">
@@ -27,9 +36,13 @@ function App() {
             </Link>
             
             <div className="flex items-center space-x-6">
-              <a href="mailto:projectsddm@zabgu.ru" className="hidden md:block text-sm font-medium text-gray-700 hover:text-natural-blue">
-                ✉️ projectsddm@zabgu.ru
-              </a>
+              <button 
+                onClick={handleCopyEmail}
+                className="hidden md:block text-sm font-medium text-gray-700 hover:text-natural-blue focus:outline-none cursor-pointer transition duration-150"
+                title="Нажмите, чтобы скопировать email"
+              >
+                {copied ? "✅ Почта скопирована!" : "✉️ projectsddm@zabgu.ru"}
+              </button>
               <Link 
                 to="/booking" 
                 className="bg-natural-blue text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-90 transition duration-150"

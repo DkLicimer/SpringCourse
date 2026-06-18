@@ -70,6 +70,13 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         if start_date >= end_date:
             raise serializers.ValidationError({"end_date": "Дата выезда должна быть позже даты заезда."})
 
+        # Ограничение сезоном (до 31 августа текущего года включительно)
+        max_allowed_date = date(start_date.year, 8, 31)
+        if start_date > max_allowed_date or end_date > max_allowed_date:
+            raise serializers.ValidationError(
+                {"end_date": "Бронирование гостевых домов на текущий год возможно только до 31 августа включительно."}
+            )
+
         # 2. Лимит для сотрудников: максимум 2 домика одновременно
         if user_role == Booking.UserRole.STAFF:
             attrs['num_beds_booked'] = 4
