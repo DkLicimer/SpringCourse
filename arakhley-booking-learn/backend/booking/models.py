@@ -5,11 +5,10 @@ from django.utils import timezone
 
 
 class Cabin(models.Model):
-    """Модель Домика. На базе всего 11 домиков."""
+    """Модель Домика"""
     number = models.PositiveSmallIntegerField(unique=True, verbose_name="Номер домика")
     capacity = models.PositiveSmallIntegerField(default=4, verbose_name="Вместимость (койко-мест)")
     
-    # Раздельные тарифы для сотрудников (за домик целиком) и студентов (за койку)
     price_staff_full_cabin = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name="Цена за домик сутки (Сотрудник)"
     )
@@ -45,16 +44,16 @@ class Booking(models.Model):
         REJECTED = 'REJECTED', 'Оплата отклонена'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # УВЕЛИЧЕНО С 12 ДО 20 СИМВОЛОВ
     booking_number = models.CharField(
-        max_length=12, unique=True, verbose_name="Номер бронирования", db_index=True
+        max_length=20, unique=True, verbose_name="Номер бронирования", db_index=True
     )
     
-    # Первый (или единственный) забронированный домик
     cabin = models.ForeignKey(
         Cabin, on_delete=models.PROTECT, related_name='bookings', verbose_name="Домик"
     )
     
-    # ВТОРОЙ ЗАБРОНИРОВАННЫЙ ДОМИК (Опциональный, только для сотрудников)
     second_cabin = models.ForeignKey(
         Cabin, on_delete=models.PROTECT, related_name='second_bookings',
         blank=True, null=True, verbose_name="Второй домик"
@@ -66,27 +65,21 @@ class Booking(models.Model):
     
     num_beds_booked = models.PositiveSmallIntegerField(verbose_name="Забронировано мест")
     
-    # Даты проживания
     start_date = models.DateField(verbose_name="Дата заезда")
     end_date = models.DateField(verbose_name="Дата выезда")
     
-    # Расчет стоимости
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Итоговая стоимость")
     
-    # Контактные данные
     contact_name = models.CharField(max_length=255, verbose_name="ФИО контактного лица")
     contact_phone = models.CharField(max_length=20, verbose_name="Телефон")
     contact_email = models.EmailField(verbose_name="E-mail")
     
-    # Поля для Сотрудника
     department = models.CharField(max_length=255, blank=True, null=True, verbose_name="Структурное подразделение")
     position = models.CharField(max_length=255, blank=True, null=True, verbose_name="Должность")
     
-    # Поля для Студента
     faculty = models.CharField(max_length=255, blank=True, null=True, verbose_name="Факультет")
     academic_group = models.CharField(max_length=50, blank=True, null=True, verbose_name="Академическая группа")
     
-    # Системные поля времени и статуса
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING_PAYMENT, verbose_name="Статус"
     )
@@ -102,7 +95,7 @@ class Booking(models.Model):
         if not self.booking_number:
             date_str = timezone.now().strftime("%y%m%d")
             unique_suffix = str(uuid.uuid4().hex[:4]).upper()
-            self.booking_number = f"AR-{date_str}-{unique_suffix}"
+            self.booking_number = f"AR-{date_str}-{unique_suffix}" # Теперь 14 символов влезет в 20
             
         if not self.expires_at:
             self.expires_at = timezone.now() + timedelta(hours=1)
@@ -114,7 +107,7 @@ class Booking(models.Model):
 
 
 class Guest(models.Model):
-    """Список отдыхающих внутри одной брони (для формирования путевки)"""
+    """Список отдыхающих"""
     
     class GuestCategory(models.TextChoices):
         ADULT = 'ADULT', 'Взрослый'
@@ -143,7 +136,7 @@ def secure_receipt_upload_path(instance, filename):
 
 
 class PaymentReceipt(models.Model):
-    """Модель Чека / Подтверждения оплаты"""
+    """Модель Чека"""
     booking = models.OneToOneField(
         Booking, on_delete=models.CASCADE, related_name='receipt', verbose_name="Бронирование"
     )

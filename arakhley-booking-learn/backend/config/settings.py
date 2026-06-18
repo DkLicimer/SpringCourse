@@ -2,25 +2,21 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Базовая директория проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Автоматическая загрузка переменных окружения из файла .env, если он существует
-env_path = BASE_DIR / '.env'
-if env_path.exists():
-    load_dotenv(dotenv_path=env_path)
+# Загружаем переменные из .env
+load_dotenv(dotenv_path=BASE_DIR / '.env')
 
-# Секретный ключ для разработки
-SECRET_KEY = 'django-insecure-mvp-secret-key-for-arakhley-booking'
+# В продакшене SECRET_KEY ОБЯЗАТЕЛЬНО должен быть в .env
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-it-in-env')
 
-DEBUG = True
+# DEBUG в продакшене должен быть False
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# Сюда добавим твой домен после покупки
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://arakhleybazezabgu.ru',
-    'https://www.arakhleybazezabgu.ru',
-]
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'https://*.beget.app').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -29,11 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Сторонние библиотеки
     'rest_framework',
-    
-    # Наше приложение
     'booking',
 ]
 
@@ -67,59 +59,50 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Автоматическое переключение: SQLite для локальных тестов, PostgreSQL для продакшена
-POSTGRES_HOST = os.getenv('POSTGRES_HOST')
-if POSTGRES_HOST:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'arakhley_db'),
-            'USER': os.getenv('POSTGRES_USER', 'postgres'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-            'HOST': POSTGRES_HOST,
-            'PORT': os.getenv('POSTGRES_PORT', '5432'),
-        }
+# Настройка БД (PostgreSQL для Docker)
+POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'db')
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'arakhley_db'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': POSTGRES_HOST,
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # Локализация
 LANGUAGE_CODE = 'ru-ru'
-TIME_ZONE = 'Asia/Yakutsk' # Часовой пояс Забайкальского края
+TIME_ZONE = 'Asia/Yakutsk' 
 USE_I18N = True
 USE_TZ = True
 
+# Статика и медиа
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'static'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Интеллектуальная настройка отправки писем через SMTP / Console
+# Настройка почты
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
-if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-    # Локальный тестовый режим отправки в консоль (если данные почты не указаны в .env)
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = 'projectsddm@zabgu.ru'
-else:
-    # Режим реальной отправки писем через SMTP
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.yandex.ru')
-    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 465))
-    EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'True') == 'True'
-    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'False') == 'True'
-    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+# Настройки безопасности для HTTPS (включим, когда подключим домен)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False # Пока False, включим после настройки SSL
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

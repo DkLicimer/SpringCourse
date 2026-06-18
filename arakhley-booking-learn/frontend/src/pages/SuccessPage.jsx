@@ -9,7 +9,6 @@ export default function SuccessPage() {
   const [error, setError] = useState(null);
 
   const [rulesAgreed, setRulesAgreed] = useState(false);
-
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [file, setFile] = useState(null);
   const [comment, setComment] = useState('');
@@ -48,7 +47,6 @@ export default function SuccessPage() {
 
   useEffect(() => {
     if (timeLeft <= 0) return;
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -59,7 +57,6 @@ export default function SuccessPage() {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [timeLeft]);
 
@@ -82,12 +79,10 @@ export default function SuccessPage() {
       alert("Пожалуйста, прикрепите файл чека.");
       return;
     }
-
     if (!rulesAgreed) {
       alert("Необходимо подтвердить ознакомление с правилами выезда.");
       return;
     }
-
     setIsUploading(true);
     try {
       await api.uploadReceipt(id, file, comment);
@@ -129,8 +124,8 @@ export default function SuccessPage() {
   const isPending = booking.status === 'PENDING';
   const isReceiptUploaded = booking.status === 'RECEIPT_UPLOADED';
   const isConfirmed = booking.status === 'CONFIRMED' || booking.status === 'PAYMENT_CONFIRMED';
+  const isRejected = booking.status === 'REJECTED';
 
-  // Вывод домиков (проверяем, забронирован ли один или два домика)
   const cabinNumbers = `№${booking.cabin_number}` + (booking.second_cabin_number ? ` и №${booking.second_cabin_number}` : '');
 
   return (
@@ -145,6 +140,12 @@ export default function SuccessPage() {
             <p className="text-sm text-gray-500 mt-2">
               Номер брони: <span className="font-mono font-bold text-gray-950 bg-gray-100 px-2 py-0.5 rounded">{booking.booking_number}</span>
             </p>
+
+            {/* УВЕДОМЛЕНИЕ О СПАМЕ */}
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800 max-w-lg mx-auto">
+              <b>📧 Письмо отправлено:</b> Инструкция с реквизитами уже на вашей почте <b>{booking.contact_email}</b>. 
+              Если письма нет во «Входящих» — обязательно проверьте папку <b>«СПАМ»</b>.
+            </div>
             
             {timeLeft > 0 ? (
               <div className="mt-6 max-w-sm mx-auto bg-amber-50 border border-amber-200 p-4 rounded-xl">
@@ -187,12 +188,16 @@ export default function SuccessPage() {
           </div>
         )}
 
-        {isCancelled && (
+        {(isCancelled || isRejected) && (
           <div className="py-4">
             <span className="text-4xl">⏰</span>
-            <h1 className="text-2xl font-extrabold text-red-600 mt-3">Бронирование отменено</h1>
+            <h1 className="text-2xl font-extrabold text-red-600 mt-3">
+              {isCancelled ? "Бронирование отменено" : "Оплата отклонена"}
+            </h1>
             <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-              Время, отведенное на оплату (1 час), истекло. Выбранные даты и домики снова свободны для бронирования другими пользователями.
+              {isCancelled 
+                ? "Время, отведенное на оплату (1 час), истекло. Выбранные даты и домики снова свободны." 
+                : "К сожалению, ваш платеж не был подтвержден. Пожалуйста, проверьте данные или свяжитесь с администрацией."}
             </p>
             <Link to="/booking" className="mt-4 inline-block text-xs font-bold text-natural-blue hover:underline">
               Попробовать забронировать заново →
@@ -224,7 +229,7 @@ export default function SuccessPage() {
         </div>
       </div>
 
-      {/* Реквизиты и Инструкция по оплате ЗабГУ */}
+      {/* Реквизиты и Инструкция (ТОЛЬКО ЕСЛИ ОЖИДАЕТ ОПЛАТЫ) */}
       {isPending && (
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
           
@@ -232,33 +237,27 @@ export default function SuccessPage() {
             <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">Реквизиты ФГБОУ ВО «Забайкальский государственный университет»</h3>
             
             <div className="bg-gray-50 p-5 rounded-xl font-mono text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed border border-gray-200/50">
-              <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Получатель платежа</span>УФК по Приморскому краю (ФГБОУ ВО «ЗабГУ» л/с 20916X16810)</div>
-              
+              <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">Получатель платежа</span>УФК по Приморскому краю (ФГБОУ ВО «ЗабГУ» л/с 20916X16810)</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">ИНН</span>7534000257</div>
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">КПП</span>753601001</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">ИНН</span>7534000257</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">КПП</span>753601001</div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">ОКТМО</span>76701000</div>
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">УИН</span>не заполнять, пропустить</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">ОКТМО</span>76701000</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">УИН</span>не заполнять, пропустить</div>
               </div>
-
               <div className="pt-2">
-                <span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Банк получателя</span>
+                <span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">Банк получателя</span>
                 ОКЦ № 1 ДГУ Банка России//УФК по Приморскому краю, г Владивосток
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">БИК</span>010507002</div>
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Счет банка (ЕКС)</span>40102810545370000012</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">БИК</span>010507002</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">Счет банка (ЕКС)</span>40102810545370000012</div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">Счет получателя</span>03214643000000012009</div>
-                <div><span className="text-gray-400 select-none font-sans block text-xxs uppercase font-semibold">КБК</span>00000000000000000130</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">Счет получателя</span>03214643000000012009</div>
+                <div><span className="text-gray-400 select-none font-sans block text-[10px] uppercase font-semibold">КБК</span>00000000000000000130</div>
               </div>
-
               <div className="pt-3 border-t border-gray-200 font-sans">
                 <span className="text-red-700 block text-xs uppercase font-extrabold mb-1">Назначение платежа</span>
                 <span className="font-bold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded inline-block">
@@ -273,26 +272,20 @@ export default function SuccessPage() {
               📱 Инструкция по оплате через приложение банка:
             </h3>
             <ol className="list-decimal pl-5 text-xs text-gray-700 space-y-2">
-              <li>Откройте приложение вашего банка на мобильном устройстве.</li>
-              <li>Перейдите в раздел меню <b>«Платежи»</b> → выберите <b>«Оплата по реквизитам»</b>.</li>
-              <li>В строке поиска или ввода ИНН укажите ИНН университета: <span className="font-bold text-gray-900 font-mono bg-white px-1.5 py-0.5 border border-gray-200 rounded">7534000257</span>.</li>
-              <li>В списке найденных услуг выберите тип платежа <b>«Оплата общежития»</b> (это официальный зачисляемый счет за услуги баз отдыха).</li>
-              <li>Укажите ваши полные ФИО в качестве плательщика.</li>
-              <li>В поле <b>«Назначение платежа»</b> обязательно напишите: <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded">Арахлей, бронь №{booking.booking_number}</span>.</li>
-              <li>Выберите документ удостоверения личности <b>«Паспорт РФ»</b>, на следующей странице корректно введите серию и номер вашего паспорта.</li>
+              <li>В приложении банка выберите <b>«Оплата по реквизитам»</b>.</li>
+              <li>Укажите ИНН университета: <span className="font-bold text-gray-900 font-mono bg-white px-1.5 py-0.5 border border-gray-200 rounded">7534000257</span>.</li>
+              <li>Выберите тип платежа <b>«Оплата общежития»</b> (единый счет университета).</li>
+              <li>В поле <b>«Назначение платежа»</b> ОБЯЗАТЕЛЬНО напишите: <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded">Арахлей, бронь №{booking.booking_number}</span>.</li>
             </ol>
           </div>
 
-          {/* Предупреждение о правилах выезда и документах */}
           <div className="p-5 bg-red-50 rounded-xl border border-red-100 space-y-3">
-            <h4 className="font-bold text-red-800 text-sm">⚠️ Важные условия и правила нахождения на базе отдыха:</h4>
+            <h4 className="font-bold text-red-800 text-sm">⚠️ Важные правила:</h4>
             <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
-              <li><b>Правило расчетного часа:</b> Освободить домик необходимо строго до <b>12:00</b> в день выезда. Пребывание на территории базы возможно до конца дня. В случае задержки отдыхающего в домике после 12:00, автоматически взимается оплата за еще одни полные сутки.</li>
-              <li><b>Документы при заселении:</b> При въезде на базу отдыха необходимо в обязательном порядке предоставить оригинал паспорта на каждого взрослого и свидетельство о рождении на каждого ребенка.</li>
-              <li><b>Запрет на животных:</b> Нахождение на территории базы отдыха с любыми домашними животными категорически запрещено.</li>
+              <li>Освобождение домика — строго до <b>12:00</b>.</li>
+              <li>Документы при заселении: оригинал паспорта (взрослым) и св-во о рождении (детям).</li>
             </ul>
             
-            {/* Чекбокс обязательного ознакомления */}
             <div className="flex items-start gap-2.5 pt-3 border-t border-red-200/50">
               <input
                 id="rules-agree"
@@ -303,68 +296,48 @@ export default function SuccessPage() {
                 className="w-4 h-4 mt-0.5 text-red-600 border-red-300 rounded focus:ring-red-500 cursor-pointer"
               />
               <label htmlFor="rules-agree" className="text-xs text-red-800 font-semibold leading-tight cursor-pointer select-none">
-                Я подтверждаю, что ознакомлен со всеми правилами пребывания, временем выезда до 12:00 и списком обязательных документов для заселения на базу отдыха.
+                Я подтверждаю, что ознакомлен с правилами пребывания и временем выезда до 12:00.
               </label>
             </div>
           </div>
 
-          {/* Форма загрузки подтверждения */}
           {!showUploadForm ? (
             <button
               onClick={() => {
                 if (!rulesAgreed) {
-                  alert("Пожалуйста, сначала ознакомьтесь с правилами нахождения на базе отдыха и отметьте галочку согласия.");
+                  alert("Пожалуйста, сначала ознакомьтесь с правилами и отметьте галочку согласия.");
                   return;
                 }
                 setShowUploadForm(true);
               }}
               className={`w-full py-3.5 rounded-xl font-bold transition duration-150 flex items-center justify-center gap-2 cursor-pointer ${
-                rulesAgreed
-                  ? 'bg-natural-blue text-white shadow-lg hover:bg-opacity-95'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                rulesAgreed ? 'bg-natural-blue text-white shadow-lg' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              <span>🙋‍♂️ Я оплатил, прикрепить чек</span>
+              🙋‍♂️ Я оплатил, прикрепить чек
             </button>
           ) : (
             <form onSubmit={handleUploadSubmit} className="border-t border-gray-100 pt-6 space-y-4">
-              <h4 className="font-bold text-gray-900 text-sm">Подтверждение факта совершения платежа</h4>
-              
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Загрузить квитанцию / чек (PDF, PNG, JPG)</label>
-                <input
-                  type="file"
-                  required
-                  accept=".pdf, .png, .jpg, .jpeg"
-                  onChange={handleFileChange}
-                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-natural-blue hover:file:bg-blue-100 file:cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Комментарий к платежу (необязательно)</label>
-                <textarea
-                  rows="2"
-                  placeholder="Например: Перевод из приложения Сбербанк от Иванова И.И."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-natural-blue"
-                />
-              </div>
-
+              <h4 className="font-bold text-gray-900 text-sm">Подтверждение платежа</h4>
+              <input
+                type="file"
+                required
+                accept=".pdf, .png, .jpg, .jpeg"
+                onChange={handleFileChange}
+                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-natural-blue"
+              />
+              <textarea
+                rows="2"
+                placeholder="Комментарий к платежу"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs"
+              />
               <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isUploading}
-                  className="flex-grow py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  {isUploading ? "Загрузка..." : "📤 Отправить квитанцию на проверку"}
+                <button type="submit" disabled={isUploading} className="flex-grow py-2.5 bg-emerald-500 text-white font-bold rounded-lg text-xs">
+                  {isUploading ? "Загрузка..." : "📤 Отправить квитанцию"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowUploadForm(false)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition cursor-pointer"
-                >
+                <button type="button" onClick={() => setShowUploadForm(false)} className="px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-lg text-xs">
                   Отмена
                 </button>
               </div>
