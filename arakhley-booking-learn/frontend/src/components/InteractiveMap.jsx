@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 // ========================================== // НАСТРОЙКА ПУТЕЙ
 const CABIN_SVG_PATH = "/cabin.svg"; 
@@ -16,7 +16,7 @@ const MOBILE_CABIN_HEIGHT = 95;
 const MOBILE_ADMIN_WIDTH = 190;
 const MOBILE_ADMIN_HEIGHT = 165;
 
-// Координаты домиков
+// Координаты домиков (добавлен благоустроенный домик №16)
 const CABIN_POSITIONS = [ 
   { number: 1, x: 1330, y: 960, label: "Домик 1" }, 
   { number: 2, x: 1280, y: 1050, label: "Домик 2" }, 
@@ -29,6 +29,7 @@ const CABIN_POSITIONS = [
   { number: 11, x: 615, y: 369, label: "Домик 11" }, 
   { number: 9, x: 493, y: 515, label: "Домик 9" }, 
   { number: 8, x: 615, y: 515, label: "Домик 8" }, 
+  { number: 16, x: 1310, y: 830, label: "Домик 16" }, 
 ];
 
 const CABIN_EQUIPMENT = { 
@@ -41,41 +42,59 @@ const CABIN_EQUIPMENT = {
   11: { beds: "4 односпальные кровати", furniture: "Шифоньер, 2 стола, 4 стула", linen: "4 комплекта постельного белья", kitchen: "Посуда на 4 персоны", appliances: "Газовая плита, холодильник" }, 
   12: { beds: "3 односпальные кровати", furniture: "Шифоньер, кухонный стол, 6 стульев", linen: "3 комплекта белья", kitchen: "Посуда на 3 персоны, швабра", appliances: "Газовая плита, холодильник" }, 
   13: { beds: "4 односпальные кровати", furniture: "Шифоньер, 2 стола, 4 стула", linen: "4 комплекта белья", kitchen: "Посуда на 4 персоны", appliances: "Газовая плита, холодильник" }, 
-  14: { beds: "2 двуспальные кровати (комфортное размещение до 4 человек)", furniture: "Прикроватные тумбочки (2 шт), шифоньер (2 шт), 2 кухонных стола, 4 стула, шторы (4 комплекта)", linen: "4 комплекта постельного белья", kitchen: "Посуда на 8 персон, полотенца лицевые и банные (по 4 шт), ведра (2 шт), швабра, ветошь (2 шт)", appliances: "Газовая плита с тумбой, 2 холодильника, 2 электрических чайника" }, 
-  15: { beds: "2 двуспальные кровати", furniture: "Прикроватные тумбочки, шифоньер, 2 стола, 4 стула", linen: "4 комплекта белья", kitchen: "Посуда на 8 персон, полотенца", appliances: "Газовая плита, 2 холодильника, 2 чайника" } 
+  14: { beds: "2 двуспальные кровати (комфортное размещение до 4 человек)", furniture: "Прикроватные тумбочки (2 шт), шифоньер (2 шт), 2 кухонных стола, 4 стула, шторы (4 комплекта)", linen: "4 комплекта постельного белья, полотенца лицевые и банные", kitchen: "Посуда на 8 персон, ведра (2 шт), швабра, ветошь", appliances: "Газовая плита, 2 холодильника, 2 электрочайника" }, 
+  15: { beds: "2 двуспальные кровати", furniture: "Прикроватные тумбочки, шифоньер, 2 стола, 4 стула", linen: "4 комплекта белья, полотенца", kitchen: "Посуда на 8 персон, полотенца", appliances: "Газовая плита, 2 холодильника, 2 чайника" },
+  16: { 
+    beds: "Позже", 
+    furniture: "Позже", 
+    linen: "Позже", 
+    kitchen: "Позже", 
+    appliances: "Позже" 
+  }
 };
 
 export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabinSelect, isLoading, role }) {
   const [scale, setScale] = useState(1); 
   const [position, setPosition] = useState({ x: 0, y: 0 }); 
   const [isDragging, setIsDragging] = useState(false); 
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); 
+  const [dragStart, setDragStart] = useState({ x: e => e.clientX - position.x, y: e => e.clientY - position.y }); 
   const [hasMoved, setHasMoved] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const containerRef = useRef(null);
 
-  // Определение мобильного экрана и установка начального масштаба
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
     };
 
-    handleResize(); // Проверка при монтировании
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Устанавливаем приближение по умолчанию для мобильных устройств при инициализации
   useEffect(() => {
     if (isMobile) {
-      setScale(1.8); // Автоматически приближаем карту на смартфонах
+      setScale(1.8);
     } else {
       setScale(1);
     }
     setPosition({ x: 0, y: 0 });
   }, [isMobile]);
+
+  const cabinsStatusMap = useMemo(() => {
+    const map = {};
+    if (cabinsData) {
+      cabinsData.forEach((cabin) => {
+        map[cabin.number] = {
+          isAvailable: cabin.is_available,
+          data: cabin
+        };
+      });
+    }
+    return map;
+  }, [cabinsData]);
 
   useEffect(() => { 
     const container = containerRef.current; 
@@ -162,8 +181,7 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
 
   const getCabinStatus = (cabinNumber) => { 
     if (isLoading || !cabinsData) return { isAvailable: false, data: null }; 
-    const cabin = cabinsData.find(c => c.number === cabinNumber); 
-    return { isAvailable: cabin ? cabin.is_available : false, data: cabin }; 
+    return cabinsStatusMap[cabinNumber] || { isAvailable: false, data: null };
   };
 
   const handleCabinClick = (cabinNumber, isAvailable) => { 
@@ -187,13 +205,11 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
     onCabinSelect(updated);
   };
 
-  // Вычисляем динамические размеры на основе текущего типа устройства
   const cabinWidth = isMobile ? MOBILE_CABIN_WIDTH : DESKTOP_CABIN_WIDTH;
   const cabinHeight = isMobile ? MOBILE_CABIN_HEIGHT : DESKTOP_CABIN_HEIGHT;
   const adminWidth = isMobile ? MOBILE_ADMIN_WIDTH : DESKTOP_ADMIN_WIDTH;
   const adminHeight = isMobile ? MOBILE_ADMIN_HEIGHT : DESKTOP_ADMIN_HEIGHT;
 
-  // Параметры плашки с номером домика
   const badgeW = isMobile ? 70 : 48;
   const badgeH = isMobile ? 32 : 22;
   const badgeX = -badgeW / 2;
@@ -270,10 +286,11 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           style={{
-            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})`,
             transformOrigin: 'center',
             transition: isDragging ? 'none' : 'transform 0.12s ease-out',
-            cursor: scale > 1 || isMobile ? (isDragging ? 'grabbing' : 'grab') : 'default'
+            cursor: scale > 1 || isMobile ? (isDragging ? 'grabbing' : 'grab') : 'default',
+            willChange: 'transform'
           }}
           className="w-full h-full select-none touch-none"
         >
@@ -372,6 +389,11 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
             {CABIN_POSITIONS.map((pos) => {
               const { isAvailable } = getCabinStatus(pos.number);
               const isSelected = selectedCabins.includes(pos.number);
+              
+              // Для домика №16 используем текстуру администрации admin.svg
+              const isSpecialCabin = pos.number === 16;
+              const currentWidth = isSpecialCabin ? adminWidth : cabinWidth;
+              const currentHeight = isSpecialCabin ? adminHeight : cabinHeight;
 
               let badgeBg = "#10B981";  
               let badgeBorder = "#047857";
@@ -403,8 +425,8 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
                     <ellipse 
                       cx={pos.x} 
                       cy={pos.y} 
-                      rx={cabinWidth / 2 + 6} 
-                      ry={cabinHeight / 2 + 3} 
+                      rx={currentWidth / 2 + 6} 
+                      ry={currentHeight / 2 + 3} 
                       fill="none" 
                       stroke="#3B82F6" 
                       strokeWidth="3" 
@@ -412,17 +434,17 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
                     />
                   )}
 
-                  {/* Изображение домика */}
+                  {/* Изображение домика (для 16-го используется admin.svg) */}
                   <image 
-                    href={CABIN_SVG_PATH} 
-                    x={pos.x - cabinWidth / 2} 
-                    y={pos.y - cabinHeight / 2} 
-                    width={cabinWidth} 
-                    height={cabinHeight} 
+                    href={isSpecialCabin ? ADMIN_SVG_PATH : CABIN_SVG_PATH} 
+                    x={pos.x - currentWidth / 2} 
+                    y={pos.y - currentHeight / 2} 
+                    width={currentWidth} 
+                    height={currentHeight} 
                   />
 
                   {/* Плашка с номером под домиком */}
-                  <g transform={`translate(${pos.x}, ${pos.y + cabinHeight / 2 + (isMobile ? 12 : 6)})`}>
+                  <g transform={`translate(${pos.x}, ${pos.y + currentHeight / 2 + (isMobile ? 12 : 6)})`}>
                     <rect 
                       x={badgeX} 
                       y={badgeY} 
@@ -447,11 +469,11 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
                     </text>
                   </g>
 
-                  {/* НЕВИДИМАЯ ОБЛАСТЬ КЛИКА (увеличивает сенсорное пятно для пальца) */}
+                  {/* НЕВИДИМАЯ ОБЛАСТЬ КЛИКА */}
                   <circle 
                     cx={pos.x} 
                     cy={pos.y} 
-                    r={cabinWidth * 0.75} 
+                    r={currentWidth * 0.75} 
                     fill="transparent" 
                     pointerEvents="all"
                   />
@@ -476,8 +498,8 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
             </div>
             <div className="text-right w-full sm:w-auto font-sans">
               <span className="text-xs text-gray-500 block font-semibold">Базовые тарифы ЗабГУ:</span>
-              <span className="text-sm font-bold text-blue-700 block">Сотрудник: 610 руб. / сутки</span>
-              <span className="text-sm font-bold text-blue-700 block">Студент: 100 руб. / сутки за койку</span>
+              <span className="text-sm font-bold text-blue-700 block">Сотрудник: 610 руб. / сутки (Благоустроенный №16: 2500 руб.)</span>
+              <span className="text-sm font-bold text-blue-700 block">Студент: 100 руб. / сутки за койку (Дом №16 недоступен)</span>
             </div>
           </div>
 

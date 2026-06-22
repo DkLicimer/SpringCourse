@@ -54,11 +54,10 @@ export default function BookingPage() {
     setConsent(false);
   }, [role, startDate, endDate]);
 
-  // Интеллектуальная бесконфликтная маска ввода телефона РФ
+  // Интеллектуальная маска ввода телефона РФ
   const handlePhoneChange = (e) => {
     const input = e.target.value;
 
-    // Решение проблемы Backspace: если стираем, отключаем автодописывание маски
     if (input.length < contactPhone.length) {
       setContactPhone(input);
       return;
@@ -186,8 +185,21 @@ export default function BookingPage() {
       return;
     }
 
-    const maxAllowedBedsPerCabin = 4;
-    const maxBedsTotal = role === 'STAFF' ? (selectedCabins.length * maxAllowedBedsPerCabin) : numBeds;
+    // Динамический расчет максимального количества мест на основе вместимости выбранных домиков
+    let maxBedsTotal = 0;
+    if (role === 'STAFF') {
+      selectedCabins.forEach(cabinNum => {
+        const cabinObj = cabins.find(c => c.number === cabinNum);
+        if (cabinObj) {
+          maxBedsTotal += cabinObj.capacity;
+        } else {
+          maxBedsTotal += 4; // Резервный фолбек
+        }
+      });
+    } else {
+      maxBedsTotal = numBeds;
+    }
+
     const guestsRequiringBed = guests.filter(g => g.full_name.trim() !== "" && g.category !== 'CHILD_3').length;
 
     if (guestsRequiringBed > maxBedsTotal) {
@@ -226,11 +238,12 @@ export default function BookingPage() {
 
     setIsSubmitting(true);
 
+    const mainCabinObj = cabins.find(c => c.number === selectedCabins[0]);
     const bookingPayload = {
-      cabin: cabins.find(c => c.number === selectedCabins[0])?.id,
+      cabin: mainCabinObj?.id,
       second_cabin: selectedCabins.length > 1 ? cabins.find(c => c.number === selectedCabins[1])?.id : undefined,
       user_role: role,
-      num_beds_booked: role === 'STAFF' ? 4 : numBeds,
+      num_beds_booked: role === 'STAFF' ? (mainCabinObj?.capacity || 4) : numBeds,
       start_date: startDate,
       end_date: endDate,
       contact_name: contactName.trim(),

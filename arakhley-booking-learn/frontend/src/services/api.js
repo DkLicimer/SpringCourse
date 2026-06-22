@@ -5,7 +5,6 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Эти настройки позволят работать с CSRF-токеном
   withCredentials: true,
   xsrfCookieName: 'csrftoken',
   xsrfHeaderName: 'X-CSRFToken',
@@ -31,6 +30,16 @@ export const api = {
     const response = await apiClient.post(`/api/bookings/${bookingId}/upload-receipt/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+    return response.data;
+  },
+
+  cancelBooking: async (bookingId) => {
+    const response = await apiClient.post(`/api/bookings/${bookingId}/cancel/`);
+    return response.data;
+  },
+
+  getGalleryPhotos: async () => {
+    const response = await apiClient.get('/api/gallery/');
     return response.data;
   }
 };

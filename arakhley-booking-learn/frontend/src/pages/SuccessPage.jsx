@@ -96,6 +96,21 @@ export default function SuccessPage() {
     }
   };
 
+  const handleCancelBooking = async () => {
+    const confirmCancel = window.confirm(
+      "Вы действительно хотите отменить эту заявку? Выбранные домики будут немедленно освобождены для других отдыхающих."
+    );
+    if (!confirmCancel) return;
+
+    try {
+      await api.cancelBooking(id);
+      alert("Заявка успешно отменена.");
+      fetchBookingDetails();
+    } catch (err) {
+      alert(err.response?.data?.error || "Произошла ошибка при отмене бронирования. Возможно, время истекло.");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -196,7 +211,7 @@ export default function SuccessPage() {
             </h1>
             <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
               {isCancelled 
-                ? "Время, отведенное на оплату (1 час), истекло. Выбранные даты и домики снова свободны." 
+                ? "Заявка аннулирована. Выбранные даты и домики снова свободны для бронирования." 
                 : "К сожалению, ваш платеж не был подтвержден. Пожалуйста, проверьте данные или свяжитесь с администрацией."}
             </p>
             <Link to="/booking" className="mt-4 inline-block text-xs font-bold text-natural-blue hover:underline">
@@ -229,6 +244,14 @@ export default function SuccessPage() {
         </div>
       </div>
 
+      {/* НОВОЕ ПРАВИЛЬНОЕ МЕСТО ДЛЯ БЛОКА ОТМЕНЫ ПОСЛЕ ОПЛАТЫ */}
+      {(isReceiptUploaded || isConfirmed) && (
+        <div className="p-5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 leading-relaxed text-left shadow-xs">
+          <b>ℹ️ Правила отмены оплаченного бронирования:</b><br />
+          Поскольку вы уже прикрепили документ об оплате (или бронирование подтверждено), автоматическая отмена в один клик невозможна. Для оформления возврата денежных средств и отмены брони, пожалуйста, отправьте заявление в свободной форме на почту <a href="mailto:projectsddm@zabgu.ru" className="font-bold underline text-amber-900 hover:text-amber-950">projectsddm@zabgu.ru</a>, указав номер вашей брони <b>{booking.booking_number}</b> и ФИО получателя путевки. Возврат средств производится в ручном режиме через бухгалтерию университета.
+        </div>
+      )}
+
       {/* Реквизиты и Инструкция (ТОЛЬКО ЕСЛИ ОЖИДАЕТ ОПЛАТЫ) */}
       {isPending && (
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
@@ -260,8 +283,8 @@ export default function SuccessPage() {
               </div>
               <div className="pt-3 border-t border-gray-200 font-sans">
                 <span className="text-red-700 block text-xs uppercase font-extrabold mb-1">Назначение платежа</span>
-                <span className="font-bold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded inline-block">
-                  Арахлей, бронь №{booking.booking_number}
+                <span className="font-bold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded inline-block uppercase">
+                  Арахлей
                 </span>
               </div>
             </div>
@@ -275,7 +298,7 @@ export default function SuccessPage() {
               <li>В приложении банка выберите <b>«Оплата по реквизитам»</b>.</li>
               <li>Укажите ИНН университета: <span className="font-bold text-gray-900 font-mono bg-white px-1.5 py-0.5 border border-gray-200 rounded">7534000257</span>.</li>
               <li>Выберите тип платежа <b>«Оплата общежития»</b> (единый счет университета).</li>
-              <li>В поле <b>«Назначение платежа»</b> ОБЯЗАТЕЛЬНО напишите: <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded">Арахлей, бронь №{booking.booking_number}</span>.</li>
+              <li>В поле <b>«Назначение платежа»</b> ОБЯЗАТЕЛЬНО напишите: <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded uppercase">Арахлей</span>.</li>
             </ol>
           </div>
 
@@ -302,20 +325,32 @@ export default function SuccessPage() {
           </div>
 
           {!showUploadForm ? (
-            <button
-              onClick={() => {
-                if (!rulesAgreed) {
-                  alert("Пожалуйста, сначала ознакомьтесь с правилами и отметьте галочку согласия.");
-                  return;
-                }
-                setShowUploadForm(true);
-              }}
-              className={`w-full py-3.5 rounded-xl font-bold transition duration-150 flex items-center justify-center gap-2 cursor-pointer ${
-                rulesAgreed ? 'bg-natural-blue text-white shadow-lg' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              🙋‍♂️ Я оплатил, прикрепить чек
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  if (!rulesAgreed) {
+                    alert("Пожалуйста, сначала ознакомьтесь с правилами и отметьте галочку согласия.");
+                    return;
+                  }
+                  setShowUploadForm(true);
+                }}
+                className={`w-full py-3.5 rounded-xl font-bold transition duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+                  rulesAgreed ? 'bg-natural-blue text-white shadow-lg' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                🙋‍♂️ Я оплатил, прикрепить чек
+              </button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={handleCancelBooking}
+                  className="text-xs font-semibold text-red-500 hover:text-red-700 hover:underline cursor-pointer"
+                >
+                  ❌ Я передумал, отменить бронирование
+                </button>
+              </div>
+            </div>
           ) : (
             <form onSubmit={handleUploadSubmit} className="border-t border-gray-100 pt-6 space-y-4">
               <h4 className="font-bold text-gray-900 text-sm">Подтверждение платежа</h4>

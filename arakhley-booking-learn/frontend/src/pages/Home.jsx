@@ -1,8 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../services/api';
+
+// Красивые заглушки (фолбеки) по умолчанию
+const FALLBACK_IMAGES = [
+  { 
+    id: 'f1', 
+    src: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=800&q=80", 
+    alt: "Уютный деревянный гостевой домик" 
+  },
+  { 
+    id: 'f2', 
+    src: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80", 
+    alt: "Живописный песчаный берег" 
+  },
+  { 
+    id: 'f3', 
+    src: "https://images.unsplash.com/photo-1542718610-a1d656d1884c?auto=format&fit=crop&w=800&q=80", 
+    alt: "Сосновый бор на территории базы отдыха" 
+  },
+  { 
+    id: 'f4', 
+    src: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80", 
+    alt: "Вечерняя зона отдыха у костра" 
+  }
+];
 
 export default function Home() {
   const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  
+  // Состояния динамической галереи
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [isGalleryLoading, setIsGalleryLoading] = useState(true);
+
+  // Запрашиваем фотографии из БД при загрузке страницы
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const data = await api.getGalleryPhotos();
+        setGalleryPhotos(data);
+      } catch (err) {
+        console.error("Не удалось загрузить фотографии галереи:", err);
+      } finally {
+        setIsGalleryLoading(false);
+      }
+    };
+    fetchGallery();
+  }, []);
+
+  // Если в БД есть загруженные фото — показываем их, иначе — берем красивые фолбеки
+  const displayImages = useMemo(() => {
+    if (galleryPhotos.length > 0) {
+      return galleryPhotos.map(p => ({
+        id: p.id,
+        src: p.image, // Django возвращает полный URL (например, /media/gallery/...)
+        alt: p.caption || "Фотография базы отдыха ЗабГУ"
+      }));
+    }
+    return FALLBACK_IMAGES;
+  }, [galleryPhotos]);
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setSelectedImageIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setSelectedImageIndex((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <div className="space-y-16 pb-16">
@@ -43,7 +110,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Условия размещения</h2>
-          <p className="text-sm text-gray-500 mt-2">Перед оформлением заявки ознакомьтесь с тарифами и типами гостевых домов базы отдыха ЗабГУ.</p>
+          <p className="text-sm text-gray-500 mt-2">Перед оформлением заявки ознакомьтесь с тарифами и типами гостевых домов базы отдыха ЗабГУ</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -133,6 +200,83 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Блок Динамической Галереи */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-10">
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Галерея базы отдыха</h2>
+          <p className="text-sm text-gray-500 mt-2">Посмотрите на живописную природу Арахлея и наши уютные гостевые дома</p>
+        </div>
+
+        {/* Адаптивная сетка фотографий */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {displayImages.map((img, idx) => (
+            <div
+              key={img.id}
+              onClick={() => setSelectedImageIndex(idx)}
+              className="group relative aspect-[4/3] rounded-2xl overflow-hidden cursor-pointer border border-gray-200 shadow-xs hover:shadow-md transition-all duration-300"
+            >
+              <img
+                src={img.src}
+                alt={img.alt}
+                loading="lazy"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <span className="text-white text-xs font-bold bg-white/20 backdrop-blur-xs px-3.5 py-2 rounded-full border border-white/20">
+                  🔍 Увеличить
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Лайтбокс */}
+      {selectedImageIndex !== null && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in touch-none select-none"
+          onClick={() => setSelectedImageIndex(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setSelectedImageIndex(null)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold cursor-pointer p-3 z-50 transition"
+          >
+            ✕
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePrevImage}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 text-4xl sm:text-5xl font-bold cursor-pointer p-4 z-50 transition select-none"
+          >
+            ‹
+          </button>
+
+          <div 
+            className="max-w-4xl max-h-[80vh] flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={displayImages[selectedImageIndex].src}
+              alt={displayImages[selectedImageIndex].alt}
+              className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+            />
+            <p className="text-white/80 text-sm mt-4 font-semibold text-center px-4">
+              {displayImages[selectedImageIndex].alt}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNextImage}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 text-4xl sm:text-5xl font-bold cursor-pointer p-4 z-50 transition select-none"
+          >
+            ›
+          </button>
+        </div>
+      )}
+
       {/* Модальное окно правил */}
       {isRulesOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -185,7 +329,7 @@ export default function Home() {
               </div>
 
               <div>
-                <h4 className="font-extrabold text-gray-900 mb-2 text-natural-blue flex items-center gap-1.5">🛡️ За что вы отвечаете:</h4>
+                <h4 className="font-extrabold text-gray-900 mb-2 text-natural-blue flex items-center gap-1.5">🛡️ За за что вы отвечаете:</h4>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Бережно относитесь к имуществу базы отдыха.</li>
                   <li>Поддерживайте чистоту и порядок в своем номере.</li>
