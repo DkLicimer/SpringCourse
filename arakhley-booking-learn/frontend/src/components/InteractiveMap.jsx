@@ -45,11 +45,11 @@ const CABIN_EQUIPMENT = {
   14: { beds: "2 двуспальные кровати (комфортное размещение до 4 человек)", furniture: "Прикроватные тумбочки (2 шт), шифоньер (2 шт), 2 кухонных стола, 4 стула, шторы (4 комплекта)", linen: "4 комплекта постельного белья, полотенца лицевые и банные", kitchen: "Посуда на 8 персон, ведра (2 шт), швабра, ветошь", appliances: "Газовая плита, 2 холодильника, 2 электрочайника" }, 
   15: { beds: "2 двуспальные кровати", furniture: "Прикроватные тумбочки, шифоньер, 2 стола, 4 стула", linen: "4 комплекта белья, полотенца", kitchen: "Посуда на 8 персон, полотенца", appliances: "Газовая плита, 2 холодильника, 2 чайника" },
   16: { 
-    beds: "Позже", 
-    furniture: "Позже", 
-    linen: "Позже", 
-    kitchen: "Позже", 
-    appliances: "Позже" 
+    beds: "2 удобные двуспальные кровати (комфортное VIP-размещение до 4 человек)", 
+    furniture: "Полный спальный гарнитур, шкаф-купе, прикроватные тумбы, мягкие кресла, кухонный гарнитур, обеденный стол, стулья", 
+    linen: "4 комплекта сатинового постельного белья премиум-класса, большие махровые полотенца (лицевые и банные)", 
+    kitchen: "Полный комплект столовой посуды на 4 персоны, бокалы, умывальник с автоматической подачей горячей и холодной воды (бойлер)", 
+    appliances: "Электрическая плита на тумбе, СВЧ-печь, холодильник, электрический чайник, плазменный телевизор с ТВ-приставкой" 
   }
 };
 
@@ -57,7 +57,7 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
   const [scale, setScale] = useState(1); 
   const [position, setPosition] = useState({ x: 0, y: 0 }); 
   const [isDragging, setIsDragging] = useState(false); 
-  const [dragStart, setDragStart] = useState({ x: e => e.clientX - position.x, y: e => e.clientY - position.y }); 
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); 
   const [hasMoved, setHasMoved] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -418,7 +418,7 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
                   onClick={() => handleCabinClick(pos.number, isAvailable)}
                 >
                   {/* Тень под домиком */}
-                  <ellipse cx={pos.x} cy={pos.y + cabinHeight / 2 - 8} rx="20" ry="5" fill="rgba(0,0,0,0.15)" />
+                  <ellipse cx={pos.x} cy={pos.y + currentHeight / 2 - 8} rx="20" ry="5" fill="rgba(0,0,0,0.15)" />
 
                   {/* Эффект выделения выбранного домика */}
                   {isSelected && (
@@ -503,24 +503,39 @@ export default function InteractiveMap({ cabinsData, selectedCabins = [], onCabi
             </div>
           </div>
 
-          {selectedCabins.map(cabinNum => (
-            <div key={cabinNum} className="p-5 bg-amber-50/50 rounded-xl border border-amber-200/60 shadow-xs font-sans">
-              <h5 className="font-extrabold text-gray-900 text-sm mb-3 flex items-center gap-1.5 uppercase tracking-wider text-amber-900">
-                🏡 Комплектация и инвентарь дома №{cabinNum}:
-              </h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-700">
-                <div className="space-y-2">
-                  <p><b>🛏️ Спальные места:</b> {CABIN_EQUIPMENT[cabinNum]?.beds}</p>
-                  <p><b>🛋️ Мебель и интерьер:</b> {CABIN_EQUIPMENT[cabinNum]?.furniture}</p>
-                  <p><b>🛏️ Постельное белье:</b> {CABIN_EQUIPMENT[cabinNum]?.linen}</p>
-                </div>
-                <div className="space-y-2">
-                  <p><b>🔌 Бытовая техника:</b> {CABIN_EQUIPMENT[cabinNum]?.appliances}</p>
-                  <p><b>🍳 Посуда и бытовая утварь:</b> {CABIN_EQUIPMENT[cabinNum]?.kitchen}</p>
+          {selectedCabins.map(cabinNum => {
+            const statusObj = getCabinStatus(cabinNum);
+            const cabinObj = statusObj.data;
+            
+            // Расчет свободных мест для отображения студентам
+            const freeBeds = cabinObj ? (cabinObj.capacity - cabinObj.booked_beds_count) : 0;
+            const totalBeds = cabinObj ? cabinObj.capacity : 4;
+
+            return (
+              <div key={cabinNum} className="p-5 bg-amber-50/50 rounded-xl border border-amber-200/60 shadow-xs font-sans">
+                <h5 className="font-extrabold text-gray-900 text-sm mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 uppercase tracking-wider text-amber-900">
+                  <span>🏡 Комплектация и инвентарь дома №{cabinNum}:</span>
+                  {/* КРАСИВЫЙ ИНДИКАТОР ОСТАВШИХСЯ КОЙКО-МЕСТ ДЛЯ СТУДЕНТОВ */}
+                  {role === 'STUDENT' && (
+                    <span className="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold normal-case select-none border border-emerald-200">
+                      🟢 Свободно мест на ваши даты: {freeBeds} из {totalBeds}
+                    </span>
+                  )}
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-700">
+                  <div className="space-y-2">
+                    <p><b>🛏️ Спальные места:</b> {CABIN_EQUIPMENT[cabinNum]?.beds}</p>
+                    <p><b>🛋️ Мебель и интерьер:</b> {CABIN_EQUIPMENT[cabinNum]?.furniture}</p>
+                    <p><b>🛏️ Постельное белье:</b> {CABIN_EQUIPMENT[cabinNum]?.linen}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p><b>🔌 Бытовая техника:</b> {CABIN_EQUIPMENT[cabinNum]?.appliances}</p>
+                    <p><b>🍳 Посуда и бытовая утварь:</b> {CABIN_EQUIPMENT[cabinNum]?.kitchen}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -13,13 +13,15 @@ export default function BookingPage() {
   
   // Массив выбранных домиков (поддержка одновременного выбора до 2 штук)
   const [selectedCabins, setSelectedCabins] = useState([]);
-  const [numBeds, setNumBeds] = useState(1); // Только для студентов
+  const [numBeds, setNumBeds] = useState(1); // Для студентов всегда 1
   
   // Согласие на обработку персональных данных
   const [consent, setConsent] = useState(false);
 
-  // Динамический список отдыхающих
-  const [guests, setGuests] = useState([{ full_name: '', category: 'ADULT' }]);
+  // Динамический список отдыхающих с новыми полями
+  const [guests, setGuests] = useState([
+    { full_name: '', category: 'ADULT', document_info: '', birth_date: '' }
+  ]);
 
   // Контактные данные
   const [contactName, setContactName] = useState('');
@@ -53,6 +55,43 @@ export default function BookingPage() {
     setSelectedCabins([]);
     setConsent(false);
   }, [role, startDate, endDate]);
+
+  // Фильтр ввода ФИО (разрешаем ТОЛЬКО кириллицу, пробелы и дефисы)
+  const filterCyrillic = (value) => {
+    return value.replace(/[^а-яА-ЯёЁ\s-]/g, "");
+  };
+
+  const handleContactNameChange = (e) => {
+    setContactName(filterCyrillic(e.target.value));
+  };
+
+  const handleGuestNameChange = (idx, value) => {
+    handleGuestChange(idx, 'full_name', filterCyrillic(value));
+  };
+
+  // Автоформатирование паспорта взрослых и детей 14-17 лет (XXXX XXXXXX - только цифры)
+  const formatPassport = (value) => {
+    const digits = value.replace(/\D/g, "").substring(0, 10);
+    if (digits.length > 4) {
+      return `${digits.substring(0, 4)} ${digits.substring(4)}`;
+    }
+    return digits;
+  };
+
+  // Форматирование детских документов (разрешаем латиницу для римских цифр, кириллицу для серии, цифры, дефисы и пробелы)
+  const formatChildDoc = (value) => {
+    return value.toUpperCase().replace(/[^А-ЯЁA-Z0-9\s-]/g, "");
+  };
+
+  const handleGuestDocChange = (idx, category, value) => {
+    let formatted = value;
+    if (category === 'ADULT' || category === 'TEEN_17') {
+      formatted = formatPassport(value);
+    } else {
+      formatted = formatChildDoc(value);
+    }
+    handleGuestChange(idx, 'document_info', formatted);
+  };
 
   // Интеллектуальная маска ввода телефона РФ
   const handlePhoneChange = (e) => {
@@ -128,7 +167,7 @@ export default function BookingPage() {
     }
   };
 
-  // Мгновенный автоматический расчет цены для всех выбранных домиков
+  // МГНОВЕННАЯ ПЕРЕСКАБИЛЯЦИЯ СТОИМОСТИ НА ФРОНТЕНДЕ НА ОСНОВЕ ПЛАТНЫХ КАТЕГОРИЙ ГОСТЕЙ И СПЕЦИФИКИ ДОМА №16
   const totalPrice = useMemo(() => {
     if (!startDate || !endDate || selectedCabins.length === 0 || cabins.length === 0) return 0;
     
@@ -138,23 +177,45 @@ export default function BookingPage() {
     if (days <= 0) return 0;
 
     let totalSum = 0;
-    selectedCabins.forEach(cabinNum => {
-      const cabinObj = cabins.find(c => c.number === cabinNum);
-      if (cabinObj) {
-        if (role === 'STAFF') {
-          totalSum += Number(cabinObj.price_staff_full_cabin) * days;
-        } else {
-          totalSum += Number(cabinObj.price_student_bed) * numBeds * days;
-        }
+    
+    if (role === 'STAFF') {
+      // Считаем количество только платных отдыхающих
+      const payingGuestsCount = guests.filter(g => 
+        g.full_name.trim() !== '' && 
+        (g.category === 'ADULT' || g.category === 'TEEN_17' || g.category === 'CHILD_13')
+      ).length;
+
+      const hasVip = selectedCabins.includes(16);
+      const hasStandard = selectedCabins.some(num => num !== 16);
+
+      // Начисляем фиксированные 2500 руб. за VIP домик №16, а стандартные домики рассчитываем поклиентно (по 610 руб. с человека)
+      if (hasVip) {
+        totalSum += 2500 * days;
       }
-    });
+      if (hasStandard) {
+        // Ищем первый выбранный стандартный домик для получения цены (обычно 610)
+        const standardCabinNum = selectedCabins.find(num => num !== 16);
+        const standardCabin = cabins.find(c => c.number === standardCabinNum);
+        const pricePerPerson = standardCabin ? Number(standardCabin.price_staff_full_cabin) : 610;
+        
+        totalSum += payingGuestsCount * pricePerPerson * days;
+      }
+    } else {
+      // Для студентов: расчет по койко-местам (всегда 1 место)
+      selectedCabins.forEach(cabinNum => {
+        const cabinObj = cabins.find(c => c.number === cabinNum);
+        if (cabinObj) {
+          totalSum += Number(cabinObj.price_student_bed) * 1 * days;
+        }
+      });
+    }
 
     return totalSum;
-  }, [startDate, endDate, selectedCabins, cabins, role, numBeds]);
+  }, [startDate, endDate, selectedCabins, cabins, role, numBeds, guests]);
 
   // Функции управления списком гостей
   const addGuest = () => {
-    setGuests([...guests, { full_name: '', category: 'ADULT' }]);
+    setGuests([...guests, { full_name: '', category: 'ADULT', document_info: '', birth_date: '' }]);
   };
 
   const removeGuest = (index) => {
@@ -185,7 +246,6 @@ export default function BookingPage() {
       return;
     }
 
-    // Динамический расчет максимального количества мест на основе вместимости выбранных домиков
     let maxBedsTotal = 0;
     if (role === 'STAFF') {
       selectedCabins.forEach(cabinNum => {
@@ -193,11 +253,11 @@ export default function BookingPage() {
         if (cabinObj) {
           maxBedsTotal += cabinObj.capacity;
         } else {
-          maxBedsTotal += 4; // Резервный фолбек
+          maxBedsTotal += 4;
         }
       });
     } else {
-      maxBedsTotal = numBeds;
+      maxBedsTotal = 1; // Для студентов всегда максимум 1
     }
 
     const guestsRequiringBed = guests.filter(g => g.full_name.trim() !== "" && g.category !== 'CHILD_3').length;
@@ -225,10 +285,35 @@ export default function BookingPage() {
       return;
     }
 
-    const invalidGuests = guests.filter(g => g.full_name.trim() !== "" && !validateFIO(g.full_name));
-    if (invalidGuests.length > 0) {
-      setErrorMessage("Укажите ФИО всех гостей в списке полностью (Фамилия и Имя).");
-      return;
+    // СТРОГАЯ ВАЛИДАЦИЯ ПЕРЕД ОТПРАВКОЙ НА БЭКЕНД
+    for (let i = 0; i < guests.length; i++) {
+      const g = guests[i];
+      const name = g.full_name.trim();
+      const doc = g.document_info.trim();
+      const isChild = g.category !== 'ADULT';
+      const isPassport = g.category === 'ADULT' || g.category === 'TEEN_17';
+
+      if (!name) {
+        setErrorMessage(`Укажите ФИО для отдыхающего №${i + 1}.`);
+        return;
+      }
+      if (!validateFIO(name)) {
+        setErrorMessage(`Укажите ФИО полностью (Фамилия и Имя) для отдыхающего №${i + 1}.`);
+        return;
+      }
+      if (!doc) {
+        const docName = isPassport ? "паспорта" : "свидетельства о рождении";
+        setErrorMessage(`Укажите серию и номер ${docName} для отдыхающего №${i + 1}.`);
+        return;
+      }
+      if (isPassport && doc.replace(/\s/g, "").length < 10) {
+        setErrorMessage(`Серия и номер паспорта отдыхающего №${i + 1} должны содержать 10 цифр.`);
+        return;
+      }
+      if (isChild && !g.birth_date) {
+        setErrorMessage(`Укажите дату рождения для отдыхающего №${i + 1} (ребенок).`);
+        return;
+      }
     }
 
     if (!consent) {
@@ -243,7 +328,7 @@ export default function BookingPage() {
       cabin: mainCabinObj?.id,
       second_cabin: selectedCabins.length > 1 ? cabins.find(c => c.number === selectedCabins[1])?.id : undefined,
       user_role: role,
-      num_beds_booked: role === 'STAFF' ? (mainCabinObj?.capacity || 4) : numBeds,
+      num_beds_booked: role === 'STAFF' ? (mainCabinObj?.capacity || 4) : 1, // Для студентов всегда 1
       start_date: startDate,
       end_date: endDate,
       contact_name: contactName.trim(),
@@ -253,9 +338,11 @@ export default function BookingPage() {
       position: role === 'STAFF' ? position.trim() : undefined,
       faculty: role === 'STUDENT' ? faculty.trim() : undefined,
       academic_group: role === 'STUDENT' ? academicGroup.trim() : undefined,
-      guests: guests.filter(g => g.full_name.trim() !== '').map(g => ({
+      guests: guests.map(g => ({
         full_name: g.full_name.trim(),
-        category: g.category
+        category: g.category,
+        document_info: g.document_info.trim(),
+        birth_date: g.category !== 'ADULT' ? g.birth_date : null
       }))
     };
 
@@ -314,7 +401,12 @@ export default function BookingPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setRole('STUDENT')}
+                onClick={() => {
+                  setRole('STUDENT'); 
+                  setNumBeds(1);
+                  // Принудительно сбрасываем список гостей до 1 карточки при переходе на роль студента
+                  setGuests([{ full_name: '', category: 'ADULT', document_info: '', birth_date: '' }]);
+                }}
                 className={`py-3 px-4 border rounded-xl font-semibold text-sm transition-all duration-150 flex flex-col items-center justify-center gap-1 cursor-pointer ${
                   role === 'STUDENT' 
                     ? 'border-natural-blue bg-blue-50/50 text-natural-blue' 
@@ -322,7 +414,7 @@ export default function BookingPage() {
                 }`}
               >
                 <span>🎓 Студент</span>
-                <span className="text-[10px] font-normal text-gray-500">Бронь койко-места</span>
+                <span className="text-[10px] font-normal text-gray-500">Бронь койко-места (макс. 1)</span>
               </button>
             </div>
           </div>
@@ -331,7 +423,7 @@ export default function BookingPage() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h2 className="text-md font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-natural-blue text-white flex items-center justify-center text-xs">2</span>
-              Даты отдыха {role === 'STUDENT' && ' и места'}
+              Даты отдыха
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -365,22 +457,6 @@ export default function BookingPage() {
                 />
               </div>
             </div>
-
-            {role === 'STUDENT' && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase">Количество бронируемых койко-мест</label>
-                <select
-                  value={numBeds}
-                  onChange={(e) => setNumBeds(Number(e.target.value))}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-natural-blue bg-white"
-                >
-                  <option value={1}>1 койко-место</option>
-                  <option value={2}>2 койко-места</option>
-                  <option value={3}>3 койко-места</option>
-                  <option value={4}>4 койко-места (весь домик)</option>
-                </select>
-              </div>
-            )}
           </div>
 
           {/* Шаг 3 */}
@@ -396,51 +472,103 @@ export default function BookingPage() {
 
           {/* Шаг 4: Список отдыхающих */}
           {selectedCabins.length > 0 && (
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex justify-between items-center mb-4">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+              <div className="flex justify-between items-center mb-2">
                 <h2 className="text-md font-bold text-gray-900 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-natural-blue text-white flex items-center justify-center text-xs">3</span>
                   Список отдыхающих
                 </h2>
-                <button
-                  type="button"
-                  onClick={addGuest}
-                  className="text-xs font-bold text-natural-blue hover:underline cursor-pointer"
-                >
-                  + Добавить человека
-                </button>
+                {/* Кнопка добавления доступна только для сотрудников */}
+                {role === 'STAFF' && (
+                  <button
+                    type="button"
+                    onClick={addGuest}
+                    className="text-xs font-bold text-natural-blue hover:underline cursor-pointer"
+                  >
+                    + Добавить человека
+                  </button>
+                )}
               </div>
 
+              {/* ДИНАМИЧЕСКИЙ СПИСОК КАРТОЧЕК ГОСТЕЙ С ДОКУМЕНТАМИ */}
               <div className="space-y-4">
                 {guests.map((guest, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row gap-2 sm:items-center pb-3 border-b border-gray-100 sm:border-0">
-                    <input
-                      type="text"
-                      placeholder="ФИО гостя полностью"
-                      required
-                      value={guest.full_name}
-                      onChange={(e) => handleGuestChange(idx, 'full_name', e.target.value)}
-                      className="flex-grow min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-natural-blue"
-                    />
-                    
-                    <div className="flex gap-2 items-center w-full sm:w-auto">
-                      <select
-                        value={guest.category}
-                        onChange={(e) => handleGuestChange(idx, 'category', e.target.value)}
-                        className="flex-grow sm:flex-grow-0 px-2 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-natural-blue min-w-[140px]"
-                      >
-                        <option value="ADULT">Взрослый</option>
-                        <option value="CHILD_10">Ребенок до 10 лет (Бесплатно)</option>
-                        <option value="CHILD_3">Ребенок до 3 лет (Без места)</option>
-                      </select>
-                      {guests.length > 1 && (
+                  <div key={idx} className="p-4 bg-gray-50/50 rounded-xl border border-gray-150/70 space-y-3 relative">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-150/70">
+                      <span className="text-xs font-bold text-natural-blue uppercase tracking-wider">Отдыхающий №{idx + 1}</span>
+                      {guests.length > 1 && role === 'STAFF' && (
                         <button
                           type="button"
                           onClick={() => removeGuest(idx)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded cursor-pointer"
+                          className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer"
                         >
-                          ❌
+                          ❌ Удалить
                         </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">ФИО полностью</label>
+                        <input
+                          type="text"
+                          placeholder="Иванов Иван Иванович"
+                          required
+                          value={guest.full_name}
+                          onChange={(e) => handleGuestNameChange(idx, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-natural-blue bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Категория</label>
+                        <select
+                          value={guest.category}
+                          onChange={(e) => {
+                            handleGuestChange(idx, 'category', e.target.value);
+                            handleGuestChange(idx, 'document_info', ''); // сбрасываем документ при изменении
+                            if (e.target.value === 'ADULT') {
+                              handleGuestChange(idx, 'birth_date', '');
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:border-natural-blue"
+                        >
+                          <option value="ADULT">Взрослый</option>
+                          <option value="CHILD_10">Ребенок до 10 лет (Бесплатно)</option>
+                          <option value="CHILD_3">Ребенок до 3 лет (Без места)</option>
+                          <option value="CHILD_13">Ребенок 10-13 лет</option>
+                          <option value="TEEN_17">Ребенок 14-17 лет</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">
+                          {(guest.category === 'ADULT' || guest.category === 'TEEN_17') ? 'Серия и номер паспорта' : 'Серия и номер свидетельства о рождении'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder={(guest.category === 'ADULT' || guest.category === 'TEEN_17') ? 'Серия и номер (только цифры)' : 'Пример: I-АГ 123456'}
+                          value={guest.document_info}
+                          onChange={(e) => handleGuestDocChange(idx, guest.category, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-natural-blue bg-white"
+                        />
+                      </div>
+
+                      {guest.category !== 'ADULT' && (
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Дата рождения</label>
+                          <input
+                            type="date"
+                            required
+                            max={todayDateStr}
+                            value={guest.birth_date}
+                            onChange={(e) => handleGuestChange(idx, 'birth_date', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-natural-blue bg-white"
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -474,7 +602,7 @@ export default function BookingPage() {
                       required
                       placeholder="Иванов Иван Иванович"
                       value={contactName}
-                      onChange={(e) => setContactName(e.target.value)}
+                      onChange={handleContactNameChange}
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-natural-blue"
                     />
                   </div>
@@ -584,7 +712,7 @@ export default function BookingPage() {
                   {role === 'STUDENT' && (
                     <div className="flex justify-between">
                       <span>Количество коек:</span>
-                      <span className="font-semibold text-gray-700">{numBeds} шт.</span>
+                      <span className="font-semibold text-gray-700">1 шт.</span>
                     </div>
                   )}
                 </div>

@@ -248,7 +248,7 @@ export default function SuccessPage() {
       {(isReceiptUploaded || isConfirmed) && (
         <div className="p-5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 leading-relaxed text-left shadow-xs">
           <b>ℹ️ Правила отмены оплаченного бронирования:</b><br />
-          Поскольку вы уже прикрепили документ об оплате (или бронирование подтверждено), автоматическая отмена в один клик невозможна. Для оформления возврата денежных средств и отмены брони, пожалуйста, отправьте заявление в свободной форме на почту <a href="mailto:projectsddm@zabgu.ru" className="font-bold underline text-amber-900 hover:text-amber-950">projectsddm@zabgu.ru</a>, указав номер вашей брони <b>{booking.booking_number}</b> и ФИО получателя путевки. Возврат средств производится в ручном режиме через бухгалтерию университета.
+          Поскольку вы уже прикрепили документ об оплате (или бронирование подтверждено), автоматическая отмена в один клик невозможна. Для оформления возврата денежных средств и отмены брони (<b>возможна не позднее 14:00 предыдущих суток до заезда</b>), пожалуйста, отправьте заявление в свободной форме на почту <a href="mailto:projectsddm@zabgu.ru" className="font-bold underline text-amber-900 hover:text-amber-950">projectsddm@zabgu.ru</a>, указав номер вашей брони <b>{booking.booking_number}</b> и ФИО получателя путевки. Возврат средств производится в ручном режиме через бухгалтерию университета.
         </div>
       )}
 
@@ -307,6 +307,7 @@ export default function SuccessPage() {
             <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
               <li>Освобождение домика — строго до <b>12:00</b>.</li>
               <li>Документы при заселении: оригинал паспорта (взрослым) и св-во о рождении (детям).</li>
+              <li className="font-semibold text-red-900">Отмена бронирования с возвратом средств возможна не позднее 14:00 предыдущих суток до заезда.</li>
             </ul>
             
             <div className="flex items-start gap-2.5 pt-3 border-t border-red-200/50">

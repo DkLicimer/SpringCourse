@@ -11,15 +11,44 @@ class CabinSerializer(serializers.ModelSerializer):
         model = Cabin
         fields = ['id', 'number', 'capacity', 'price_staff_full_cabin', 'price_student_bed', 'description']
 
+
 class GuestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Guest
-        fields = ['full_name', 'category']
+        fields = ['full_name', 'category', 'document_info', 'birth_date']
+
+    def validate(self, attrs):
+        category = attrs.get('category')
+        document_info = attrs.get('document_info', '').strip()
+        birth_date = attrs.get('birth_date')
+
+        # 1. Валидация ФИО гостя
+        if not attrs.get('full_name', '').strip():
+            raise serializers.ValidationError("ФИО гостя является обязательным полем.")
+
+        # 2. Обязательная проверка заполнения документа
+        if not document_info:
+            doc_type = "свидетельства о рождении" if category in ['CHILD_10', 'CHILD_3', 'CHILD_13'] else "паспорта"
+            raise serializers.ValidationError({"document_info": f"Укажите серию и номер {doc_type} гостя."})
+
+        # 3. Валидация серии и номера паспорта (ровно 10 цифр) для взрослых и детей 14-17 лет
+        if category in ['ADULT', 'TEEN_17']:
+            clean_doc = document_info.replace(" ", "")
+            if len(clean_doc) != 10 or not clean_doc.isdigit():
+                raise serializers.ValidationError({"document_info": "Серия и номер паспорта должны содержать ровно 10 цифр."})
+
+        # 4. Обязательная валидация даты рождения для всех несовершеннолетних гостей (до 18 лет)
+        if category in ['CHILD_10', 'CHILD_3', 'CHILD_13', 'TEEN_17'] and not birth_date:
+            raise serializers.ValidationError({"birth_date": "Для ребенка необходимо обязательно указать дату рождения."})
+
+        return attrs
+
 
 class GalleryPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = GalleryPhoto
         fields = ['id', 'image', 'caption']
+
 
 def get_booked_beds_for_cabin(cabin_obj, start, end):
     """
@@ -39,6 +68,7 @@ def get_booked_beds_for_cabin(cabin_obj, start, end):
         elif b.second_cabin == cabin_obj:
             total += cabin_obj.capacity
     return total
+
 
 class BookingCreateSerializer(serializers.ModelSerializer):
     guests = GuestSerializer(many=True, required=False)
@@ -72,9 +102,14 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         user_role = attrs.get('user_role')
         cabin = attrs.get('cabin')
         second_cabin = attrs.get('second_cabin')
+        
+        # ОГРАНИЧЕНИЕ: Если бронирует студент, принудительно выставляем 1 койко-место
+        if user_role == Booking.UserRole.STUDENT:
+            attrs['num_beds_booked'] = 1
+
         num_beds_booked = attrs.get('num_beds_booked', 1)
 
-        # ЖЕСТКАЯ БЛОКИРОВКА БРОНИРОВАНИЯ БЛАГОУСТРОЕННЫХ ДОМОВ СТУДЕНТАМИ
+        # Жесткая блокировка бронирования благоустроенных домов студентами
         if user_role == Booking.UserRole.STUDENT:
             if cabin.price_student_bed == 0:
                 raise serializers.ValidationError({"cabin": f"Домик №{cabin.number} является полностью благоустроенным и доступен для бронирования только сотрудникам ЗабГУ."})
@@ -141,9 +176,9 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             if booked_first > 0:
                 raise serializers.ValidationError({"cabin": f"Домик №{cabin.number} уже занят на эти даты."})
         else:
-            beds_req = validated_data.get('num_beds_booked', 1)
-            if beds_req > cabin.capacity:
-                raise serializers.ValidationError({"num_beds_booked": f"Невозможно забронировать {beds_req} мест в домике вместимостью {cabin.capacity}."})
+            # Для студентов принудительно ставим 1 место в БД
+            validated_data['num_beds_booked'] = 1
+            beds_req = 1
             if booked_first + beds_req > cabin.capacity:
                 raise serializers.ValidationError({"cabin": f"В домике №{cabin.number} недостаточно мест. Свободно: {cabin.capacity - booked_first}"})
 
@@ -158,11 +193,21 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         # Расчет цены
         days = (end_date - start_date).days
         if user_role == Booking.UserRole.STAFF:
-            price = cabin.price_staff_full_cabin * days
+            price = 0
+            if cabin.number == 16:
+                price += 2500 * days
+            else:
+                paying_guests_count = sum(1 for g in guests_data if g.get('category') in ['ADULT', 'TEEN_17', 'CHILD_13'])
+                price += paying_guests_count * cabin.price_staff_full_cabin * days
+
             if second_cabin:
-                price += second_cabin.price_staff_full_cabin * days
+                if second_cabin.number == 16:
+                    price += 2500 * days
+                else:
+                    if cabin.number == 16:
+                        price += paying_guests_count * second_cabin.price_staff_full_cabin * days
         else:
-            price = (cabin.price_student_bed * validated_data['num_beds_booked']) * days
+            price = 1 * cabin.price_student_bed * days # Принудительно 1 место
 
         validated_data['total_price'] = price
         booking = Booking.objects.create(**validated_data)
@@ -172,6 +217,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
 
         send_booking_notification(booking, "CREATED")
         return booking
+
 
 class ReceiptUploadSerializer(serializers.ModelSerializer):
     class Meta:

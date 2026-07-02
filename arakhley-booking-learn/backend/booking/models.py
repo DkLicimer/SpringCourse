@@ -110,8 +110,10 @@ class Guest(models.Model):
     
     class GuestCategory(models.TextChoices):
         ADULT = 'ADULT', 'Взрослый'
-        CHILD_10 = 'CHILD_10', 'Ребенок до 10 лет'
-        CHILD_3 = 'CHILD_3', 'Ребенок до 3 лет'
+        CHILD_10 = 'CHILD_10', 'Ребенок до 10 лет (бесплатно)'
+        CHILD_3 = 'CHILD_3', 'Ребенок до 3 лет (без места)'
+        CHILD_13 = 'CHILD_13', 'Ребенок 10-13 лет' # Новая категория
+        TEEN_17 = 'TEEN_17', 'Ребенок 14-17 лет'   # Новая категория
 
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name='guests', verbose_name="Бронирование"
@@ -119,6 +121,12 @@ class Guest(models.Model):
     full_name = models.CharField(max_length=255, verbose_name="ФИО гостя")
     category = models.CharField(
         max_length=10, choices=GuestCategory.choices, default=GuestCategory.ADULT, verbose_name="Категория"
+    )
+    document_info = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Документ (серия и номер)"
+    )
+    birth_date = models.DateField(
+        blank=True, null=True, verbose_name="Дата рождения"
     )
 
     class Meta:
@@ -152,7 +160,6 @@ class PaymentReceipt(models.Model):
         return f"Чек для брони {self.booking.booking_number}"
 
 
-# ПУТЬ ЗАГРУЗКИ КАРТИНОК ДЛЯ ГАЛЕРЕИ
 def gallery_photo_upload_path(instance, filename):
     ext = filename.split('.')[-1]
     return f"gallery/{uuid.uuid4().hex}.{ext}"

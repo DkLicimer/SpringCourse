@@ -17,7 +17,7 @@ services:
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/app
-      - media_volume:/app/media
+      - ./backend/media:/app/media
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-arakhley_db}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
@@ -40,4 +40,3 @@ services:
 
 volumes:
   postgres_data:
-  media_volume:

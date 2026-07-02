@@ -117,7 +117,15 @@ def generate_voucher_pdf(booking) -> bytes:
             p.drawString(54, y_pos, f"{idx}.")
             p.line(70, y_pos - 2, width - 54, y_pos - 2)
             p.setFillColorRGB(*navy_blue)
-            p.drawString(80, y_pos + 2, f"{g.full_name} ({g.get_category_display()})")
+            
+            # Динамический формат подписи документа и даты рождения в PDF с учетом новых категорий
+            category_text = g.get_category_display()
+            doc_label = "Свид-во" if g.category in ['CHILD_10', 'CHILD_3', 'CHILD_13'] else "Паспорт"
+            birth_date_text = f", д.р. {g.birth_date.strftime('%d.%m.%Y')}" if (g.category in ['CHILD_10', 'CHILD_3', 'CHILD_13', 'TEEN_17'] and g.birth_date) else ""
+            
+            guest_info_text = f"{g.full_name} ({category_text}, {doc_label}: {g.document_info or 'не указан'}{birth_date_text})"
+            
+            p.drawString(80, y_pos + 2, guest_info_text)
             p.setFillColorRGB(0, 0, 0)
         
         y_next = y_start - (num_guests * 22) - 15
@@ -221,6 +229,8 @@ def send_booking_notification(booking, event_type: str):
             f"Сумма к оплате: {booking.total_price} руб.\n\n"
             f"Для завершения бронирования оплатите его и загрузите чек в течение 1 часа по ссылке:\n"
             f"{payment_link}\n\n"
+            f"⛔ ПРАВИЛА ОТМЕНЫ БРОНИРОВАНИЯ И ВОЗВРАТА СРЕДСТВ:\n"
+            f"Обращаем ваше внимание, что самостоятельная отмена и возврат средств возможны не позднее 14:00 предыдущих суток до заезда.\n\n"
             f"ВАЖНО: Если письма нет в папке Входящие, проверьте папку СПАМ.\n"
             f"С уважением, Администрация базы отдыха ЗабГУ."
         )
@@ -234,9 +244,8 @@ def send_booking_notification(booking, event_type: str):
             f"После подтверждения официальная путевка с подписями будет выслана на ваш email.\n\n"
             f"⛔ ПРАВИЛА ОТМЕНЫ БРОНИРОВАНИЯ И ВОЗВРАТА СРЕДСТВ:\n"
             f"Поскольку вы уже прикрепили документ об оплате, автоматическая отмена в один клик невозможна. "
-            f"Для отмены бронирования и оформления возврата денежных средств, пожалуйста, отправьте "
-            f"письмо на адрес projectsddm@zabgu.ru, указав номер вашей брони {booking.booking_number} "
-            f"и ФИО получателя путевки. Возврат оформляется вручную через бухгалтерию университета.\n\n"
+            f"Для оформления возврата денежных средств и отмены заявки (возможна не позднее 14:00 предыдущих суток до заезда), "
+            f"пожалуйста, отправьте письмо на адрес projectsddm@zabgu.ru, указав номер вашей брони {booking.booking_number}.\n\n"
             f"С уважением, Администрация базы отдыха ЗабГУ."
         )
 
@@ -252,8 +261,8 @@ def send_booking_notification(booking, event_type: str):
             f"- Оригинал свидетельства о рождении на каждого ребенка.\n"
             f"Без предъявления документов заселение не производится.\n\n"
             f"⛔ ПРАВИЛА ОТМЕНЫ БРОНИРОВАНИЯ И ВОЗВРАТА СРЕДСТВ:\n"
-            f"Для отмены подтвержденного бронирования и оформления возврата денежных средств, пожалуйста, "
-            f"отправьте письмо на адрес projectsddm@zabgu.ru, указав номер вашей брони {booking.booking_number} "
+            f"Для отмены подтвержденного бронирования и оформления возврата денежных средств (отмена возможна не позднее 14:00 предыдущих суток до заезда), "
+            f"пожалуйста, отправьте письмо на адрес projectsddm@zabgu.ru, указав номер вашей брони {booking.booking_number} "
             f"и ФИО получателя путевки. Возврат оформляется в ручном режиме через бухгалтерию университета.\n\n"
             f"Желаем вам хорошего отдыха!"
         )
@@ -285,10 +294,12 @@ def send_booking_notification(booking, event_type: str):
 
     if not subject: return
 
+    # НАСТРАИВАЕМ СКРЫТУЮ КОПИЮ (BCC) НА СОБСТВЕННЫЙ ЯЩИК ОТПРАВИТЕЛЯ (РЕЗЕРВНЫЙ АРХИВ)
     email = EmailMessage(
         subject=subject, body=body,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[booking.contact_email],
+        bcc=[settings.DEFAULT_FROM_EMAIL], # Копия незаметно придет в ваши "Входящие"
         reply_to=['projectsddm@zabgu.ru']
     )
     for att in attachments:
@@ -296,6 +307,6 @@ def send_booking_notification(booking, event_type: str):
 
     try:
         email.send(fail_silently=False)
-        print(f"EMAIL_SENT: {event_type} to {booking.contact_email}")
+        print(f"EMAIL_SENT: {event_type} to {booking.contact_email} and BCC to {settings.DEFAULT_FROM_EMAIL}")
     except Exception as e:
         print(f"EMAIL_ERROR: {e}")

@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 
-// Красивые заглушки (фолбеки) по умолчанию
 const FALLBACK_IMAGES = [
   { 
     id: 'f1', 
@@ -29,12 +28,9 @@ const FALLBACK_IMAGES = [
 export default function Home() {
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-  
-  // Состояния динамической галереи
   const [galleryPhotos, setGalleryPhotos] = useState([]);
   const [isGalleryLoading, setIsGalleryLoading] = useState(true);
 
-  // Запрашиваем фотографии из БД при загрузке страницы
   useEffect(() => {
     const fetchGallery = async () => {
       try {
@@ -49,12 +45,11 @@ export default function Home() {
     fetchGallery();
   }, []);
 
-  // Если в БД есть загруженные фото — показываем их, иначе — берем красивые фолбеки
   const displayImages = useMemo(() => {
     if (galleryPhotos.length > 0) {
       return galleryPhotos.map(p => ({
         id: p.id,
-        src: p.image, // Django возвращает полный URL (например, /media/gallery/...)
+        src: p.image,
         alt: p.caption || "Фотография базы отдыха ЗабГУ"
       }));
     }
@@ -156,7 +151,8 @@ export default function Home() {
               <h3 className="font-bold text-gray-900 text-base mb-2">Заселение и выезд</h3>
               <ul className="text-xs text-gray-600 space-y-2 list-disc pl-4">
                 <li>Время заселения: с 14:00 до 21:00.</li>
-                <li>Освобождение домиков: до 12:00 в день выезда.</li>
+                <li>Освобождение домиков: строго до 12:00.</li>
+                <li className="font-semibold text-amber-900">Отмена брони с возвратом: не позднее 14:00 предыдущих суток до заезда.</li>
               </ul>
             </div>
             <span className="text-xs font-bold text-amber-600 uppercase tracking-wider mt-6 block">Важно знать</span>
@@ -167,7 +163,8 @@ export default function Home() {
       {/* Промо-блок */}
       <section className="bg-gray-50 border-y border-gray-200 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
+          {/* Добавлены адаптивные отступы pb-6 lg:pb-0 для разделения карточек на мобильных */}
+          <div className="space-y-6 pb-6 lg:pb-0">
             <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Проведите время на природе с комфортом</h2>
             <div className="text-sm text-gray-600 leading-relaxed space-y-4">
               <p>
@@ -296,7 +293,7 @@ export default function Home() {
                   <li>Заявку на сайте заполняет только действующий сотрудник или студент университета.</li>
                   <li>Не передавайте путёвку другим людям.</li>
                   <li>Распечатайте путёвку, чтобы показать её при въезде.</li>
-                  <li>Если вы не сможете приехать, напишите на почту <a href="mailto:projectsddm@zabgu.ru" className="text-natural-blue font-bold hover:underline">projectsddm@zabgu.ru</a> и верните путёвку в кабинет 243 на Бабушкина 129 <b>за 3 дня до заезда</b>.</li>
+                  <li>Если вы не сможете приехать, оформите отмену бронирования на сайте (кнопка в деталях брони) или напишите на почту <a href="mailto:projectsddm@zabgu.ru" className="text-natural-blue font-bold hover:underline">projectsddm@zabgu.ru</a> (или позвоните по телефону <a href="tel:89144912084" className="text-natural-blue font-bold hover:underline">8 (914) 491-20-84</a>) <b>не позднее 14:00 предыдущих суток до заезда</b>.</li>
                 </ul>
               </div>
 
