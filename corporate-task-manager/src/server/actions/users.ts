@@ -109,3 +109,70 @@ export async function deleteEmployee(userId: string) {
 
   revalidatePath("/app/employees");
 }
+
+// Добавьте эту функцию в самый конец файла src/server/actions/users.ts
+
+export async function updateEmployee(userId: string, formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  const name = formData.get("name") as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  
+  const canReadSocial = formData.get("canReadSocial") === "true";
+  const canWriteSocial = formData.get("canWriteSocial") === "true";
+  const canReadTeam = formData.get("canReadTeam") === "true";
+  const canWriteTeam = formData.get("canWriteTeam") === "true";
+
+  if (!name || !email) {
+    throw new Error("ФИО и Email обязательны для заполнения");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Формируем объект обновления данных пользователя
+    const updateData: any = { name, email };
+    
+    // Если администратор указал новый пароль — хешируем и обновляем его
+    if (password && password.trim().length > 0) {
+      updateData.passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    // 2. Обновляем (или создаем, если не было) права доступа к таблице Соц паспорт
+    await tx.tableAccess.upsert({
+      where: {
+        userId_tableName: { userId, tableName: "social_passport" }
+      },
+      update: { canRead: canReadSocial, canWrite: canWriteSocial },
+      create: {
+        userId,
+        tableName: "social_passport",
+        canRead: canReadSocial,
+        canWrite: canWriteSocial
+      }
+    });
+
+    // 3. Обновляем права к таблице Командообразование
+    await tx.tableAccess.upsert({
+      where: {
+        userId_tableName: { userId, tableName: "teambuilding" }
+      },
+      update: { canRead: canReadTeam, canWrite: canWriteTeam },
+      create: {
+        userId,
+        tableName: "teambuilding",
+        canRead: canReadTeam,
+        canWrite: canWriteTeam
+      }
+    });
+  });
+
+  revalidatePath("/app/employees");
+}

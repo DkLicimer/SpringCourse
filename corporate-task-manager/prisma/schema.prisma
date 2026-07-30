@@ -71,10 +71,11 @@ model Task {
   title               String
   description         String?
   deadline            DateTime?
-  intermediateControl Boolean          @default(false) // Нужен ли промежуточный контроль
-  controlReport       String?          // Текстовый отчет контроля
-  adminNotes          String?          // Примечания админа
+  intermediateControl Boolean          @default(false)
+  controlReport       String?
+  adminNotes          String?
   assignmentType      AssignmentType   @default(INDIVIDUAL)
+  isPriority          Boolean          @default(false) // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ (Приоритетная задача)
   
   goalId              String
   goal                Goal             @relation(fields: [goalId], references: [id], onDelete: Cascade)
@@ -85,7 +86,6 @@ model Task {
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
-  // Связи
   assignments         TaskAssignment[]
   comments            Comment[]
 }

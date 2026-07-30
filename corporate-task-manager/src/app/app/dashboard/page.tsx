@@ -14,13 +14,10 @@ export default async function DashboardPage() {
     redirect("/app");
   }
 
-  const now = new Date();
-  const threeDaysFromNow = new Date();
-  threeDaysFromNow.setDate(now.getDate() + 3);
-
-  // 1. Извлекаем все задачи
-  const allTasks = await prisma.task.findMany({
+  // Загружаем сырые данные задач со всеми связями
+  const tasks = await prisma.task.findMany({
     include: {
+      goal: true,
       assignments: {
         include: {
           status: true,
@@ -29,27 +26,7 @@ export default async function DashboardPage() {
     },
   });
 
-  // 2. Рассчитываем метрики задач
-  const totalTasks = allTasks.length;
-  
-  // Просроченные задачи: дедлайн прошел, и хотя бы одно назначение НЕ выполнено
-  const overdueTasksCount = allTasks.filter((task) => {
-    if (!task.deadline) return false;
-    const isOverdue = new Date(task.deadline) < now;
-    const isNotFinished = task.assignments.some((as) => as.statusId !== "status-done");
-    return isOverdue && isNotFinished;
-  }).length;
-
-  // Срочные задачи: дедлайн в ближайшие 3 дня, и они не выполнены
-  const urgentTasksCount = allTasks.filter((task) => {
-    if (!task.deadline) return false;
-    const taskDeadline = new Date(task.deadline);
-    const isUpcoming = taskDeadline >= now && taskDeadline <= threeDaysFromNow;
-    const isNotFinished = task.assignments.some((as) => as.statusId !== "status-done");
-    return isUpcoming && isNotFinished;
-  }).length;
-
-  // 3. Загружаем сотрудников для сводной таблицы эффективности
+  // Загружаем сырые данные сотрудников со всеми их назначениями
   const employees = await prisma.user.findMany({
     where: { role: "EMPLOYEE" },
     include: {
@@ -62,35 +39,6 @@ export default async function DashboardPage() {
     },
   });
 
-  // Рассчитываем детальную статистику по каждому сотруднику
-  const employeeStats = employees.map((emp) => {
-    const total = emp.assignments.length;
-    const completed = emp.assignments.filter((as) => as.statusId === "status-done").length;
-    const active = emp.assignments.filter((as) => as.statusId !== "status-done" && !as.isBlocked).length;
-    const blocked = emp.assignments.filter((as) => as.isBlocked).length;
-
-    // Считаем просроченные задачи для конкретного сотрудника
-    const overdue = emp.assignments.filter((as) => {
-      if (as.statusId === "status-done" || !as.task.deadline) return false;
-      return new Date(as.task.deadline) < now;
-    }).length;
-
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    return {
-      id: emp.id,
-      name: emp.name,
-      initials: emp.initials,
-      email: emp.email,
-      total,
-      completed,
-      active,
-      blocked,
-      overdue,
-      completionRate: rate,
-    };
-  });
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
@@ -99,10 +47,8 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardClient
-        totalTasks={totalTasks}
-        overdueCount={overdueTasksCount}
-        urgentCount={urgentTasksCount}
-        employeeStats={employeeStats}
+        tasks={JSON.parse(JSON.stringify(tasks))}
+        employees={JSON.parse(JSON.stringify(employees))}
       />
     </div>
   );

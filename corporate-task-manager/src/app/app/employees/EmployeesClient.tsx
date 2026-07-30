@@ -2,8 +2,9 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { createEmployee, deleteEmployee } from "@/server/actions/users";
-import { UserPlus, Shield, X, Search, Trash2 } from "lucide-react";
+import { createEmployee, deleteEmployee, updateEmployee } from "@/server/actions/users";
+import { UserPlus, Shield, X, Search, Trash2, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type TableAccess = {
   tableName: string;
@@ -22,14 +23,18 @@ type UserWithAccess = {
 
 interface EmployeesClientProps {
   initialUsers: UserWithAccess[];
-  currentUserId: string; // ID текущего администратора
+  currentUserId: string;
 }
 
 export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClientProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // Стейты редактирования сотрудника
+  const [editingUser, setEditingUser] = useState<UserWithAccess | null>(null);
 
   // Состояния для чекбоксов доступа
   const [access, setAccess] = useState({
@@ -45,6 +50,31 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
       u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const openCreateModal = () => {
+    setEditingUser(null);
+    setAccess({
+      canReadSocial: false,
+      canWriteSocial: false,
+      canReadTeam: false,
+      canWriteTeam: false,
+    });
+    setIsOpen(true);
+  };
+
+  const openEditModal = (user: UserWithAccess) => {
+    setEditingUser(user);
+    const social = user.tableAccesses.find(a => a.tableName === "social_passport");
+    const team = user.tableAccesses.find(a => a.tableName === "teambuilding");
+    
+    setAccess({
+      canReadSocial: social?.canRead || false,
+      canWriteSocial: social?.canWrite || false,
+      canReadTeam: team?.canRead || false,
+      canWriteTeam: team?.canWrite || false,
+    });
+    setIsOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -57,21 +87,21 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
 
     startTransition(async () => {
       try {
-        await createEmployee(formData);
+        if (editingUser) {
+          // Режим обновления
+          await updateEmployee(editingUser.id, formData);
+        } else {
+          // Режим создания
+          await createEmployee(formData);
+        }
         setIsOpen(false);
-        setAccess({
-          canReadSocial: false,
-          canWriteSocial: false,
-          canReadTeam: false,
-          canWriteTeam: false,
-        });
+        router.refresh(); // Принудительно обновляем данные на клиенте
       } catch (err: any) {
-        setError(err.message || "Ошибка при создании сотрудника");
+        setError(err.message || "Ошибка при сохранении");
       }
     });
   };
 
-  // Функция удаления сотрудника
   const handleDelete = async (userId: string, userName: string) => {
     if (!window.confirm(`Вы уверены, что хотите безвозвратно удалить сотрудника ${userName}?`)) {
       return;
@@ -80,6 +110,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     startTransition(async () => {
       try {
         await deleteEmployee(userId);
+        router.refresh(); // Мгновенное обновление таблицы без перезагрузки
       } catch (err: any) {
         alert(err.message || "Не удалось удалить сотрудника");
       }
@@ -107,8 +138,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
           />
         </div>
         <button
-          onClick={() => setIsOpen(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+          onClick={openCreateModal}
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
         >
           <UserPlus className="h-4 w-4" />
           Добавить сотрудника
@@ -167,18 +198,27 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {user.id !== currentUserId ? (
+                    <div className="flex items-center justify-end gap-1.5">
                       <button
-                        onClick={() => handleDelete(user.id, user.name)}
-                        disabled={isPending}
-                        className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center"
-                        title="Удалить сотрудника"
+                        onClick={() => openEditModal(user)}
+                        className="text-slate-500 hover:text-slate-800 p-1.5 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                        title="Редактировать сотрудника"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </button>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">Это вы</span>
-                    )}
+                      {user.id !== currentUserId ? (
+                        <button
+                          onClick={() => handleDelete(user.id, user.name)}
+                          disabled={isPending}
+                          className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center cursor-pointer"
+                          title="Удалить сотрудника"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic px-2">Это вы</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -192,7 +232,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-800">Добавить нового сотрудника</h3>
+              <h3 className="text-lg font-bold text-slate-800">
+                {editingUser ? `Редактировать сотрудника: ${editingUser.name}` : "Добавить нового сотрудника"}
+              </h3>
               <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
@@ -212,6 +254,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     type="text"
                     name="name"
                     required
+                    defaultValue={editingUser?.name || ""}
                     placeholder="Например, Петров Петр"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
@@ -222,17 +265,20 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     type="email"
                     name="email"
                     required
+                    defaultValue={editingUser?.email || ""}
                     placeholder="petrov@company.com"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Временный пароль</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {editingUser ? "Новый пароль (оставьте пустым для сохранения прежнего)" : "Пароль"}
+                  </label>
                   <input
                     type="password"
                     name="password"
-                    required
-                    placeholder="Укажите сложный пароль"
+                    required={!editingUser} // Пароль обязателен только при создании
+                    placeholder={editingUser ? "••••••••" : "Укажите сложный пароль"}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>
@@ -296,16 +342,16 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:bg-blue-400"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors disabled:bg-blue-400 cursor-pointer"
                 >
-                  {isPending ? "Создание..." : "Создать сотрудника"}
+                  {isPending ? "Сохранение..." : editingUser ? "Сохранить изменения" : "Создать сотрудника"}
                 </button>
               </div>
             </form>

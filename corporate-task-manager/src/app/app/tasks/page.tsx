@@ -6,12 +6,20 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { TasksClient } from "./TasksClient";
 
-export default async function TasksPage() {
-  const session = await getServerSession(authOptions);
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
 
+export default async function TasksPage(props: PageProps) {
+  const session = await getServerSession(authOptions);
   if (!session) {
     redirect("/login");
   }
+
+  const searchParams = await props.searchParams; // Извлекаем параметры страницы
+  const page = parseInt(searchParams.page || "1") || 1;
+  const pageSize = 10; // По 10 задач на страницу
+  const skip = (page - 1) * pageSize;
 
   const isAdmin = session.user.role === "ADMIN";
 
@@ -31,9 +39,7 @@ export default async function TasksPage() {
     orderBy: { position: "asc" },
   });
 
-  // 4. Загружаем задачи в зависимости от роли (с комментариями!)
-  let tasks = [];
-
+  // Общие связи для выборки задач
   const includeRelations = {
     goal: true,
     assignments: {
@@ -41,37 +47,58 @@ export default async function TasksPage() {
         user: true,
         status: true,
       },
-      orderBy: { sequenceOrder: "asc" },
+      orderBy: { sequenceOrder: "asc" as const },
     },
-    // Подгружаем чат комментариев и информацию об авторе
     comments: {
       include: {
         user: {
           select: { name: true, initials: true },
         },
       },
-      orderBy: { createdAt: "asc" as const }, // От старых к новым
+      orderBy: { createdAt: "asc" as const },
     },
   };
 
+  // 4. Загружаем задачи с пагинацией и сортировкой по приоритету (isPriority: "desc")
+  let tasks = [];
+  let totalTasksCount = 0;
+
+  const orderCondition = [
+    { isPriority: "desc" as const }, // Приоритетные задачи в самом верху
+    { deadline: "asc" as const },    // Затем по приближению дедлайна
+    { createdAt: "desc" as const },  // Затем новые сверху
+  ];
+
   if (isAdmin) {
+    totalTasksCount = await prisma.task.count();
     tasks = await prisma.task.findMany({
-      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+      orderBy: orderCondition,
       include: includeRelations,
     });
   } else {
+    totalTasksCount = await prisma.task.count({
+      where: {
+        assignments: {
+          some: { userId: session.user.id },
+        },
+      },
+    });
     tasks = await prisma.task.findMany({
       where: {
         assignments: {
-          some: {
-            userId: session.user.id,
-          },
+          some: { userId: session.user.id },
         },
       },
-      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+      orderBy: orderCondition,
       include: includeRelations,
     });
   }
+
+  const totalPages = Math.ceil(totalTasksCount / pageSize);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -82,6 +109,8 @@ export default async function TasksPage() {
         statuses={JSON.parse(JSON.stringify(statuses))}
         currentUserId={session.user.id}
         isAdmin={isAdmin}
+        currentPage={page}
+        totalPages={totalPages}
       />
     </div>
   );

@@ -7,6 +7,19 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "./notifications";
 
+// Интерфейс для создания и редактирования задачи (с поддержкой приоритета)
+interface CreateTaskInput {
+  title: string;
+  description?: string;
+  deadline?: string;
+  intermediateControl: boolean;
+  adminNotes?: string;
+  assignmentType: "INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL";
+  goalId: string;
+  assigneeIds: string[]; // Для SEQUENTIAL порядок элементов определяет очередь
+  isPriority: boolean;   // Приоритетная задача (срочно)
+}
+
 // 1. Создание новой глобальной цели (только для ADMIN)
 export async function createGoal(title: string, color: string) {
   const session = await getServerSession(authOptions);
@@ -30,17 +43,6 @@ export async function createGoal(title: string, color: string) {
 }
 
 // 2. Создание новой задачи (только для ADMIN)
-interface CreateTaskInput {
-  title: string;
-  description?: string;
-  deadline?: string;
-  intermediateControl: boolean;
-  adminNotes?: string;
-  assignmentType: "INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL";
-  goalId: string;
-  assigneeIds: string[]; // Для SEQUENTIAL порядок элементов определяет очередь
-}
-
 export async function createTask(input: CreateTaskInput) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -56,6 +58,7 @@ export async function createTask(input: CreateTaskInput) {
     assignmentType,
     goalId,
     assigneeIds,
+    isPriority,
   } = input;
 
   if (!title || !goalId || assigneeIds.length === 0) {
@@ -72,6 +75,7 @@ export async function createTask(input: CreateTaskInput) {
         intermediateControl,
         adminNotes,
         assignmentType,
+        isPriority, // Сохраняем флаг приоритета в БД
         goalId,
         createdById: session.user.id,
       },
@@ -325,4 +329,140 @@ export async function addComment(taskId: string, text: string) {
 
   revalidatePath("/app/tasks");
   return comment;
+}
+
+// 7. Создание кастомного статуса задачи (только для ADMIN)
+export async function createTaskStatus(name: string, color: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  if (!name || !color) {
+    throw new Error("Укажите название статуса и цвет");
+  }
+
+  // Находим максимальную позицию, чтобы добавить новый статус в конец списка
+  const maxStatus = await prisma.taskStatus.findFirst({
+    orderBy: { position: "desc" },
+  });
+  const nextPosition = maxStatus ? maxStatus.position + 1 : 1;
+
+  const status = await prisma.taskStatus.create({
+    data: {
+      name,
+      color,
+      isDefault: false,
+      position: nextPosition,
+    },
+  });
+
+  revalidatePath("/app/tasks");
+  return status;
+}
+
+// 8. Удаление кастомного статуса задачи (только для ADMIN)
+export async function deleteTaskStatus(id: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  const status = await prisma.taskStatus.findUnique({
+    where: { id },
+  });
+
+  if (!status) {
+    throw new Error("Статус не найден");
+  }
+
+  // Защита системных дефолтных статусов
+  if (status.isDefault) {
+    throw new Error("Системные статусы по умолчанию удалять нельзя");
+  }
+
+  // Защита от удаления используемых статусов
+  const isUsed = await prisma.taskAssignment.count({
+    where: { statusId: id },
+  });
+
+  if (isUsed > 0) {
+    throw new Error(
+      "Этот статус сейчас используется в задачах. Переведите все зависимые задачи на другие статусы перед его удалением"
+    );
+  }
+
+  await prisma.taskStatus.delete({
+    where: { id },
+  });
+
+  revalidatePath("/app/tasks");
+}
+
+// 9. Редактирование задачи администратором (только для ADMIN)
+export async function updateTask(taskId: string, input: CreateTaskInput) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  const {
+    title,
+    description,
+    deadline,
+    intermediateControl,
+    adminNotes,
+    assignmentType,
+    isPriority, // Получаем флаг приоритета
+    goalId,
+    assigneeIds,
+  } = input;
+
+  if (!title || !goalId || assigneeIds.length === 0) {
+    throw new Error("Заполните обязательные поля и выберите исполнителей");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Обновляем саму карточку задачи
+    await tx.task.update({
+      where: { id: taskId },
+      data: {
+        title,
+        description,
+        deadline: deadline ? new Date(deadline) : null,
+        intermediateControl,
+        adminNotes,
+        assignmentType,
+        isPriority, // Обновляем флаг приоритета в БД
+        goalId,
+      },
+    });
+
+    // 2. Стираем старые назначения исполнителей
+    await tx.taskAssignment.deleteMany({
+      where: { taskId },
+    });
+
+    // 3. Создаем новые назначения заново
+    const assignmentsData = assigneeIds.map((userId, index) => {
+      let isBlocked = false;
+      if (assignmentType === "SEQUENTIAL" && index > 0) {
+        isBlocked = true;
+      }
+
+      return {
+        taskId,
+        userId,
+        statusId: "status-todo",
+        sequenceOrder: assignmentType === "SEQUENTIAL" ? index : 0,
+        isBlocked,
+      };
+    });
+
+    await tx.taskAssignment.createMany({
+      data: assignmentsData,
+    });
+  });
+
+  revalidatePath("/app/tasks");
 }
