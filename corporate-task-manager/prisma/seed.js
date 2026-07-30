@@ -1,14 +1,20 @@
 // prisma/seed.js
+require('dotenv').config(); // Загружаем переменные окружения из .env
 const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const pg = require('pg');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
+// Создаем пул соединений и передаем в адаптер Prisma
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Начало заполнения базы данных...');
 
   // 1. Создаем дефолтные статусы задач
-  const statusTodo = await prisma.taskStatus.upsert({
+  await prisma.taskStatus.upsert({
     where: { id: 'status-todo' },
     update: {},
     create: {
@@ -20,7 +26,7 @@ async function main() {
     },
   });
 
-  const statusInProgress = await prisma.taskStatus.upsert({
+  await prisma.taskStatus.upsert({
     where: { id: 'status-in-progress' },
     update: {},
     create: {
@@ -32,7 +38,7 @@ async function main() {
     },
   });
 
-  const statusDone = await prisma.taskStatus.upsert({
+  await prisma.taskStatus.upsert({
     where: { id: 'status-done' },
     update: {},
     create: {
@@ -45,7 +51,7 @@ async function main() {
   });
 
   // 2. Создаем шаблонную цель "Текучка"
-  const currentTasksGoal = await prisma.goal.upsert({
+  await prisma.goal.upsert({
     where: { id: 'goal-current-tasks' },
     update: {},
     create: {
@@ -58,7 +64,7 @@ async function main() {
 
   // 3. Создаем Администратора по умолчанию
   const hashedPassword = await bcrypt.hash('admin12345', 10);
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@company.com' },
     update: {},
     create: {
@@ -81,4 +87,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end(); // Обязательно закрываем пул соединений
   });
