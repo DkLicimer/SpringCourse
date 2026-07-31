@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql" // или "sqlite", если вы решили начать локально с нее
+  provider = "postgresql"
 }
 
 generator client {

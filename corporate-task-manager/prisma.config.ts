@@ -1,14 +1,5 @@
 // prisma.config.ts
-import "dotenv/config";
-
-// Принудительно очищаем глобальные переменные Windows, чтобы они не перебивали наш .env
-delete process.env.PGUSER;
-delete process.env.PGPASSWORD;
-delete process.env.PGHOST;
-delete process.env.PGPORT;
-delete process.env.PGDATABASE;
-
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -17,6 +8,8 @@ export default defineConfig({
     seed: "node prisma/seed.js",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Прописываем строку подключения текстом напрямую сюда (без env),
+    // чтобы Prisma CLI гарантированно прочитала её на Windows без конфликтов СУБД
+    url: "postgresql://postgres:mysecretpassword@127.0.0.1:5433/task_manager_db?schema=public",
   },
 });
