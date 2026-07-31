@@ -1,10 +1,30 @@
 // src/lib/prisma.ts
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import "dotenv/config";
+
+// Принудительно очищаем глобальные переменные Windows, чтобы они не перебивали наш .env
+delete process.env.PGUSER;
+delete process.env.PGPASSWORD;
+delete process.env.PGHOST;
+delete process.env.PGPORT;
+delete process.env.PGDATABASE;
+
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
 const prismaClientSingleton = () => {
-  // Адаптер Prisma 7 берет строку подключения из переменных окружения
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not defined in environment variables");
+  }
+  
+  console.log("🔌 Prisma пытается подключиться к:", process.env.DATABASE_URL);
+  
+  const pool = new pg.Pool({ 
+    connectionString: process.env.DATABASE_URL 
+  });
+  
+  const adapter = new PrismaPg(pool);
+  
   return new PrismaClient({ adapter });
 };
 

@@ -20,32 +20,45 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Заполните все поля");
         }
 
-        // Поиск пользователя в БД
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        });
+        console.log("🔑 Попытка входа с email:", credentials.email);
 
-        if (!user) {
-          throw new Error("Пользователь не найден");
+        try {
+          // Ищем пользователя в БД
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          });
+
+          if (!user) {
+            console.log("❌ Ошибка авторизации: Пользователь с таким email не найден в БД");
+            throw new Error("Пользователь не найден");
+          }
+
+          console.log("👤 Пользователь найден:", user.name);
+
+          // Сравнение пароля
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.passwordHash
+          );
+
+          if (!isPasswordValid) {
+            console.log("❌ Ошибка авторизации: Пароль не совпал с хешем в БД");
+            throw new Error("Неверный пароль");
+          }
+
+          console.log("✅ Авторизация успешна для:", user.name);
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            initials: user.initials,
+          };
+        } catch (error: any) {
+          console.error("🚨 Исключение в процессе авторизации:", error.message || error);
+          return null; // Возвращаем null, чтобы NextAuth вывел ошибку на клиенте
         }
-
-        // Сравнение пароля
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("Неверный пароль");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          initials: user.initials,
-        };
       }
     })
   ],
@@ -68,7 +81,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   pages: {
-    signIn: "/login", // Наша кастомная страница входа
+    signIn: "/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

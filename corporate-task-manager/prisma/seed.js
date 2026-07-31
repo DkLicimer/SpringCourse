@@ -1,5 +1,23 @@
 // prisma/seed.js
-require('dotenv').config(); // Загружаем переменные окружения из .env
+// prisma/seed.js
+require('dotenv').config();
+
+// Принудительно очищаем глобальные переменные Windows, чтобы они не перебивали наш .env
+delete process.env.PGUSER;
+delete process.env.PGPASSWORD;
+delete process.env.PGHOST;
+delete process.env.PGPORT;
+delete process.env.PGDATABASE;
+
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const pg = require('pg');
+const bcrypt = require('bcryptjs');
+
+// Создаем пул соединений и передаем в адаптер Prisma
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const pg = require('pg');
