@@ -3,16 +3,26 @@
 
 import React, { useState, useTransition } from "react";
 import { createSocialPassportRow, deleteSocialPassportRow } from "@/server/actions/tables";
-import { Plus, Trash2, ArrowLeft, Search, Globe, X, User, PhoneCall, Briefcase } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Search, X, User, PhoneCall, Briefcase } from "lucide-react";
 import Link from "next/link";
 
+// 1. ИСХОДНЫЙ ТИП ИЗ СХЕМЫ БАЗЫ ДАННЫХ (с неудобными названиями)
 type SocialRow = {
   id: string;
   department: string;
-  accountUrl: string;
-  followers: number;
-  notes: string | null;
+  accountUrl: string; // В БД пишется ФИО
+  followers: number;  // В БД пишется Номер кабинета
+  notes: string | null; // В БД пишутся Должность и примечания
 };
+
+// 2. СЕМАНТИЧЕСКИЙ СТРУКТУРИРОВАННЫЙ ИНТЕРФЕЙС ДЛЯ БЕЗОПАСНОЙ РАЗРАБОТКИ (UI-to-DB Adapter)
+interface MappedSocialRow {
+  id: string;
+  department: string;     // Отдел / Подразделение
+  fullName: string;       // Соответствует "accountUrl" в БД
+  cabinetOrPhone: number; // Соответствует "followers" в БД
+  position: string | null;// Соответствует "notes" в БД
+}
 
 interface SocialPassportClientProps {
   initialRows: SocialRow[];
@@ -24,12 +34,21 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Поиск по ФИО, должности или подразделению
-  const filteredRows = initialRows.filter(
+  // Преобразуем (мапируем) массив из базы в человекочитаемый UI-формат
+  const mappedRows: MappedSocialRow[] = initialRows.map((row) => ({
+    id: row.id,
+    department: row.department,
+    fullName: row.accountUrl,       // Мапинг accountUrl -> fullName
+    cabinetOrPhone: row.followers,  // Мапинг followers -> cabinetOrPhone
+    position: row.notes,            // Мапинг notes -> position
+  }));
+
+  // Фильтрация по адаптированным семантическим полям
+  const filteredRows = mappedRows.filter(
     (r) =>
+      r.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.accountUrl.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+      (r.position && r.position.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -94,9 +113,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
         />
       </div>
 
-      {/* ========================================================================= */}
       {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
-      {/* ========================================================================= */}
       <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
@@ -121,7 +138,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                   <td className="px-6 py-4 whitespace-nowrap font-bold text-slate-900">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-slate-400" />
-                      {row.accountUrl} {/* Отображаем accountUrl как ФИО */}
+                      {row.fullName} {/* Мапированная переменная */}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-slate-700 font-medium">
@@ -130,19 +147,19 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                   <td className="px-6 py-4 whitespace-nowrap font-bold text-slate-700">
                     <div className="flex items-center gap-1.5">
                       <PhoneCall className="h-4 w-4 text-slate-400" />
-                      {row.followers === 0 ? "—" : row.followers} {/* Отображаем followers как внутренний номер */}
+                      {row.cabinetOrPhone === 0 ? "—" : row.cabinetOrPhone} {/* Мапированная переменная */}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-500 max-w-xs truncate" title={row.notes || ""}>
+                  <td className="px-6 py-4 text-slate-500 max-w-xs truncate" title={row.position || ""}>
                     <div className="flex items-center gap-1.5">
                       <Briefcase className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span className="truncate">{row.notes || "—"}</span>
+                      <span className="truncate">{row.position || "—"}</span> {/* Мапированная переменная */}
                     </div>
                   </td>
                   {canWrite && (
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
-                        onClick={() => handleDelete(row.id, row.accountUrl)}
+                        onClick={() => handleDelete(row.id, row.fullName)}
                         disabled={isPending}
                         className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Удалить"
@@ -158,9 +175,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
         </table>
       </div>
 
-      {/* ========================================================================= */}
       {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
-      {/* ========================================================================= */}
       <div className="block md:hidden space-y-4">
         {filteredRows.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
@@ -171,15 +186,15 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
             <div key={row.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
               <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
                 <div>
-                  <div className="font-bold text-slate-900 text-base leading-snug">{row.accountUrl}</div>
+                  <div className="font-bold text-slate-900 text-base leading-snug">{row.fullName}</div>
                   <div className="text-xs text-slate-500 mt-1 flex items-center gap-1 font-semibold">
                     <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                    {row.notes || "Должность не указана"}
+                    {row.position || "Должность не указана"}
                   </div>
                 </div>
                 {canWrite && (
                   <button
-                    onClick={() => handleDelete(row.id, row.accountUrl)}
+                    onClick={() => handleDelete(row.id, row.fullName)}
                     disabled={isPending}
                     className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                   >
@@ -196,7 +211,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                 <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex flex-col gap-0.5">
                   <span className="text-slate-400 font-medium text-[9px] uppercase">Кабинет / Номер</span>
                   <span className="font-bold text-slate-800 flex items-center gap-1">
-                    <PhoneCall className="h-3.5 w-3.5 text-slate-400" /> {row.followers === 0 ? "—" : row.followers}
+                    <PhoneCall className="h-3.5 w-3.5 text-slate-400" /> {row.cabinetOrPhone === 0 ? "—" : row.cabinetOrPhone}
                   </span>
                 </div>
               </div>
@@ -215,13 +230,14 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                 <X className="h-5 w-5" />
               </button>
             </div>
+            {/* Форма отправляет данные со старыми именами атрибутов name, чтобы API сервера (Server Action) сработало без изменений */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">ФИО сотрудника</label>
                   <input
                     type="text"
-                    name="accountUrl" // пишется в accountUrl
+                    name="accountUrl" // пишется в БД как accountUrl
                     required
                     placeholder="Например, Сидорова Наталья Владимировна"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
@@ -231,7 +247,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Подразделение (Отдел / Направление)</label>
                   <input
                     type="text"
-                    name="department" // пишется в department
+                    name="department" // пишется в БД как department
                     required
                     placeholder="Например, Художественный отдел"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
@@ -241,7 +257,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Кабинет / Внутренний телефон (Цифры)</label>
                   <input
                     type="number"
-                    name="followers" // пишется в followers
+                    name="followers" // пишется в БД как followers
                     placeholder="Например, 104"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
@@ -249,7 +265,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Должность и примечания</label>
                   <textarea
-                    name="notes" // пишется в notes
+                    name="notes" // пишется в БД как notes
                     rows={2}
                     placeholder="Педагог доп. образования, руководитель студии..."
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"

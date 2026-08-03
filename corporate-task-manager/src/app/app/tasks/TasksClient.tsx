@@ -17,7 +17,6 @@ import {
   Plus, 
   FolderPlus, 
   Lock, 
-  Unlock, 
   Clock, 
   CheckCircle2, 
   Eye, 
@@ -33,7 +32,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search,
+  Filter
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -78,7 +79,7 @@ type Task = {
   controlReport: string | null;
   adminNotes: string | null;
   assignmentType: "INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL";
-  isPriority: boolean; // Добавляем приоритет
+  isPriority: boolean;
   goal: Goal;
   assignments: Assignment[];
   comments: Comment[];
@@ -91,8 +92,8 @@ interface TasksClientProps {
   statuses: TaskStatus[];
   currentUserId: string;
   isAdmin: boolean;
-  currentPage: number; // Пагинация
-  totalPages: number;  // Пагинация
+  currentPage: number;
+  totalPages: number;
 }
 
 export function TasksClient({
@@ -113,10 +114,24 @@ export function TasksClient({
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  // Состояние свернутых/развернутых описаний задач в списке (Пункт 5)
-  const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([]);
+  // Стейт кастомных тостов (уведомлений)
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-  // Состояние редактирования задачи
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+
+  // Стейты фильтрации и поиска задач
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterGoalId, setFilterGoalId] = useState("all");
+  const [filterStatusId, setFilterStatusId] = useState("all");
+  const [filterAssigneeId, setFilterAssigneeId] = useState("all");
+  const [filterPriorityOnly, setFilterPriorityOnly] = useState(false);
+
+  const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // Стейты новой цели
@@ -135,10 +150,27 @@ export function TasksClient({
   // Стейт нового комментария
   const [commentText, setCommentText] = useState("");
 
-  // Специфические стейты для создания/редактирования задачи
+  // Стейты создания/редактирования задачи
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [assignmentType, setAssignmentType] = useState<"INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL">("INDIVIDUAL");
-  const [isPriority, setIsPriority] = useState(false); // Стейт приоритета
+  const [isPriority, setIsPriority] = useState(false);
+
+  // Логика фильтрации задач на клиенте
+  const filteredTasks = initialTasks.filter((task) => {
+    const matchesSearch = 
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesGoal = filterGoalId === "all" || task.goal.id === filterGoalId;
+    
+    const matchesStatus = filterStatusId === "all" || task.assignments.some(as => as.statusId === filterStatusId);
+    
+    const matchesAssignee = filterAssigneeId === "all" || task.assignments.some(as => as.userId === filterAssigneeId);
+    
+    const matchesPriority = !filterPriorityOnly || task.isPriority;
+
+    return matchesSearch && matchesGoal && matchesStatus && matchesAssignee && matchesPriority;
+  });
 
   const handleCreateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,25 +179,27 @@ export function TasksClient({
         await createGoal(goalTitle, goalColor);
         setGoalTitle("");
         setIsGoalOpen(false);
+        showToast("Новая цель успешно создана!", "success");
         router.refresh();
       } catch (err: any) {
-        alert(err.message || "Ошибка создания цели");
+        showToast(err.message || "Ошибка создания цели", "error");
       }
     });
   };
 
   const handleUpdateGoal = async (goalId: string) => {
     if (!editGoalTitle.trim()) {
-      alert("Название цели не может быть пустым");
+      showToast("Название цели не может быть пустым", "error");
       return;
     }
     startTransition(async () => {
       try {
         await updateGoal(goalId, editGoalTitle, editGoalColor);
         setEditingGoalId(null);
+        showToast("Глобальная цель обновлена", "success");
         router.refresh();
       } catch (err: any) {
-        alert(err.message || "Ошибка обновления цели");
+        showToast(err.message || "Ошибка обновления цели", "error");
       }
     });
   };
@@ -181,9 +215,10 @@ export function TasksClient({
     startTransition(async () => {
       try {
         await deleteGoal(goalId);
+        showToast("Цель и связанные задачи удалены", "success");
         router.refresh();
       } catch (err: any) {
-        alert(err.message || "Ошибка удаления цели");
+        showToast(err.message || "Ошибка удаления цели", "error");
       }
     });
   };
@@ -196,9 +231,10 @@ export function TasksClient({
       try {
         await createTaskStatus(newStatusName, newStatusColor);
         setNewStatusName("");
+        showToast("Новый статус задач добавлен", "success");
         router.refresh();
       } catch (err: any) {
-        alert(err.message || "Ошибка создания статуса");
+        showToast(err.message || "Ошибка создания статуса", "error");
       }
     });
   };
@@ -209,9 +245,10 @@ export function TasksClient({
     startTransition(async () => {
       try {
         await deleteTaskStatus(statusId);
+        showToast("Статус успешно удален", "success");
         router.refresh();
       } catch (err: any) {
-        alert(err.message || "Ошибка удаления статуса");
+        showToast(err.message || "Ошибка удаления статуса", "error");
       }
     });
   };
@@ -236,7 +273,7 @@ export function TasksClient({
   const handleSaveTask = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (selectedAssignees.length === 0) {
-      alert("Выберите хотя бы одного исполнителя");
+      showToast("Выберите хотя бы одного исполнителя", "error");
       return;
     }
 
@@ -250,21 +287,23 @@ export function TasksClient({
       assignmentType,
       goalId: formData.get("goalId") as string,
       assigneeIds: selectedAssignees,
-      isPriority, // Сохраняем приоритет
+      isPriority,
     };
 
     startTransition(async () => {
       try {
         if (editingTask) {
           await updateTask(editingTask.id, taskInput);
+          showToast("Задача успешно обновлена", "success");
         } else {
           await createTask(taskInput);
+          showToast("Новая задача успешно создана!", "success");
         }
         setSelectedAssignees([]);
         setIsTaskOpen(false);
         router.refresh();
       } catch (err: any) {
-        alert(err.message || "Ошибка сохранения задачи");
+        showToast(err.message || "Ошибка сохранения задачи", "error");
       }
     });
   };
@@ -273,13 +312,14 @@ export function TasksClient({
     startTransition(async () => {
       try {
         await updateAssignmentStatus(assignmentId, newStatusId);
+        showToast("Статус задачи изменен", "success");
         router.refresh();
         if (activeTask) {
           const updated = initialTasks.find(t => t.id === activeTask.id);
           if (updated) setActiveTask(updated);
         }
       } catch (err: any) {
-        alert(err.message || "Не удалось изменить статус");
+        showToast(err.message || "Не удалось изменить статус", "error");
       }
     });
   };
@@ -295,10 +335,7 @@ export function TasksClient({
       id: `temp-${Date.now()}`,
       text: tempCommentText,
       createdAt: new Date().toISOString(),
-      user: {
-        name: "Вы",
-        initials: "Вы"
-      }
+      user: { name: "Вы", initials: "Вы" }
     };
 
     if (activeTask) {
@@ -317,7 +354,7 @@ export function TasksClient({
           setActiveTask(updatedTask);
         }
       } catch (err: any) {
-        alert(err.message || "Не удалось отправить комментарий");
+        showToast(err.message || "Не удалось отправить комментарий", "error");
         const originalTask = initialTasks.find(t => t.id === activeTask!.id);
         if (originalTask) {
           setActiveTask(originalTask);
@@ -354,15 +391,41 @@ export function TasksClient({
     );
   };
 
-  // Переключение страниц в пагинации (Пункт 7)
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       router.push(`/app/tasks?page=${newPage}`);
     }
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterGoalId("all");
+    setFilterStatusId("all");
+    setFilterAssigneeId("all");
+    setFilterPriorityOnly(false);
+  };
+
   return (
     <div className="space-y-6">
+      {/* 🔔 КЛИЕНТСКИЙ КРАСИВЫЙ TOAST */}
+      {toast && (
+        <div className={`fixed bottom-6 left-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-xs font-semibold animate-slide-up transition-all ${
+          toast.type === "success" 
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
+            : toast.type === "error" 
+            ? "bg-rose-50 border-rose-200 text-rose-800" 
+            : "bg-blue-50 border-blue-200 text-blue-800"
+        }`}>
+          {toast.type === "success" && <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />}
+          {toast.type === "error" && <AlertCircle className="h-4.5 w-4.5 text-rose-600 shrink-0" />}
+          {toast.type === "info" && <Clock className="h-4.5 w-4.5 text-blue-600 shrink-0" />}
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Шапка модуля задач */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
         <div>
@@ -374,49 +437,141 @@ export function TasksClient({
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <button
               onClick={() => setIsManageStatusesOpen(true)}
-              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
               title="Управление статусами"
             >
-              <Sliders className="h-4 w-4 text-slate-500" />
+              <Sliders className="h-3.5 w-3.5 text-slate-500" />
               Статусы
             </button>
             <button
               onClick={() => setIsManageGoalsOpen(true)}
-              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
               title="Управление целями"
             >
-              <Settings className="h-4 w-4 text-slate-500" />
+              <Settings className="h-3.5 w-3.5 text-slate-500" />
               Цели
             </button>
             <button
               onClick={() => setIsGoalOpen(true)}
-              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
-              <FolderPlus className="h-4 w-4 text-slate-500" />
+              <FolderPlus className="h-3.5 w-3.5 text-slate-500" />
               Добавить цель
             </button>
             <button
               onClick={openCreateTaskModal}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors shadow-sm cursor-pointer"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               Добавить задачу
             </button>
           </div>
         )}
       </div>
 
+      {/* 🔍 ПАНЕЛЬ ИНТЕРАКТИВНОЙ ФИЛЬТРАЦИИ (Рекомендация №3) */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <Filter className="h-3.5 w-3.5 text-slate-400" /> Фильтрация бэклога задач
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+          {/* Поиск */}
+          <div className="relative col-span-1 md:col-span-1">
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Поиск</label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Поиск по названию..."
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Цель */}
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Глобальная цель</label>
+            <select
+              value={filterGoalId}
+              onChange={(e) => setFilterGoalId(e.target.value)}
+              className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">Все направления</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>{g.title}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Статус */}
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Статус выполнения</label>
+            <select
+              value={filterStatusId}
+              onChange={(e) => setFilterStatusId(e.target.value)}
+              className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">Все статусы</option>
+              {statuses.map((st) => (
+                <option key={st.id} value={st.id}>{st.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Исполнитель */}
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Исполнитель</label>
+            <select
+              value={filterAssigneeId}
+              onChange={(e) => setFilterAssigneeId(e.target.value)}
+              className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">Все сотрудники</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Опции и Сброс */}
+          <div className="flex items-center justify-between gap-2">
+            <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-semibold cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={filterPriorityOnly}
+                onChange={(e) => setFilterPriorityOnly(e.target.checked)}
+                className="rounded border-slate-300 text-red-600 focus:ring-red-500 h-3.5 w-3.5"
+              />
+              Срочные
+            </label>
+
+            {(searchQuery || filterGoalId !== "all" || filterStatusId !== "all" || filterAssigneeId !== "all" || filterPriorityOnly) && (
+              <button
+                onClick={clearFilters}
+                className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer"
+              >
+                Сбросить
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* РЕНДЕР ДЛЯ АДМИНИСТРАТОРА */}
       {isAdmin && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="p-5 border-b border-slate-200 bg-slate-50">
-            <h3 className="font-bold text-slate-800">Все задачи организации</h3>
+          <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 text-sm">Все задачи организации</h3>
+            <span className="text-xs text-slate-500 font-medium">Отображено задач: {filteredTasks.length}</span>
           </div>
           <div className="divide-y divide-slate-100">
-            {initialTasks.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-sm">Задач пока нет</div>
+            {filteredTasks.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm italic">Задачи, соответствующие фильтрам, не найдены</div>
             ) : (
-              initialTasks.map((task) => {
+              filteredTasks.map((task) => {
                 const isExpanded = expandedTaskIds.includes(task.id);
 
                 return (
@@ -435,14 +590,13 @@ export function TasksClient({
                           {task.assignmentType === "INDIVIDUAL" && "Индивидуальная"}
                         </span>
                         {task.isPriority && (
-                          <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
+                          <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                             Срочно
                           </span>
                         )}
                       </div>
                       <h4 className="font-bold text-slate-900 text-base">{task.title}</h4>
                       
-                      {/* Сворачиваемое описание задачи (Пункт 5) */}
                       {task.description && (
                         <div className="space-y-1">
                           <p className={`text-sm text-slate-500 leading-relaxed ${isExpanded ? "" : "line-clamp-1"}`}>
@@ -518,7 +672,7 @@ export function TasksClient({
       {!isAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           {statuses.map((status) => {
-            const myTasks = initialTasks.filter((task) => {
+            const myTasks = filteredTasks.filter((task) => {
               const myAssignment = task.assignments.find((as) => as.userId === currentUserId);
               return myAssignment?.statusId === status.id;
             });
@@ -580,7 +734,7 @@ export function TasksClient({
         </div>
       )}
 
-      {/* ПАНЕЛЬ ПАГИНАЦИИ (Пункт 7) */}
+      {/* ПАНЕЛЬ ПАГИНАЦИИ */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-3 bg-white px-4 py-3 rounded-xl border border-slate-200 max-w-xs mx-auto shadow-sm print:hidden">
           <button
@@ -640,7 +794,7 @@ export function TasksClient({
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsGoalOpen(false)} // <-- Исправлено
+                  onClick={() => setIsGoalOpen(false)}
                   className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm"
                 >
                   Отмена
@@ -1069,7 +1223,7 @@ export function TasksClient({
                   {activeTask.assignmentType === "SEQUENTIAL" ? "Последовательная цепочка" : "Обычная задача"}
                 </span>
                 {activeTask.isPriority && (
-                  <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
+                  <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                     Срочно
                   </span>
                 )}
@@ -1190,7 +1344,6 @@ export function TasksClient({
               <div className="border-t border-slate-200 pt-4 space-y-3">
                 <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Обсуждение по задаче</h5>
                 
-                {/* Лента сообщений */}
                 <div className="space-y-3 max-h-60 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
                   {activeTask.comments.length === 0 ? (
                     <div className="p-6 text-center text-xs text-slate-400 italic">
@@ -1214,7 +1367,6 @@ export function TasksClient({
                   )}
                 </div>
 
-                {/* Форма отправки */}
                 <form onSubmit={handleSendComment} className="flex gap-2 items-center">
                   <input
                     type="text"
