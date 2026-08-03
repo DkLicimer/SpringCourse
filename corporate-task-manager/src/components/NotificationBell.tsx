@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { getMyNotifications, markAsRead, markAllAsRead } from "@/server/actions/notifications";
-import { Bell, Check, Eye, MailOpen, AlertCircle } from "lucide-react";
+import { Bell, AlertCircle, MailOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Notification = {
@@ -20,7 +20,6 @@ export function NotificationBell() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // Загружаем уведомления при монтировании и раз в 30 секунд (простой лонг-поллинг)
   const fetchNotifications = async () => {
     try {
       const data = await getMyNotifications();
@@ -32,7 +31,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Опрашиваем раз в 30 секунд
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -71,7 +70,7 @@ export function NotificationBell() {
       {/* Кнопка Колокольчика */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
+        className="relative p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-all cursor-pointer z-50"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -83,56 +82,68 @@ export function NotificationBell() {
 
       {/* Выпадающий список уведомлений */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden flex flex-col max-h-96">
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
-            <span className="font-bold text-slate-800 text-sm">Уведомления</span>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                disabled={isPending}
-                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 cursor-pointer disabled:text-slate-400"
-              >
-                <MailOpen className="h-3 w-3" /> Прочитать все
-              </button>
-            )}
-          </div>
+        <>
+          {/* Невидимая подложка для закрытия по клику в любое место экрана */}
+          <div 
+            className="fixed inset-0 z-40 bg-transparent" 
+            onClick={() => setIsOpen(false)} 
+          />
 
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-            {notifications.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 italic">
-                Уведомлений пока нет
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => handleMarkAsRead(n.id, n.link)}
-                  className={`p-4 flex gap-3 text-xs cursor-pointer hover:bg-slate-50 transition-colors ${
-                    !n.isRead ? "bg-blue-50/30" : ""
-                  }`}
+          {/* 
+            fixed на мобильном (выравнивание по границам экрана), 
+            absolute на экранах sm и больше (выравнивание под кнопкой) 
+          */}
+          <div className="fixed top-16 left-4 right-4 sm:absolute sm:top-full sm:left-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden flex flex-col max-h-96">
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+              <span className="font-bold text-slate-800 text-sm">Уведомления</span>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  disabled={isPending}
+                  className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 cursor-pointer disabled:text-slate-400"
                 >
-                  <div className={`p-1.5 rounded-full shrink-0 ${
-                    !n.isRead ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
-                  }`}>
-                    <AlertCircle className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="space-y-1 flex-1">
-                    <p className={`leading-relaxed ${!n.isRead ? "font-semibold text-slate-900" : "text-slate-600"}`}>
-                      {n.text}
-                    </p>
-                    <span className="text-[10px] text-slate-400">
-                      {new Date(n.createdAt).toLocaleDateString()} в{" "}
-                      {new Date(n.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  {!n.isRead && (
-                    <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-2" />
-                  )}
+                  <MailOpen className="h-3 w-3" /> Прочитать все
+                </button>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400 italic">
+                  Уведомлений пока нет
                 </div>
-              ))
-            )}
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => handleMarkAsRead(n.id, n.link)}
+                    className={`p-4 flex gap-3 text-xs cursor-pointer hover:bg-slate-50 transition-colors ${
+                      !n.isRead ? "bg-blue-50/30" : ""
+                    }`}
+                  >
+                    <div className={`p-1.5 rounded-full shrink-0 ${
+                      !n.isRead ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
+                    }`}>
+                      <AlertCircle className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <p className={`leading-relaxed ${!n.isRead ? "font-semibold text-slate-900" : "text-slate-600"}`}>
+                        {n.text}
+                      </p>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(n.createdAt).toLocaleDateString()} в{" "}
+                        {new Date(n.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    {!n.isRead && (
+                      <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-2" />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

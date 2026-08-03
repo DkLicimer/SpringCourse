@@ -640,7 +640,7 @@ export function TasksClient({
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsGoalOpen(false)} // <-- Исправлено
                   className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm"
                 >
                   Отмена

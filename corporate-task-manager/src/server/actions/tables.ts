@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-// Служебный хелпер для проверки прав доступа сотрудника к таблицам в реальном времени
+// Проверка прав доступа сотрудника к таблицам в реальном времени
 async function verifyAccess(tableName: string, action: "read" | "write"): Promise<boolean> {
   const session = await getServerSession(authOptions);
   if (!session) return false;
@@ -14,7 +14,6 @@ async function verifyAccess(tableName: string, action: "read" | "write"): Promis
   // Администратор всегда имеет полный доступ ко всему
   if (session.user.role === "ADMIN") return true;
 
-  // Ищем персональные права доступа сотрудника в БД
   const access = await prisma.tableAccess.findUnique({
     where: {
       userId_tableName: {
@@ -68,11 +67,14 @@ export async function deleteContact(id: string) {
 }
 
 // =========================================================================
-// 2. ЗАЯВКИ НА ПОСТЫ И КОНТЕНТ-ПЛАН
+// 2. ЗАЯВКИ НА ПОСТЫ И КОНТЕНТ-ПЛАН (С ПРОВЕРКОЙ ПРАВ canWrite)
 // =========================================================================
 
 // Отправка сотрудником формы заявки на пост
 export async function createPostRequest(formData: FormData) {
+  const hasAccess = await verifyAccess("post_request", "write");
+  if (!hasAccess) throw new Error("У вас нет прав для подачи заявок на публикации");
+
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Вы не авторизованы");
 
@@ -98,12 +100,10 @@ export async function createPostRequest(formData: FormData) {
   revalidatePath("/app/tables/post-request");
 }
 
-// Одобрение заявки админом (перенос в Контент-план)
+// Одобрение заявки (требует прав на запись в контент-план)
 export async function approvePostRequest(requestId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
+  const hasAccess = await verifyAccess("content_plan", "write");
+  if (!hasAccess) throw new Error("У вас нет прав на одобрение и перенос заявок в Контент-План");
 
   const request = await prisma.postRequest.findUnique({
     where: { id: requestId },
@@ -112,21 +112,18 @@ export async function approvePostRequest(requestId: string) {
   if (!request) throw new Error("Заявка не найдена");
   if (request.status !== "PENDING") throw new Error("Заявка уже обработана");
 
-  // Переносим данные в рамках единой транзакции БД
   await prisma.$transaction(async (tx) => {
-    // 1. Создаем строку в таблице Контент-плана
     await tx.contentPlan.create({
       data: {
         topic: request.topic,
         platform: request.platform,
         publishDate: request.requestedDate,
-        status: "Черновик", // Статус публикации по умолчанию
+        status: "Черновик",
         authorId: request.userId,
         notes: request.description,
       },
     });
 
-    // 2. Обновляем статус заявки на APPROVED
     await tx.postRequest.update({
       where: { id: requestId },
       data: { status: "APPROVED" },
@@ -137,12 +134,10 @@ export async function approvePostRequest(requestId: string) {
   revalidatePath("/app/tables/content-plan");
 }
 
-// Отклонение заявки на пост
+// Отклонение заявки на пост (требует прав на запись в контент-план)
 export async function rejectPostRequest(requestId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
+  const hasAccess = await verifyAccess("content_plan", "write");
+  if (!hasAccess) throw new Error("У вас нет прав на отклонение заявок");
 
   await prisma.postRequest.update({
     where: { id: requestId },
@@ -151,18 +146,6 @@ export async function rejectPostRequest(requestId: string) {
 
   revalidatePath("/app/tables/post-request");
 }
-
-// Удаление строки контент-плана
-export async function deleteContentPlanRow(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
-
-  await prisma.contentPlan.delete({ where: { id } });
-  revalidatePath("/app/tables/content-plan");
-}
-
 // =========================================================================
 // 3. ТАБЛИЦА «СОЦ ПАСПОРТ» (С ПРОВЕРКОЙ ПРАВ canWrite)
 // =========================================================================
@@ -232,38 +215,4 @@ export async function deleteTeambuildingRow(id: string) {
 
   await prisma.teambuilding.delete({ where: { id } });
   revalidatePath("/app/tables/teambuilding");
-}
-
-
-// Добавьте эту функцию в src/server/actions/tables.ts
-
-// Прямое добавление публикации в Контент-план администратором
-export async function createContentPlanRow(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Только администратор может добавлять публикации напрямую");
-  }
-
-  const topic = formData.get("topic") as string;
-  const platform = formData.get("platform") as string;
-  const publishDate = formData.get("publishDate") as string;
-  const status = (formData.get("status") as string) || "Черновик";
-  const notes = formData.get("notes") as string;
-
-  if (!topic || !platform || !publishDate) {
-    throw new Error("Тема, площадка и дата обязательны для заполнения");
-  }
-
-  await prisma.contentPlan.create({
-    data: {
-      topic,
-      platform,
-      publishDate: new Date(publishDate),
-      status,
-      authorId: session.user.id,
-      notes,
-    },
-  });
-
-  revalidatePath("/app/tables/content-plan");
 }

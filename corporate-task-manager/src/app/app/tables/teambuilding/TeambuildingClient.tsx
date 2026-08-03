@@ -71,7 +71,7 @@ export function TeambuildingClient({ initialRows, canWrite }: TeambuildingClient
         {canWrite && (
           <button
             onClick={() => setIsOpen(true)}
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             Добавить мероприятие
@@ -91,8 +91,10 @@ export function TeambuildingClient({ initialRows, canWrite }: TeambuildingClient
         />
       </div>
 
-      {/* Таблица */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* ========================================================================= */}
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
+      {/* ========================================================================= */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -140,7 +142,7 @@ export function TeambuildingClient({ initialRows, canWrite }: TeambuildingClient
                       <button
                         onClick={() => handleDelete(row.id, row.eventName)}
                         disabled={isPending}
-                        className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                        className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Удалить"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -152,6 +154,61 @@ export function TeambuildingClient({ initialRows, canWrite }: TeambuildingClient
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      {/* ========================================================================= */}
+      <div className="block md:hidden space-y-4">
+        {filteredRows.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
+            Записи не найдены
+          </div>
+        ) : (
+          filteredRows.map((row) => (
+            <div key={row.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                <div>
+                  <div className="font-bold text-slate-900 text-base leading-snug">{row.eventName}</div>
+                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-1 font-semibold">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {new Date(row.date).toLocaleDateString("ru-RU")}
+                  </div>
+                </div>
+                {canWrite && (
+                  <button
+                    onClick={() => handleDelete(row.id, row.eventName)}
+                    disabled={isPending}
+                    className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex flex-col gap-0.5">
+                  <span className="text-slate-400 font-medium text-[10px] uppercase">Участники</span>
+                  <span className="font-bold text-slate-800 flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-slate-400" /> {row.participantsCount} чел.
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex flex-col gap-0.5">
+                  <span className="text-slate-400 font-medium text-[10px] uppercase">Бюджет</span>
+                  <span className="font-bold text-slate-800 flex items-center gap-1">
+                    <Landmark className="h-3.5 w-3.5 text-slate-400" /> {row.budget.toLocaleString("ru-RU")} ₽
+                  </span>
+                </div>
+              </div>
+
+              {row.notes && (
+                <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 italic leading-relaxed">
+                  {row.notes}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* МОДАЛЬНОЕ ОКНО */}

@@ -37,7 +37,9 @@ export async function createNotification(userId: string, text: string, link?: st
       `;
 
       // Отправляем асинхронное письмо
-      await sendEmail(user.email, "Уведомление | Task Manager", text, emailHtml);
+      sendEmail(user.email, "Уведомление | Task Manager", text, emailHtml).catch((err) => {
+        console.error("Ошибка асинхронной отправки почты в фоне:", err);
+      });
     }
   } catch (error) {
     console.error("Ошибка при создании уведомления:", error);

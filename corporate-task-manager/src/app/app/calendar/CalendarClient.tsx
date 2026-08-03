@@ -8,7 +8,6 @@ import {
   Plus, 
   Trash2, 
   Clock, 
-  Users, 
   X, 
   AlertCircle,
   ChevronLeft,
@@ -40,11 +39,11 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<"MEETING" | "BLOCKED">("MEETING");
 
-  // ВЫЧИСЛЕНИЕ ТЕКУЩЕЙ НЕДЕЛИ (Пункт 11)
+  // Инициализация текущей недели
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const d = new Date();
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // подстраиваем понедельник
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d.setDate(diff));
     monday.setHours(0, 0, 0, 0);
     return monday;
@@ -55,6 +54,12 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     const d = new Date(currentWeekStart);
     d.setDate(currentWeekStart.getDate() + i);
     return d;
+  });
+
+  // Состояние выбранного дня для мобильной версии (по умолчанию текущий день недели)
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(() => {
+    const today = new Date().getDay(); // 0 - воскресенье, 1 - понедельник
+    return today === 0 ? 6 : today - 1;
   });
 
   const startDay = weekDays[0];
@@ -78,9 +83,8 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     });
   };
 
-  // Временная шкала: с 08:00 до 21:00
   const hours = Array.from({ length: 14 }, (_, i) => 8 + i);
-  const cellHeight = 64; // Высота ячейки 1 часа в пикселях (h-16)
+  const cellHeight = 64; // Высота ячейки 1 часа
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -114,7 +118,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
   };
 
   const handleDelete = async (id: string, title: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Предотвращаем конфликты кликов на сетке
+    e.stopPropagation();
     if (!window.confirm(`Отменить встречу "${title}"?`)) return;
 
     startTransition(async () => {
@@ -140,25 +144,25 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
 
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full md:w-auto cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full md:w-auto cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           {isAdmin ? "Блокировка / Встреча" : "Забронировать встречу"}
         </button>
       </div>
 
-      {/* Панель переключения недель (по скриншоту) */}
+      {/* Панель переключения недель */}
       <div className="flex items-center justify-between bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-md">
-        <h3 className="text-xl font-bold tracking-tight">Дата и время</h3>
+        <h3 className="text-sm sm:text-base font-bold tracking-tight">Дата и время</h3>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={handlePrevWeek}
             className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <span className="font-bold text-sm tracking-wide">{weekLabel}</span>
+          <span className="font-bold text-xs sm:text-sm tracking-wide">{weekLabel}</span>
           <button 
             onClick={handleNextWeek}
             className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
@@ -169,15 +173,141 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
       </div>
 
       {/* ========================================================================= */}
-      {/* ВИЗУАЛЬНАЯ СЕТКА-РАСПИСАНИЕ (Пункт 11) */}
+      {/* 📱 МОБИЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ДНЕЙ (Вкладки) */}
       {/* ========================================================================= */}
+      <div className="grid grid-cols-7 gap-1 bg-slate-200/60 p-1 rounded-xl border border-slate-200 md:hidden shadow-inner">
+        {weekDays.map((day, idx) => {
+          const isSelected = selectedDayIndex === idx;
+          const isToday = day.toISOString().split("T")[0] === todayStr;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setSelectedDayIndex(idx)}
+              className={`flex flex-col items-center py-2 rounded-lg transition-all cursor-pointer ${
+                isSelected
+                  ? "bg-blue-600 text-white shadow-sm font-bold scale-[1.03]"
+                  : isToday
+                  ? "bg-blue-50 text-blue-700 font-bold border border-blue-200"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <span className="text-[9px] uppercase leading-none font-bold tracking-wider">
+                {day.toLocaleString("ru-RU", { weekday: "short" })}
+              </span>
+              <span className="text-sm font-bold mt-1">{day.getDate()}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Сетка-календарь */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        
+        {/* ========================================================================= */}
+        {/* ВЕРСИЯ ДЛЯ МОБИЛЬНЫХ ТЕЛЕФОНОВ (ОДНОКОЛОНОЧНЫЙ ДЕНЬ) */}
+        {/* ========================================================================= */}
+        <div className="md:hidden relative grid grid-cols-[70px_1fr]">
+          {/* Левая шкала часов */}
+          <div className="flex flex-col bg-slate-50/50 border-r border-slate-200 shrink-0">
+            {hours.map((hour) => (
+              <div 
+                key={hour} 
+                className="h-16 border-b border-slate-100 pr-2 flex justify-end items-start pt-1.5 text-[10px] font-bold text-slate-400"
+              >
+                {`${hour}:00`}
+              </div>
+            ))}
+          </div>
+
+          {/* Колонка выбранного дня */}
+          <div className="flex flex-col relative">
+            {hours.map((hour) => (
+              <div key={hour} className="h-16 border-b border-slate-100" />
+            ))}
+
+            {/* Рендерим события только для выбранного дня */}
+            {initialEvents
+              .filter((event) => {
+                const eventDate = new Date(event.startTime);
+                const columnDate = weekDays[selectedDayIndex];
+                return eventDate.toDateString() === columnDate.toDateString();
+              })
+              .map((event) => {
+                const start = new Date(event.startTime);
+                const end = new Date(event.endTime);
+                
+                const startMins = start.getHours() * 60 + start.getMinutes();
+                const gridStartMins = 8 * 60;
+                
+                const topOffset = ((startMins - gridStartMins) / 60) * cellHeight;
+                const durationMins = (end.getTime() - start.getTime()) / (1000 * 60);
+                const heightVal = (durationMins / 60) * cellHeight;
+
+                const isBlocked = event.type === "BLOCKED";
+                const isOwner = event.bookedById === currentUserId;
+
+                return (
+                  <div
+                    key={event.id}
+                    className={`absolute left-2 right-2 rounded-xl p-2.5 shadow-sm flex flex-col justify-between overflow-hidden border transition-all ${
+                      isBlocked 
+                        ? "bg-amber-500/10 border-amber-500 text-amber-950" 
+                        : "bg-blue-600/10 border-blue-600 text-blue-950"
+                    }`}
+                    style={{ 
+                      top: `${topOffset}px`, 
+                      height: `${heightVal}px`,
+                      minHeight: "45px" 
+                    }}
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex justify-between items-start gap-1">
+                        <h4 className="font-bold text-[11px] leading-tight line-clamp-2">
+                          {event.title}
+                        </h4>
+                        {(isOwner || isAdmin) && (
+                          <button
+                            onClick={(e) => handleDelete(event.id, event.title, e)}
+                            className="text-red-600 hover:text-red-800 p-0.5 hover:bg-white/50 rounded transition-colors cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      {event.description && (
+                        <p className="text-[10px] text-slate-500 line-clamp-1 leading-relaxed">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mt-1">
+                      <span className="flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                        {"-"}
+                        {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      {!isBlocked && (
+                        <span className="truncate max-w-[80px]">👤 {event.bookedBy.name.split(" ")[0]}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* ДЕСКТОПНАЯ ВЕРСИЯ (КЛАССИЧЕСКИЕ СЕМЬ КОЛОНОК) */}
+        {/* ========================================================================= */}
+        <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[850px] relative flex flex-col">
             
-            {/* Строка заголовков дней недели */}
+            {/* Строка заголовков */}
             <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-slate-200 bg-slate-50/50">
-              <div className="h-12 border-r border-slate-200" /> {/* Угол */}
+              <div className="h-12 border-r border-slate-200" />
               {weekDays.map((day, idx) => {
                 const isToday = day.toISOString().split("T")[0] === todayStr;
                 return (
@@ -198,7 +328,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
               })}
             </div>
 
-            {/* Тело сетки (часы и слоты) */}
+            {/* Сетка часов и дней */}
             <div className="relative grid grid-cols-[80px_repeat(7,1fr)]">
               {/* Левая шкала часов */}
               <div className="flex flex-col bg-slate-50/30 border-r border-slate-200 shrink-0">
@@ -212,14 +342,14 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 ))}
               </div>
 
-              {/* Фоновые ячейки сетки */}
+              {/* Фоновые ячейки сетки дней */}
               {Array.from({ length: 7 }).map((_, colIdx) => (
                 <div key={colIdx} className="flex flex-col border-r border-slate-100 last:border-0 relative">
                   {hours.map((hour) => (
                     <div key={hour} className="h-16 border-b border-slate-100" />
                   ))}
 
-                  {/* Рендерим события абсолютно поверх колонок */}
+                  {/* События поверх колонок */}
                   {initialEvents
                     .filter((event) => {
                       const eventDate = new Date(event.startTime);
@@ -231,9 +361,8 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                       const end = new Date(event.endTime);
                       
                       const startMins = start.getHours() * 60 + start.getMinutes();
-                      const gridStartMins = 8 * 60; // Шкала начинается с 08:00
+                      const gridStartMins = 8 * 60;
                       
-                      // Расчет абсолютных координат
                       const topOffset = ((startMins - gridStartMins) / 60) * cellHeight;
                       const durationMins = (end.getTime() - start.getTime()) / (1000 * 60);
                       const heightVal = (durationMins / 60) * cellHeight;
@@ -298,13 +427,13 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
         </div>
       </div>
 
-      {/* МОДАЛЬНОЕ ОКНО */}
+      {/* МОДАЛЬНОЕ ОКНО БРОНИРОВАНИЯ */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-slate-200">
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
               <h3 className="text-lg font-bold text-slate-800">Запланировать встречу</h3>
-              <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>

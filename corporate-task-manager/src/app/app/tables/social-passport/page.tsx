@@ -16,7 +16,6 @@ export default async function SocialPassportPage() {
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // 1. Проверяем персональные права доступа сотрудника на чтение в БД
   const access = await prisma.tableAccess.findUnique({
     where: {
       userId_tableName: {
@@ -29,7 +28,6 @@ export default async function SocialPassportPage() {
   const canRead = isAdmin || (access?.canRead ?? false);
   const canWrite = isAdmin || (access?.canWrite ?? false);
 
-  // 2. Если доступа на чтение нет — показываем экран блокировки
   if (!canRead) {
     return (
       <div className="max-w-md mx-auto mt-20 text-center space-y-4">
@@ -52,7 +50,6 @@ export default async function SocialPassportPage() {
     );
   }
 
-  // 3. Если доступ есть — загружаем данные
   const rows = await prisma.socialPassport.findMany({
     orderBy: { createdAt: "desc" },
   });

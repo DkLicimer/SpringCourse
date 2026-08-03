@@ -27,7 +27,6 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Живая фильтрация контактов по любому из полей
   const filteredContacts = initialContacts.filter(
     (c) =>
       c.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,7 +67,7 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
 
   return (
     <div className="space-y-6">
-      {/* Шапка и кнопка возврата в Хаб */}
+      {/* Шапка */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <Link
@@ -84,7 +83,7 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
         {isAdmin && (
           <button
             onClick={() => setIsOpen(true)}
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto cursor-pointer"
           >
             <UserPlus className="h-4 w-4" />
             Добавить контакт
@@ -92,20 +91,22 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
         )}
       </div>
 
-      {/* Живой поиск */}
+      {/* Поиск */}
       <div className="relative max-w-md bg-white rounded-lg shadow-sm">
         <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Поиск по ФИО, должности, телефону, почте..."
+          placeholder="Поиск по ФИО, должности, телефону..."
           className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      {/* Таблица контактов */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* ========================================================================= */}
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
+      {/* ========================================================================= */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -154,7 +155,7 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
                       <button
                         onClick={() => handleDelete(contact.id, contact.fullName)}
                         disabled={isPending}
-                        className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center"
+                        className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center cursor-pointer"
                         title="Удалить контакт"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -168,7 +169,63 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
         </table>
       </div>
 
-      {/* МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ КОНТАКТА */}
+      {/* ========================================================================= */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      {/* ========================================================================= */}
+      <div className="block md:hidden space-y-4">
+        {filteredContacts.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
+            Контакты не найдены
+          </div>
+        ) : (
+          filteredContacts.map((contact) => (
+            <div key={contact.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                <div>
+                  <div className="font-bold text-slate-900 text-base leading-snug">{contact.fullName}</div>
+                  <div className="text-xs text-slate-500 mt-0.5 font-medium">{contact.position}</div>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(contact.id, contact.fullName)}
+                    disabled={isPending}
+                    className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1.5 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <span>{contact.department}</span>
+                </div>
+                {contact.phone && (
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <a href={`tel:${contact.phone}`} className="hover:underline">{contact.phone}</a>
+                  </div>
+                )}
+                {contact.email && (
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <a href={`mailto:${contact.email}`} className="hover:underline">{contact.email}</a>
+                  </div>
+                )}
+              </div>
+
+              {contact.notes && (
+                <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 italic leading-relaxed">
+                  {contact.notes}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* МОДАЛЬНОЕ ОКНО */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-slate-200">
@@ -249,14 +306,14 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm"
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm cursor-pointer"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:bg-blue-400"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:bg-blue-400 cursor-pointer"
                 >
                   Добавить
                 </button>

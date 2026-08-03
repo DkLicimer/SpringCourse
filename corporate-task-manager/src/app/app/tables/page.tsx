@@ -20,14 +20,16 @@ export default async function TablesHubPage() {
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // Загружаем права пользователя на защищенные таблицы
+  // Загружаем права пользователя на все защищенные таблицы
   const userAccesses = await prisma.tableAccess.findMany({
     where: { userId: session.user.id }
   });
 
-  // Проверяем доступ на чтение (админ имеет доступ всегда)
+  // Проверяем доступ на чтение (админ имеет доступ по умолчанию)
   const canReadSocial = isAdmin || userAccesses.find(a => a.tableName === "social_passport")?.canRead || false;
   const canReadTeam = isAdmin || userAccesses.find(a => a.tableName === "teambuilding")?.canRead || false;
+  const canReadContent = isAdmin || userAccesses.find(a => a.tableName === "content_plan")?.canRead || false;
+  const canReadPost = isAdmin || userAccesses.find(a => a.tableName === "post_request")?.canRead || false;
 
   const tables = [
     {
@@ -36,7 +38,7 @@ export default async function TablesHubPage() {
       description: "Общая телефонная книга сотрудников, отделов и должностей компании.",
       icon: <Contact className="h-8 w-8 text-blue-500" />,
       href: "/app/tables/contacts",
-      hasAccess: true, // Доступно всем по умолчанию
+      hasAccess: true, // Всегда доступно всем
     },
     {
       id: "content-plan",
@@ -44,7 +46,7 @@ export default async function TablesHubPage() {
       description: "Календарь публикаций по всем площадкам организации.",
       icon: <FileText className="h-8 w-8 text-emerald-500" />,
       href: "/app/tables/content-plan",
-      hasAccess: true, // Доступно всем по умолчанию
+      hasAccess: canReadContent, // Проверка прав
     },
     {
       id: "post-request",
@@ -52,7 +54,7 @@ export default async function TablesHubPage() {
       description: "Форма отправки материалов на публикацию в контент-план.",
       icon: <Send className="h-8 w-8 text-indigo-500" />,
       href: "/app/tables/post-request",
-      hasAccess: true, // Доступно всем по умолчанию
+      hasAccess: canReadPost, // Проверка прав
     },
     {
       id: "social-passport",

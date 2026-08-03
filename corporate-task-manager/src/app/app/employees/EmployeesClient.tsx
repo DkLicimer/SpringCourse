@@ -33,15 +33,17 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Стейты редактирования сотрудника
   const [editingUser, setEditingUser] = useState<UserWithAccess | null>(null);
 
-  // Состояния для чекбоксов доступа
   const [access, setAccess] = useState({
     canReadSocial: false,
     canWriteSocial: false,
     canReadTeam: false,
     canWriteTeam: false,
+    canReadContent: false,
+    canWriteContent: false,
+    canReadPost: false,
+    canWritePost: false,
   });
 
   const filteredUsers = initialUsers.filter(
@@ -57,6 +59,10 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
       canWriteSocial: false,
       canReadTeam: false,
       canWriteTeam: false,
+      canReadContent: false,
+      canWriteContent: false,
+      canReadPost: false,
+      canWritePost: false,
     });
     setIsOpen(true);
   };
@@ -65,12 +71,18 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setEditingUser(user);
     const social = user.tableAccesses.find(a => a.tableName === "social_passport");
     const team = user.tableAccesses.find(a => a.tableName === "teambuilding");
+    const content = user.tableAccesses.find(a => a.tableName === "content_plan");
+    const post = user.tableAccesses.find(a => a.tableName === "post_request");
     
     setAccess({
       canReadSocial: social?.canRead || false,
       canWriteSocial: social?.canWrite || false,
       canReadTeam: team?.canRead || false,
       canWriteTeam: team?.canWrite || false,
+      canReadContent: content?.canRead || false,
+      canWriteContent: content?.canWrite || false,
+      canReadPost: post?.canRead || false,
+      canWritePost: post?.canWrite || false,
     });
     setIsOpen(true);
   };
@@ -84,18 +96,20 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     formData.append("canWriteSocial", String(access.canWriteSocial));
     formData.append("canReadTeam", String(access.canReadTeam));
     formData.append("canWriteTeam", String(access.canWriteTeam));
+    formData.append("canReadContent", String(access.canReadContent));
+    formData.append("canWriteContent", String(access.canWriteContent));
+    formData.append("canReadPost", String(access.canReadPost));
+    formData.append("canWritePost", String(access.canWritePost));
 
     startTransition(async () => {
       try {
         if (editingUser) {
-          // Режим обновления
           await updateEmployee(editingUser.id, formData);
         } else {
-          // Режим создания
           await createEmployee(formData);
         }
         setIsOpen(false);
-        router.refresh(); // Принудительно обновляем данные на клиенте
+        router.refresh();
       } catch (err: any) {
         setError(err.message || "Ошибка при сохранении");
       }
@@ -110,7 +124,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     startTransition(async () => {
       try {
         await deleteEmployee(userId);
-        router.refresh(); // Мгновенное обновление таблицы без перезагрузки
+        router.refresh();
       } catch (err: any) {
         alert(err.message || "Не удалось удалить сотрудника");
       }
@@ -118,9 +132,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   };
 
   const renderAccessBadge = (canRead: boolean, canWrite: boolean) => {
-    if (canWrite) return <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium">Чтение/Запись</span>;
-    if (canRead) return <span className="text-xs bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-medium">Только Чтение</span>;
-    return <span className="text-xs bg-rose-100 text-red-800 px-2.5 py-0.5 rounded-full font-medium">Нет доступа</span>;
+    if (canWrite) return <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Запись</span>;
+    if (canRead) return <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Чтение</span>;
+    return <span className="text-[10px] bg-rose-50 text-red-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Нет</span>;
   };
 
   return (
@@ -139,29 +153,33 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
         >
           <UserPlus className="h-4 w-4" />
           Добавить сотрудника
         </button>
       </div>
 
-      {/* Таблица */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200">
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
+      <div className="hidden lg:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <table className="min-w-full divide-y divide-slate-200 text-xs">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Сотрудник</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Роль</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Соц Паспорт</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Командообразование</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Сотрудник</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Роль</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Состав коллектива</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Тимбилдинг</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Контент-План</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Заявки</th>
+              <th className="px-6 py-3 text-right font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
             {filteredUsers.map((user) => {
               const socialAccess = user.tableAccesses.find((a) => a.tableName === "social_passport");
               const teamAccess = user.tableAccesses.find((a) => a.tableName === "teambuilding");
+              const contentAccess = user.tableAccesses.find((a) => a.tableName === "content_plan");
+              const postAccess = user.tableAccesses.find((a) => a.tableName === "post_request");
               
               return (
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
@@ -177,32 +195,29 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
                       user.role === "ADMIN" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-800"
                     }`}>
                       {user.role === "ADMIN" ? "Администратор" : "Сотрудник"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {user.role === "ADMIN" ? (
-                      <span className="text-xs bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full font-medium">Полный (Админ)</span>
-                    ) : (
-                      renderAccessBadge(socialAccess?.canRead || false, socialAccess?.canWrite || false)
-                    )}
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(socialAccess?.canRead || false, socialAccess?.canWrite || false)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {user.role === "ADMIN" ? (
-                      <span className="text-xs bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full font-medium">Полный (Админ)</span>
-                    ) : (
-                      renderAccessBadge(teamAccess?.canRead || false, teamAccess?.canWrite || false)
-                    )}
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(teamAccess?.canRead || false, teamAccess?.canWrite || false)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(contentAccess?.canRead || false, contentAccess?.canWrite || false)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(postAccess?.canRead || false, postAccess?.canWrite || false)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => openEditModal(user)}
                         className="text-slate-500 hover:text-slate-800 p-1.5 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-                        title="Редактировать сотрудника"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -211,7 +226,6 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                           onClick={() => handleDelete(user.id, user.name)}
                           disabled={isPending}
                           className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center cursor-pointer"
-                          title="Удалить сотрудника"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -227,7 +241,83 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </table>
       </div>
 
-      {/* Модалка */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      <div className="block lg:hidden space-y-4">
+        {filteredUsers.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
+            Сотрудники не найдены
+          </div>
+        ) : (
+          filteredUsers.map((user) => {
+            const socialAccess = user.tableAccesses.find((a) => a.tableName === "social_passport");
+            const teamAccess = user.tableAccesses.find((a) => a.tableName === "teambuilding");
+            const contentAccess = user.tableAccesses.find((a) => a.tableName === "content_plan");
+            const postAccess = user.tableAccesses.find((a) => a.tableName === "post_request");
+
+            return (
+              <div key={user.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-bold text-xs">
+                      {user.initials}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-slate-900 leading-snug">{user.name}</div>
+                      <div className="text-[10px] text-slate-500 leading-none">{user.email}</div>
+                    </div>
+                  </div>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                    user.role === "ADMIN" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-800"
+                  }`}>
+                    {user.role === "ADMIN" ? "Админ" : "Сотрудник"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
+                    <span className="text-slate-400 font-medium text-[10px]">Коллектив</span>
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(socialAccess?.canRead || false, socialAccess?.canWrite || false)}
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
+                    <span className="text-slate-400 font-medium text-[10px]">Тимбилдинг</span>
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(teamAccess?.canRead || false, teamAccess?.canWrite || false)}
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
+                    <span className="text-slate-400 font-medium text-[10px]">Контент-План</span>
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(contentAccess?.canRead || false, contentAccess?.canWrite || false)}
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
+                    <span className="text-slate-400 font-medium text-[10px]">Заявки</span>
+                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(postAccess?.canRead || false, postAccess?.canWrite || false)}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-1.5 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => openEditModal(user)}
+                    className="text-slate-500 hover:text-slate-800 p-1.5 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  {user.id !== currentUserId ? (
+                    <button
+                      onClick={() => handleDelete(user.id, user.name)}
+                      disabled={isPending}
+                      className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400 italic flex items-center px-1">Это вы</span>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Модальное окно */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
@@ -277,7 +367,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                   <input
                     type="password"
                     name="password"
-                    required={!editingUser} // Пароль обязателен только при создании
+                    required={!editingUser}
                     placeholder={editingUser ? "••••••••" : "Укажите сложный пароль"}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
@@ -289,8 +379,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                   <Shield className="h-4 w-4" /> Права доступа к таблицам
                 </h4>
 
+                {/* 1. Состав коллектива */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                  <div className="text-sm font-semibold text-slate-700">Социальный Паспорт</div>
+                  <div className="text-xs font-bold text-slate-700 uppercase">Состав коллектива</div>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
                       <input
@@ -313,8 +404,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                   </div>
                 </div>
 
+                {/* 2. Командообразование */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                  <div className="text-sm font-semibold text-slate-700">Командообразование</div>
+                  <div className="text-xs font-bold text-slate-700 uppercase">Командообразование</div>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
                       <input
@@ -333,6 +425,56 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                         className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       Разрешить Запись
+                    </label>
+                  </div>
+                </div>
+
+                {/* 3. Контент-План */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="text-xs font-bold text-slate-700 uppercase">Контент-План публикаций</div>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={access.canReadContent}
+                        onChange={(e) => setAccess({ ...access, canReadContent: e.target.checked })}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Разрешить Чтение
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={access.canWriteContent}
+                        onChange={(e) => setAccess({ ...access, canWriteContent: e.target.checked })}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Разрешить Запись / Одобрение
+                    </label>
+                  </div>
+                </div>
+
+                {/* 4. Заявки на посты */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="text-xs font-bold text-slate-700 uppercase">Подача заявок на посты</div>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={access.canReadPost}
+                        onChange={(e) => setAccess({ ...access, canReadPost: e.target.checked })}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Разрешить Чтение всех заявок
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={access.canWritePost}
+                        onChange={(e) => setAccess({ ...access, canWritePost: e.target.checked })}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Разрешить Подачу заявок
                     </label>
                   </div>
                 </div>

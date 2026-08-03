@@ -22,6 +22,7 @@ export default async function AppLayout({
   return (
     <AppShell sessionUser={session.user}>
       {children}
+      <UrgentTasksWidget />
     </AppShell>
   );
 }

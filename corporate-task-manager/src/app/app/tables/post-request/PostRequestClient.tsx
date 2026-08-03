@@ -40,6 +40,16 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // Состояние фильтра: ALL (Все), PENDING (На рассмотрении), ARCHIVED (Одобрено/Отклонено)
+  const [filter, setFilter] = useState<"ALL" | "PENDING" | "ARCHIVED">("PENDING"); // По умолчанию показываем только требующие внимания
+
+  // Фильтрация заявок перед выводом на экран
+  const filteredRequests = initialRequests.filter((req) => {
+    if (filter === "PENDING") return req.status === "PENDING";
+    if (filter === "ARCHIVED") return req.status === "APPROVED" || req.status === "REJECTED";
+    return true;
+  });
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -56,7 +66,7 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
   };
 
   const handleApprove = async (id: string, topic: string) => {
-    if (!window.confirm(`Одобрить заявку "${topic}" и перенести её в Контент-план?`)) return;
+    if (!window.confirm(`Одобрить заявку "${topic}"?`)) return;
     startTransition(async () => {
       try {
         await approvePostRequest(id);
@@ -80,21 +90,21 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
   const renderStatusBadge = (status: string) => {
     if (status === "APPROVED") {
       return (
-        <span className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium">
-          <CheckCircle2 className="h-3 w-3" /> Одобрено (в плане)
+        <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+          <CheckCircle2 className="h-3 w-3" /> Одобрено
         </span>
       );
     }
     if (status === "REJECTED") {
       return (
-        <span className="inline-flex items-center gap-1 text-xs bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-1 text-[10px] bg-rose-100 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
           <XCircle className="h-3 w-3" /> Отклонено
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-medium">
-        <Clock className="h-3 w-3" /> На рассмотрении
+      <span className="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+        <Clock className="h-3 w-3 animate-pulse" /> На рассмотрении
       </span>
     );
   };
@@ -116,15 +126,36 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
 
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto cursor-pointer"
         >
           <Send className="h-4 w-4" />
           Подать заявку на пост
         </button>
       </div>
 
-      {/* Таблица заявок */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* ФИЛЬТР-АРХИВ ЗАЯВОК (Вкладки) */}
+      <div className="flex bg-slate-200/60 p-1 rounded-xl max-w-sm border border-slate-200 shadow-inner">
+        {(["PENDING", "ARCHIVED", "ALL"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              filter === f 
+                ? "bg-white text-blue-600 shadow-sm" 
+                : "text-slate-600 hover:text-slate-800"
+            }`}
+          >
+            {f === "PENDING" && "Новые"}
+            {f === "ARCHIVED" && "Архив"}
+            {f === "ALL" && "Все"}
+          </button>
+        ))}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
+      {/* ========================================================================= */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -137,14 +168,14 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
-            {initialRequests.length === 0 ? (
+            {filteredRequests.length === 0 ? (
               <tr>
                 <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-slate-400 text-sm">
-                  Заявок пока нет
+                  Заявок в этой категории нет
                 </td>
               </tr>
             ) : (
-              initialRequests.map((req) => (
+              filteredRequests.map((req) => (
                 <tr key={req.id} className="hover:bg-slate-50/50 transition-colors text-sm">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2.5">
@@ -182,7 +213,7 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
                           <button
                             onClick={() => handleApprove(req.id, req.topic)}
                             disabled={isPending}
-                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors"
+                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors cursor-pointer"
                             title="Одобрить в контент-план"
                           >
                             <Check className="h-4 w-4" />
@@ -190,7 +221,7 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
                           <button
                             onClick={() => handleReject(req.id, req.topic)}
                             disabled={isPending}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors"
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer"
                             title="Отклонить"
                           >
                             <X className="h-4 w-4" />
@@ -208,7 +239,77 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
         </table>
       </div>
 
-      {/* МОДАЛЬНОЕ ОКНО: ФОРМА ЗАЯВКИ */}
+      {/* ========================================================================= */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      {/* ========================================================================= */}
+      <div className="block md:hidden space-y-4">
+        {filteredRequests.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
+            Заявок в этой категории нет
+          </div>
+        ) : (
+          filteredRequests.map((req) => (
+            <div key={req.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 rounded-full bg-slate-100 text-slate-700 font-bold items-center justify-center text-xs">
+                    {req.user.initials}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900 leading-snug">{req.user.name}</div>
+                    <div className="text-[10px] text-slate-400 leading-none">Подано: {new Date(req.createdAt).toLocaleDateString()}</div>
+                  </div>
+                </div>
+                <div>
+                  {renderStatusBadge(req.status)}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="font-bold text-slate-950 text-sm leading-snug">{req.topic}</div>
+                <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 italic leading-relaxed whitespace-pre-line">
+                  {req.description}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex flex-col gap-0.5">
+                  <span className="text-slate-400 font-medium text-[9px] uppercase">Площадка</span>
+                  <span className="font-bold text-slate-800">{req.platform}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex flex-col gap-0.5">
+                  <span className="text-slate-400 font-medium text-[9px] uppercase">Желаемая дата</span>
+                  <span className="font-bold text-slate-800 flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    {new Date(req.requestedDate).toLocaleDateString("ru-RU")}
+                  </span>
+                </div>
+              </div>
+
+              {isAdmin && req.status === "PENDING" && (
+                <div className="flex gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => handleApprove(req.id, req.topic)}
+                    disabled={isPending}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <Check className="h-4 w-4" /> Одобрить
+                  </button>
+                  <button
+                    onClick={() => handleReject(req.id, req.topic)}
+                    disabled={isPending}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <X className="h-4 w-4" /> Отклонить
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* МОДАЛЬНОЕ ОКНО */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-slate-200">
