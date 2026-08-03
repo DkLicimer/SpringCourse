@@ -32,18 +32,16 @@ type PostRequest = {
 
 interface PostRequestClientProps {
   initialRequests: PostRequest[];
-  isAdmin: boolean;
+  canManage: boolean; // Заменили isAdmin на canManage
 }
 
-export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClientProps) {
+export function PostRequestClient({ initialRequests, canManage }: PostRequestClientProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Состояние фильтра: ALL (Все), PENDING (На рассмотрении), ARCHIVED (Одобрено/Отклонено)
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "ARCHIVED">("PENDING"); // По умолчанию показываем только требующие внимания
+  const [filter, setFilter] = useState<"ALL" | "PENDING" | "ARCHIVED">("PENDING");
 
-  // Фильтрация заявок перед выводом на экран
   const filteredRequests = initialRequests.filter((req) => {
     if (filter === "PENDING") return req.status === "PENDING";
     if (filter === "ARCHIVED") return req.status === "APPROVED" || req.status === "REJECTED";
@@ -164,13 +162,13 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Площадка</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Желаемая дата</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Статус</th>
-              {isAdmin && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>}
+              {canManage && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
             {filteredRequests.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-slate-400 text-sm">
+                <td colSpan={canManage ? 6 : 5} className="px-6 py-8 text-center text-slate-400 text-sm">
                   Заявок в этой категории нет
                 </td>
               </tr>
@@ -206,7 +204,7 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
                   <td className="px-6 py-4 whitespace-nowrap">
                     {renderStatusBadge(req.status)}
                   </td>
-                  {isAdmin && (
+                  {canManage && (
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {req.status === "PENDING" ? (
                         <div className="flex items-center justify-end gap-1">
@@ -286,7 +284,7 @@ export function PostRequestClient({ initialRequests, isAdmin }: PostRequestClien
                 </div>
               </div>
 
-              {isAdmin && req.status === "PENDING" && (
+              {canManage && req.status === "PENDING" && (
                 <div className="flex gap-2 pt-2 border-t border-slate-100">
                   <button
                     onClick={() => handleApprove(req.id, req.topic)}

@@ -65,7 +65,6 @@ export async function createTask(input: CreateTaskInput) {
     throw new Error("Заполните обязательные поля и выберите исполнителей");
   }
 
-  // Создаем задачу и распределяем ее исполнителям в транзакции
   const task = await prisma.$transaction(async (tx) => {
     const newTask = await tx.task.create({
       data: {
@@ -75,7 +74,7 @@ export async function createTask(input: CreateTaskInput) {
         intermediateControl,
         adminNotes,
         assignmentType,
-        isPriority, // Сохраняем флаг приоритета в БД
+        isPriority,
         goalId,
         createdById: session.user.id,
       },
@@ -84,7 +83,6 @@ export async function createTask(input: CreateTaskInput) {
     const assignmentsData = assigneeIds.map((userId, index) => {
       let isBlocked = false;
 
-      // В SEQUENTIAL блокируем всех, кроме первого исполнителя
       if (assignmentType === "SEQUENTIAL" && index > 0) {
         isBlocked = true;
       }
@@ -105,7 +103,6 @@ export async function createTask(input: CreateTaskInput) {
     return newTask;
   });
 
-  // Отправляем уведомления ПОСЛЕ успешного закрытия транзакции
   try {
     for (let index = 0; index < assigneeIds.length; index++) {
       const userId = assigneeIds[index];
@@ -133,13 +130,14 @@ export async function createTask(input: CreateTaskInput) {
   return task;
 }
 
-// 3. Изменение статуса задачи (доступно ADMIN и назначенным EMPLOYEE)
+// 3. Изменение статуса задачи (УЛУЧШЕНО С ЗАЩИТОЙ ОТ ОТКАТОВ ЭТАПОВ!)
 export async function updateAssignmentStatus(assignmentId: string, newStatusId: string) {
   const session = await getServerSession(authOptions);
   if (!session) {
     throw new Error("Вы не авторизованы");
   }
 
+  // Загружаем назначение вместе со всей цепочкой последователей
   const currentAssignment = await prisma.taskAssignment.findUnique({
     where: { id: assignmentId },
     include: {
@@ -169,12 +167,13 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
   }
 
   const isCompletedStatus = newStatusId === "status-done";
+  const wasCompleted = currentAssignment.statusId === "status-done";
 
-  // Стейты для отправки уведомления следующему в цепочке
   let nextAssigneeId: string | null = null;
   const taskTitle = currentAssignment.task.title;
 
   await prisma.$transaction(async (tx) => {
+    // 1. Обновляем статус текущей задачи
     await tx.taskAssignment.update({
       where: { id: assignmentId },
       data: {
@@ -183,28 +182,47 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
       },
     });
 
-    if (
-      currentAssignment.task.assignmentType === "SEQUENTIAL" &&
-      isCompletedStatus
-    ) {
+    // 2. Если это последовательная цепочка — управляем блокировкой следующего шага
+    if (currentAssignment.task.assignmentType === "SEQUENTIAL") {
       const nextOrder = currentAssignment.sequenceOrder + 1;
       const nextAssignment = currentAssignment.task.assignments.find(
         (a) => a.sequenceOrder === nextOrder
       );
 
       if (nextAssignment) {
-        await tx.taskAssignment.update({
-          where: { id: nextAssignment.id },
-          data: {
-            isBlocked: false,
-          },
-        });
-        nextAssigneeId = nextAssignment.userId;
+        if (isCompletedStatus && !wasCompleted) {
+          // СЦЕНАРИЙ А: Перевели в "Исполнено" -> Разблокируем следующий этап
+          await tx.taskAssignment.update({
+            where: { id: nextAssignment.id },
+            data: {
+              isBlocked: false,
+            },
+          });
+          nextAssigneeId = nextAssignment.userId;
+        } 
+        else if (!isCompletedStatus && wasCompleted) {
+          // СЦЕНАРИЙ Б: ОТКАТЫВАЕМ назад из выполненных!
+          // Проверяем, успел ли следующий исполнитель сдвинуть задачу с "В очереди"
+          if (nextAssignment.statusId !== "status-todo" && !isAdmin) {
+            throw new Error(
+              "Вы не можете отменить выполнение, так как следующий исполнитель в цепочке уже начал работу над своим этапом."
+            );
+          }
+
+          // Если он еще не начал работу, блокируем его задачу обратно и сбрасываем статус
+          await tx.taskAssignment.update({
+            where: { id: nextAssignment.id },
+            data: {
+              isBlocked: true,
+              statusId: "status-todo",
+            },
+          });
+        }
       }
     }
   });
 
-  // Отправляем уведомления разблокированному пользователю ПОСЛЕ транзакции
+  // Отправляем уведомления только при успешной разблокировке новой задачи в фоне
   if (nextAssigneeId) {
     try {
       await createNotification(
@@ -268,7 +286,7 @@ export async function deleteGoal(id: string) {
   revalidatePath("/app/tasks");
 }
 
-// 6. Добавление комментария в задачу (любой участник задачи или ADMIN)
+// 6. Добавление комментария в задачу
 export async function addComment(taskId: string, text: string) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -304,7 +322,6 @@ export async function addComment(taskId: string, text: string) {
     },
   });
 
-  // Оповещаем остальных участников задачи после успешного создания сообщения
   try {
     const recipients = new Set<string>();
     if (task.createdById !== session.user.id) {
@@ -342,7 +359,6 @@ export async function createTaskStatus(name: string, color: string) {
     throw new Error("Укажите название статуса и цвет");
   }
 
-  // Находим максимальную позицию, чтобы добавить новый статус в конец списка
   const maxStatus = await prisma.taskStatus.findFirst({
     orderBy: { position: "desc" },
   });
@@ -376,12 +392,10 @@ export async function deleteTaskStatus(id: string) {
     throw new Error("Статус не найден");
   }
 
-  // Защита системных дефолтных статусов
   if (status.isDefault) {
     throw new Error("Системные статусы по умолчанию удалять нельзя");
   }
 
-  // Защита от удаления используемых статусов
   const isUsed = await prisma.taskAssignment.count({
     where: { statusId: id },
   });
@@ -413,7 +427,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     intermediateControl,
     adminNotes,
     assignmentType,
-    isPriority, // Получаем флаг приоритета
+    isPriority,
     goalId,
     assigneeIds,
   } = input;
@@ -423,7 +437,6 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
   }
 
   await prisma.$transaction(async (tx) => {
-    // 1. Обновляем саму карточку задачи
     await tx.task.update({
       where: { id: taskId },
       data: {
@@ -433,17 +446,15 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         intermediateControl,
         adminNotes,
         assignmentType,
-        isPriority, // Обновляем флаг приоритета в БД
+        isPriority,
         goalId,
       },
     });
 
-    // 2. Стираем старые назначения исполнителей
     await tx.taskAssignment.deleteMany({
       where: { taskId },
     });
 
-    // 3. Создаем новые назначения заново
     const assignmentsData = assigneeIds.map((userId, index) => {
       let isBlocked = false;
       if (assignmentType === "SEQUENTIAL" && index > 0) {

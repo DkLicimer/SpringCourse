@@ -12,6 +12,21 @@ export default async function PostRequestPage() {
     redirect("/login");
   }
 
+  const isAdmin = session.user.role === "ADMIN";
+
+  // Ищем права доступа сотрудника на запись в Контент-план
+  const access = await prisma.tableAccess.findUnique({
+    where: {
+      userId_tableName: {
+        userId: session.user.id,
+        tableName: "content_plan",
+      },
+    },
+  });
+
+  // Управлять заявками может админ ИЛИ сотрудник с правами записи в контент-план
+  const canManage = isAdmin || (access?.canWrite ?? false);
+
   // Загружаем все заявки на публикации вместе с информацией об авторе
   const requests = await prisma.postRequest.findMany({
     orderBy: { createdAt: "desc" },
@@ -22,13 +37,11 @@ export default async function PostRequestPage() {
     },
   });
 
-  const isAdmin = session.user.role === "ADMIN";
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <PostRequestClient
         initialRequests={JSON.parse(JSON.stringify(requests))}
-        isAdmin={isAdmin}
+        canManage={canManage} // Передаем обобщенное право
       />
     </div>
   );

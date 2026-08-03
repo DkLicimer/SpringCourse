@@ -124,13 +124,11 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     personalActiveCount = periodAssignments.filter((as) => as.statusId !== "status-done" && !as.isBlocked).length;
     personalBlockedCount = periodAssignments.filter((as) => as.isBlocked).length;
 
-    // Считаем личные просроченные задачи
     overdueTasksCount = periodAssignments.filter((as) => {
       if (as.statusId === "status-done" || !as.task.deadline) return false;
       return new Date(as.task.deadline) < startOfToday;
     }).length;
 
-    // Считаем личные горящие задачи
     urgentTasksCount = periodAssignments.filter((as) => {
       if (as.statusId === "status-done" || !as.task.deadline) return false;
       const dl = new Date(as.task.deadline);
@@ -139,7 +137,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
     companyCompletionRate = totalTasksCount > 0 ? Math.round((personalCompletedCount / totalTasksCount) * 100) : 0;
 
-    // Формируем детальный список задач сотрудника
     personalTasksList = periodAssignments.map(as => {
       const isOverdue = as.statusId !== "status-done" && as.task.deadline && new Date(as.task.deadline) < startOfToday ? true : false;
       let statusName = "В очереди";
@@ -182,7 +179,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       return isUpcoming && isNotFinished;
     }).length;
 
-    // Расчет успеваемости по всем сотрудникам
     let totalAssignments = 0;
     let totalCompleted = 0;
 
@@ -217,6 +213,20 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
+    // Определение цветового статуса загрузки для вывода
+    let workloadText = "Свободен";
+    let workloadClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (active >= 9) {
+      workloadText = "Завал! 🚨";
+      workloadClass = "bg-rose-100 text-rose-800 border-rose-300 animate-pulse font-black";
+    } else if (active >= 6) {
+      workloadText = "Высокая";
+      workloadClass = "bg-orange-50 text-orange-700 border-orange-200 font-bold";
+    } else if (active >= 3) {
+      workloadText = "В норме";
+      workloadClass = "bg-blue-50 text-blue-700 border-blue-200 font-semibold";
+    }
+
     return {
       id: emp.id,
       name: emp.name,
@@ -227,9 +237,16 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       active,
       blocked,
       overdue,
+      workloadText,
+      workloadClass,
       completionRate: rate,
     };
   });
+
+  // Расчет суммарного ресурса команды (для сводного виджета загруженности)
+  const lowLoadCount = employeeStats.filter(emp => emp.active <= 2).length;
+  const normalLoadCount = employeeStats.filter(emp => emp.active >= 3 && emp.active <= 5).length;
+  const highLoadCount = employeeStats.filter(emp => emp.active >= 6).length;
 
   // =========================================================================
   // ЭКСПОРТ В CSV
@@ -243,7 +260,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       const dateStr = new Date().toLocaleDateString("ru-RU").replace(/\./g, "-");
 
       if (currentEmployee) {
-        // Экспортируем детальный отчет по одному сотруднику
         filename = `Otchet_${currentEmployee.name.replace(/\s+/g, "_")}_${period}_${dateStr}.csv`;
         headers = ["Название задачи", "Дедлайн", "Статус", "Просрочена (Да/Нет)", "Заблокирована в цепочке"];
         csvRows = personalTasksList.map(task => [
@@ -254,16 +270,16 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           task.isBlocked ? "Да" : "Нет"
         ]);
       } else {
-        // Экспортируем общую таблицу сотрудников
         filename = `Otchet_Kompanii_${period}_${dateStr}.csv`;
         headers = [
           "ФИО сотрудника",
           "Email",
           "Всего задач",
           "Выполнено",
-          "Активно",
+          "Активно в работе",
           "Просрочено",
           "Заблокировано (в цепочке)",
+          "Статус нагрузки",
           "Процент выполнения (%)"
         ];
         csvRows = employeeStats.map((emp) => [
@@ -274,6 +290,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           emp.active,
           emp.overdue,
           emp.blocked,
+          emp.workloadText.replace("🚨", ""),
           `${emp.completionRate}%`
         ]);
       }
@@ -293,7 +310,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* 🖨️ ШАПКА ДЛЯ ВЕРСИИ ПЕЧАТИ (Скрыта на экране, видна при печати) */}
+      {/* 🖨️ ШАПКА ДЛЯ ПЕЧАТИ */}
       <div className="hidden print:block border-b border-slate-300 pb-4 mb-6">
         <h1 className="text-2xl font-bold text-slate-900 uppercase">
           {currentEmployee ? `Отчет об эффективности сотрудника: ${currentEmployee.name}` : "Общий отчет по эффективности компании"}
@@ -306,7 +323,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       {/* ПАНЕЛЬ СЕЛЕКТОРОВ И ФИЛЬТРОВ */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between print:hidden">
         {/* Выбор периода */}
-        <div className="flex bg-slate-200/60 p-1 rounded-xl max-w-xs border border-slate-200">
+        <div className="flex bg-slate-200/60 p-1 rounded-xl max-w-sm border border-slate-200">
           {(["all", "month", "quarter"] as const).map((p) => (
             <button
               key={p}
@@ -324,7 +341,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           ))}
         </div>
 
-        {/* Выбор сотрудника (Интерактивный селектор) */}
+        {/* Выбор сотрудника */}
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm max-w-sm">
           <Users className="h-4 w-4 text-slate-400 shrink-0" />
           <select
@@ -344,7 +361,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
       {/* СЕТКА С КАРТОЧКАМИ МЕТРИК (KPI) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 print:grid-cols-4">
-        {/* Карточка 1: Процент завершения (Эффективность) */}
+        {/* Карточка 1 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl print:bg-slate-100 print:text-slate-800">
             <TrendingUp className="h-6 w-6" />
@@ -357,7 +374,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Карточка 2: Всего задач в работе */}
+        {/* Карточка 2 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none">
           <div className="p-3 bg-slate-50 text-slate-600 rounded-xl print:bg-slate-100 print:text-slate-800">
             <Activity className="h-6 w-6" />
@@ -370,7 +387,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Карточка 3: Просрочено */}
+        {/* Карточка 3 */}
         <div className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none ${
           overdueTasksCount > 0 ? "bg-red-50/20 border-red-200" : "bg-white border-slate-200"
         }`}>
@@ -387,7 +404,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Карточка 4: Срочные (дедлайн до 3 дней) */}
+        {/* Карточка 4 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none">
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl print:bg-slate-100 print:text-slate-800">
             <Clock className="h-6 w-6" />
@@ -399,7 +416,33 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* ОТОБРАЖЕНИЕ РЕЗУЛЬТАТОВ (ДЕТАЛЬНАЯ ЧАСТЬ) */}
+      {/* ========================================================================= */}
+      {/* 📊 СВОДНЫЙ БАЛАНС РЕСУРСОВ КОМАНДЫ (Только в режиме общего отчета) */}
+      {/* ========================================================================= */}
+      {selectedEmployeeId === "all" && (
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 print:hidden">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <Users className="h-4 w-4 text-blue-500" />
+            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Текущий баланс ресурсов команды</h4>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="bg-emerald-50/50 border border-emerald-100 p-3.5 rounded-xl flex flex-col items-center">
+              <span className="text-2xl font-black text-emerald-600">{lowLoadCount}</span>
+              <span className="text-[10px] text-emerald-700 font-bold mt-1 uppercase tracking-wider">Свободны / Низкая нагрузка</span>
+            </div>
+            <div className="bg-blue-50/50 border border-blue-100 p-3.5 rounded-xl flex flex-col items-center">
+              <span className="text-2xl font-black text-blue-600">{normalLoadCount}</span>
+              <span className="text-[10px] text-blue-700 font-bold mt-1 uppercase tracking-wider">Оптимальная нагрузка</span>
+            </div>
+            <div className="bg-orange-50/50 border border-orange-100 p-3.5 rounded-xl flex flex-col items-center">
+              <span className="text-2xl font-black text-orange-600">{highLoadCount}</span>
+              <span className="text-[10px] text-orange-700 font-bold mt-1 uppercase tracking-wider">Высокая нагрузка / Завал</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ОТОБРАЖЕНИЕ РЕЗУЛЬТАТОВ (ДЕТАЛЬНАЯ ТАБЛИЦА) */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm print:border-slate-300 print:shadow-none">
         
         {/* Заголовок блока с кнопками экспорта */}
@@ -413,7 +456,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
             ) : (
               <>
                 <Users className="h-5 w-5 text-blue-500" />
-                Успеваемость всех сотрудников
+                Успеваемость и текущая нагрузка сотрудников
               </>
             )}
           </h3>
@@ -522,23 +565,23 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         ) : (
           
           // =========================================================================
-          // СИТУАЦИЯ 2: ОБЩАЯ СВОДНАЯ ТАБЛИЦА ВСЕХ СОТРУДНИКОВ
+          // СИТУАЦИЯ 2: ОБЩАЯ СВОДНАЯ ТАБЛИЦА С ИНДИКАТОРАМИ НАГРУЗКИ
           // =========================================================================
           <div className="overflow-x-auto print:overflow-visible">
-            <table className="min-w-full divide-y divide-slate-200 print:divide-slate-300">
+            <table className="min-w-full divide-y divide-slate-200 print:divide-slate-300 text-xs sm:text-sm">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Имя сотрудника</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Всего задач</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Выполнено</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Просрочено</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">В работе</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Эффективность</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Загруженность (В работе)</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Успеваемость</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white print:divide-slate-300">
                 {employeeStats.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors text-sm">
+                  <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 rounded-full bg-slate-100 text-slate-700 font-bold items-center justify-center text-xs print:border print:border-slate-300">
@@ -559,14 +602,19 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
                     <td className="px-6 py-4 whitespace-nowrap font-bold text-red-500">
                       {emp.overdue > 0 ? emp.overdue : "—"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                      <div className="flex flex-col text-xs gap-0.5">
-                        <span>{emp.active} активных</span>
+                    
+                    {/* 🚦 ИНДИКАТОР ЗАГРУЖЕННОСТИ В РЕАЛЬНОМ ВРЕМЕНИ */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wider ${emp.workloadClass}`}>
+                          {emp.workloadText} ({emp.active} зад.)
+                        </span>
                         {emp.blocked > 0 && (
-                          <span className="text-red-500 font-semibold">{emp.blocked} заблокировано</span>
+                          <span className="text-[10px] text-amber-600 font-semibold">+{emp.blocked} ожидает</span>
                         )}
                       </div>
                     </td>
+                    
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden print:hidden">

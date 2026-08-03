@@ -25,7 +25,7 @@ export default async function TablesHubPage() {
     where: { userId: session.user.id }
   });
 
-  // Проверяем доступ на чтение (админ имеет доступ по умолчанию)
+  // Проверяем доступ на чтение
   const canReadSocial = isAdmin || userAccesses.find(a => a.tableName === "social_passport")?.canRead || false;
   const canReadTeam = isAdmin || userAccesses.find(a => a.tableName === "teambuilding")?.canRead || false;
   const canReadContent = isAdmin || userAccesses.find(a => a.tableName === "content_plan")?.canRead || false;
@@ -38,7 +38,7 @@ export default async function TablesHubPage() {
       description: "Общая телефонная книга сотрудников, отделов и должностей компании.",
       icon: <Contact className="h-8 w-8 text-blue-500" />,
       href: "/app/tables/contacts",
-      hasAccess: true, // Всегда доступно всем
+      hasAccess: true,
     },
     {
       id: "content-plan",
@@ -46,7 +46,7 @@ export default async function TablesHubPage() {
       description: "Календарь публикаций по всем площадкам организации.",
       icon: <FileText className="h-8 w-8 text-emerald-500" />,
       href: "/app/tables/content-plan",
-      hasAccess: canReadContent, // Проверка прав
+      hasAccess: canReadContent,
     },
     {
       id: "post-request",
@@ -54,15 +54,15 @@ export default async function TablesHubPage() {
       description: "Форма отправки материалов на публикацию в контент-план.",
       icon: <Send className="h-8 w-8 text-indigo-500" />,
       href: "/app/tables/post-request",
-      hasAccess: canReadPost, // Проверка прав
+      hasAccess: canReadPost,
     },
     {
       id: "social-passport",
-      title: "Соц паспорт",
-      description: "Аналитическая сводка по официальным аккаунтам подразделений.",
+      title: "Состав коллектива", // ИСПРАВЛЕНО НА УРОВНЕ ХАБА!
+      description: "Кадровая структура, ФИО, должности и внутренние контакты сотрудников вашего ДДМа.",
       icon: <Globe className="h-8 w-8 text-teal-500" />,
       href: "/app/tables/social-passport",
-      hasAccess: canReadSocial, // Проверка прав
+      hasAccess: canReadSocial,
     },
     {
       id: "teambuilding",
@@ -70,7 +70,7 @@ export default async function TablesHubPage() {
       description: "План корпоративных мероприятий, сметы расходов и составы участников.",
       icon: <Users className="h-8 w-8 text-purple-500" />,
       href: "/app/tables/teambuilding",
-      hasAccess: canReadTeam, // Проверка прав
+      hasAccess: canReadTeam,
     },
   ];
 

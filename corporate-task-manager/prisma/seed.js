@@ -112,22 +112,24 @@ async function main() {
   // 4. Распределяем права доступа на таблицы для сотрудников
   await prisma.tableAccess.createMany({
     data: [
-      // Петров: Полный доступ к соцпаспорту, только чтение к тимбилдингу
       { userId: petrov.id, tableName: 'social_passport', canRead: true, canWrite: true },
       { userId: petrov.id, tableName: 'teambuilding', canRead: true, canWrite: false },
+      { userId: petrov.id, tableName: 'content_plan', canRead: true, canWrite: true },
+      { userId: petrov.id, tableName: 'post_request', canRead: true, canWrite: true },
       
-      // Иванова: Полный доступ ко всем таблицам
       { userId: ivanova.id, tableName: 'social_passport', canRead: true, canWrite: true },
       { userId: ivanova.id, tableName: 'teambuilding', canRead: true, canWrite: true },
+      { userId: ivanova.id, tableName: 'content_plan', canRead: true, canWrite: true },
+      { userId: ivanova.id, tableName: 'post_request', canRead: true, canWrite: true },
 
-      // Смирнов: Только чтение соцпаспорта, нет доступа к тимбилдингу
       { userId: smirnov.id, tableName: 'social_passport', canRead: true, canWrite: false },
       { userId: smirnov.id, tableName: 'teambuilding', canRead: false, canWrite: false },
+      { userId: smirnov.id, tableName: 'content_plan', canRead: true, canWrite: false },
+      { userId: smirnov.id, tableName: 'post_request', canRead: true, canWrite: true },
     ],
   });
 
   // 5. Создаем тестовые Задачи
-  // Задача 1 (Срочная / Горящая для виджета - дедлайн завтра)
   const deadlineTomorrow = new Date();
   deadlineTomorrow.setDate(deadlineTomorrow.getDate() + 1);
 
@@ -148,7 +150,6 @@ async function main() {
     data: { taskId: urgentTask.id, userId: smirnov.id, statusId: statusInProgress.id },
   });
 
-  // Задача 2 (Параллельная задача - Осенний маркетинг)
   const deadlineInThreeDays = new Date();
   deadlineInThreeDays.setDate(deadlineInThreeDays.getDate() + 3);
 
@@ -170,7 +171,6 @@ async function main() {
     ],
   });
 
-  // Задача 3 (Последовательная цепочка: Смирнов -> Петров)
   const chainTask = await prisma.task.create({
     data: {
       title: 'Написание и согласование ТЗ ребрендинга',
@@ -184,11 +184,10 @@ async function main() {
   await prisma.taskAssignment.createMany({
     data: [
       { taskId: chainTask.id, userId: smirnov.id, statusId: statusInProgress.id, sequenceOrder: 0, isBlocked: false },
-      { taskId: chainTask.id, userId: petrov.id, statusId: statusTodo.id, sequenceOrder: 1, isBlocked: true }, // Заблокирована
+      { taskId: chainTask.id, userId: petrov.id, statusId: statusTodo.id, sequenceOrder: 1, isBlocked: true },
     ],
   });
 
-  // Добавим комментарий к задаче маркетинга
   await prisma.comment.create({
     data: {
       taskId: marketingTask.id,
@@ -206,17 +205,18 @@ async function main() {
     ],
   });
 
-  // 7. Соцпаспорт
+  // 7. Состав коллектива (ПЕРЕИМЕНОВАНО И ИСПРАВЛЕНО!)
   await prisma.socialPassport.createMany({
     data: [
-      { department: 'Официальный паблик организации', accountUrl: 'vk.com/my_company_official', followers: 18450, notes: 'Основной канал коммуникации с клиентами' },
-      { department: 'Карьерный Telegram-канал', accountUrl: 't.me/company_jobs', followers: 3200, notes: 'Ведет HR-отдел' },
+      { department: 'Администрация ДДМа', accountUrl: 'Сидоренко Наталья Владимировна', followers: 101, notes: 'Директор, общий контроль процессов' },
+      { department: 'Художественное направление', accountUrl: 'Петров Петр Петрович', followers: 204, notes: 'Педагог доп. образования, руководитель студии рисования' },
+      { department: 'ИТ и Робототехника', accountUrl: 'Смирнов Алексей Игоревич', followers: 302, notes: 'Педагог, куратор направления программирования' },
     ],
   });
 
   // 8. Командообразование
   const teamDate = new Date();
-  teamDate.setDate(teamDate.getDate() + 15); // Мероприятие через 15 дней
+  teamDate.setDate(teamDate.getDate() + 15);
 
   await prisma.teambuilding.createMany({
     data: [
@@ -225,11 +225,11 @@ async function main() {
     ],
   });
 
-  // 9. Контент-план и Заявки
+  // 9. Контент-план
   const planDate1 = new Date();
   planDate1.setDate(planDate1.getDate() + 2);
   const planDate2 = new Date();
-  planDate2.setDate(planDate2.getDate() - 1); // Вчерашний пост
+  planDate2.setDate(planDate2.getDate() - 1);
 
   await prisma.contentPlan.create({
     data: {
@@ -267,24 +267,21 @@ async function main() {
   // 10. Динамическое наполнение сетки Календаря под текущую неделю
   const d = new Date();
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Понедельник текущей недели
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(d.setDate(diff));
   monday.setHours(0, 0, 0, 0);
 
-  // Встреча в понедельник в 10:00
   const startMon = new Date(monday);
   startMon.setHours(10, 0, 0, 0);
   const endMon = new Date(startMon);
   endMon.setHours(11, 30, 0, 0);
 
-  // Встреча во вторник в 14:00
   const startTue = new Date(monday);
   startTue.setDate(monday.getDate() + 1);
   startTue.setHours(14, 0, 0, 0);
   const endTue = new Date(startTue);
   endTue.setHours(15, 0, 0, 0);
 
-  // Блокировка времени руководителем в среду с 11:00 до 13:00
   const startWed = new Date(monday);
   startWed.setDate(monday.getDate() + 2);
   startWed.setHours(11, 0, 0, 0);

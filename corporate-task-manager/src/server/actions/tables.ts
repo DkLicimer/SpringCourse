@@ -146,8 +146,50 @@ export async function rejectPostRequest(requestId: string) {
 
   revalidatePath("/app/tables/post-request");
 }
+
+// Удаление строки контент-плана (требует прав на запись в контент-план) — ВОССТАНОВЛЕНО!
+export async function deleteContentPlanRow(id: string) {
+  const hasAccess = await verifyAccess("content_plan", "write");
+  if (!hasAccess) throw new Error("У вас нет прав на удаление записей из Контент-Плана");
+
+  await prisma.contentPlan.delete({ where: { id } });
+  revalidatePath("/app/tables/content-plan");
+}
+
+// Прямое добавление публикации в Контент-план (требует прав на запись в контент-план) — ВОССТАНОВЛЕНО!
+export async function createContentPlanRow(formData: FormData) {
+  const hasAccess = await verifyAccess("content_plan", "write");
+  if (!hasAccess) throw new Error("У вас нет прав для прямого добавления записей в Контент-План");
+
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Вы не авторизованы");
+
+  const topic = formData.get("topic") as string;
+  const platform = formData.get("platform") as string;
+  const publishDate = formData.get("publishDate") as string;
+  const status = (formData.get("status") as string) || "Черновик";
+  const notes = formData.get("notes") as string;
+
+  if (!topic || !platform || !publishDate) {
+    throw new Error("Тема, площадка и дата обязательны для заполнения");
+  }
+
+  await prisma.contentPlan.create({
+    data: {
+      topic,
+      platform,
+      publishDate: new Date(publishDate),
+      status,
+      authorId: session.user.id,
+      notes,
+    },
+  });
+
+  revalidatePath("/app/tables/content-plan");
+}
+
 // =========================================================================
-// 3. ТАБЛИЦА «СОЦ ПАСПОРТ» (С ПРОВЕРКОЙ ПРАВ canWrite)
+// 3. ТАБЛИЦА «СОСТАВ КОЛЛЕКТИВА» (С ПРОВЕРКОЙ ПРАВ canWrite)
 // =========================================================================
 
 export async function createSocialPassportRow(formData: FormData) {
@@ -160,7 +202,7 @@ export async function createSocialPassportRow(formData: FormData) {
   const notes = formData.get("notes") as string;
 
   if (!department || !accountUrl) {
-    throw new Error("Подразделение и ссылка на аккаунт обязательны");
+    throw new Error("Подразделение и ФИО обязательны");
   }
 
   await prisma.socialPassport.create({
