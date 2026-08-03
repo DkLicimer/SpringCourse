@@ -5,9 +5,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { TasksClient } from "./TasksClient";
+import { activeChats } from "@/lib/presence"; // ИМПОРТ КАРТЫ ПРИСУТСТВИЯ
 
 interface PageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; taskId?: string }>;
 }
 
 export default async function TasksPage(props: PageProps) {
@@ -16,25 +17,41 @@ export default async function TasksPage(props: PageProps) {
     redirect("/login");
   }
 
-  const searchParams = await props.searchParams; // Извлекаем параметры страницы
+  const searchParams = await props.searchParams;
   const page = parseInt(searchParams.page || "1") || 1;
   const pageSize = 10; // По 10 задач на страницу
   const skip = (page - 1) * pageSize;
 
+  const taskId = searchParams.taskId;
   const isAdmin = session.user.role === "ADMIN";
 
-  // 1. Загружаем все цели
+  // =========================================================================
+  // ⚡ РЕГИСТРАЦИЯ ПРИСУТСТВИЯ ПОЛЬЗОВАТЕЛЯ В ЧАТЕ ЗАДАЧИ
+  // =========================================================================
+  if (session?.user?.id) {
+    if (taskId) {
+      activeChats.set(session.user.id, {
+        taskId,
+        lastActive: Date.now(),
+      });
+    } else {
+      // Если пользователь закрыл чат и вернулся к списку — убираем его из активных
+      activeChats.delete(session.user.id);
+    }
+  }
+
+  // Загружаем все цели
   const goals = await prisma.goal.findMany({
     orderBy: { createdAt: "desc" },
   });
 
-  // 2. Загружаем сотрудников
+  // Загружаем сотрудников
   const users = await prisma.user.findMany({
     where: { role: "EMPLOYEE" },
     orderBy: { name: "asc" },
   });
 
-  // 3. Загружаем системные статусы
+  // Загружаем системные статусы
   const statuses = await prisma.taskStatus.findMany({
     orderBy: { position: "asc" },
   });
@@ -59,14 +76,23 @@ export default async function TasksPage(props: PageProps) {
     },
   };
 
-  // 4. Загружаем задачи с пагинацией и сортировкой по приоритету (isPriority: "desc")
+  // Загружаем конкретную задачу, если передан taskId
+  let taskToOpen = null;
+  if (taskId) {
+    taskToOpen = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: includeRelations,
+    });
+  }
+
+  // Загружаем задачи с пагинацией и сортировкой по приоритету
   let tasks = [];
   let totalTasksCount = 0;
 
   const orderCondition = [
-    { isPriority: "desc" as const }, // Приоритетные задачи в самом верху
-    { deadline: "asc" as const },    // Затем по приближению дедлайна
-    { createdAt: "desc" as const },  // Затем новые сверху
+    { isPriority: "desc" as const },
+    { deadline: "asc" as const },
+    { createdAt: "desc" as const },
   ];
 
   if (isAdmin) {
@@ -111,6 +137,7 @@ export default async function TasksPage(props: PageProps) {
         isAdmin={isAdmin}
         currentPage={page}
         totalPages={totalPages}
+        taskToOpen={taskToOpen ? JSON.parse(JSON.stringify(taskToOpen)) : null}
       />
     </div>
   );

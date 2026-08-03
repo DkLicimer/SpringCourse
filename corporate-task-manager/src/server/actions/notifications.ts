@@ -5,10 +5,38 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { activeChats } from "@/lib/presence"; // ИМПОРТ КАРТЫ ПРИСУТСТВИЯ
 
 // Универсальная функция создания уведомления + отправки письма
 export async function createNotification(userId: string, text: string, link?: string) {
   try {
+    // =========================================================================
+    // ⚡ УМНАЯ БЛОКИРОВКА УВЕДОМЛЕНИЙ ПРИ АКТИВНОМ ДИАЛОГЕ
+    // =========================================================================
+    let linkTaskId: string | null = null;
+    
+    // Пытаемся распарсить taskId из передаваемой ссылки
+    if (link && link.includes("taskId=")) {
+      const urlParamsString = link.split("?")[1];
+      if (urlParamsString) {
+        const params = new URLSearchParams(urlParamsString);
+        linkTaskId = params.get("taskId");
+      }
+    }
+
+    if (linkTaskId) {
+      const presence = activeChats.get(userId);
+      // Если получатель прямо сейчас находится в чате этой задачи (был активен в последние 10 сек)
+      if (
+        presence && 
+        presence.taskId === linkTaskId && 
+        (Date.now() - presence.lastActive) < 10000
+      ) {
+        console.log(`🔇 Пропущено уведомление для пользователя ${userId}, так как он уже находится в чате задачи ${linkTaskId}`);
+        return; // Мгновенно прерываем создание уведомления и отправку email!
+      }
+    }
+
     // 1. Записываем в базу данных
     await prisma.notification.create({
       data: {

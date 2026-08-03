@@ -7,7 +7,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "./notifications";
 
-// Интерфейс для создания и редактирования задачи (с поддержкой приоритета)
 interface CreateTaskInput {
   title: string;
   description?: string;
@@ -16,11 +15,10 @@ interface CreateTaskInput {
   adminNotes?: string;
   assignmentType: "INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL";
   goalId: string;
-  assigneeIds: string[]; // Для SEQUENTIAL порядок элементов определяет очередь
-  isPriority: boolean;   // Приоритетная задача (срочно)
+  assigneeIds: string[];
+  isPriority: boolean;
 }
 
-// 1. Создание новой глобальной цели (только для ADMIN)
 export async function createGoal(title: string, color: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -42,7 +40,6 @@ export async function createGoal(title: string, color: string) {
   return goal;
 }
 
-// 2. Создание новой задачи (только для ADMIN)
 export async function createTask(input: CreateTaskInput) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -112,13 +109,13 @@ export async function createTask(input: CreateTaskInput) {
         await createNotification(
           userId,
           `Вам назначена новая задача: "${title}". Она уже доступна для выполнения.`,
-          `/app/tasks`
+          `/app/tasks?taskId=${task.id}` // УЛУЧШЕНО: Прямая ссылка на чат задачи
         );
       } else {
         await createNotification(
           userId,
           `Вы добавлены в последовательную цепочку по задаче "${title}" (задача временно заблокирована до вашей очереди).`,
-          `/app/tasks`
+          `/app/tasks?taskId=${task.id}` // УЛУЧШЕНО: Прямая ссылка на чат задачи
         );
       }
     }
@@ -130,14 +127,12 @@ export async function createTask(input: CreateTaskInput) {
   return task;
 }
 
-// 3. Изменение статуса задачи (УЛУЧШЕНО С ЗАЩИТОЙ ОТ ОТКАТОВ ЭТАПОВ!)
 export async function updateAssignmentStatus(assignmentId: string, newStatusId: string) {
   const session = await getServerSession(authOptions);
   if (!session) {
     throw new Error("Вы не авторизованы");
   }
 
-  // Загружаем назначение вместе со всей цепочкой последователей
   const currentAssignment = await prisma.taskAssignment.findUnique({
     where: { id: assignmentId },
     include: {
@@ -173,7 +168,6 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
   const taskTitle = currentAssignment.task.title;
 
   await prisma.$transaction(async (tx) => {
-    // 1. Обновляем статус текущей задачи
     await tx.taskAssignment.update({
       where: { id: assignmentId },
       data: {
@@ -182,7 +176,6 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
       },
     });
 
-    // 2. Если это последовательная цепочка — управляем блокировкой следующего шага
     if (currentAssignment.task.assignmentType === "SEQUENTIAL") {
       const nextOrder = currentAssignment.sequenceOrder + 1;
       const nextAssignment = currentAssignment.task.assignments.find(
@@ -191,7 +184,6 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
 
       if (nextAssignment) {
         if (isCompletedStatus && !wasCompleted) {
-          // СЦЕНАРИЙ А: Перевели в "Исполнено" -> Разблокируем следующий этап
           await tx.taskAssignment.update({
             where: { id: nextAssignment.id },
             data: {
@@ -201,15 +193,12 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
           nextAssigneeId = nextAssignment.userId;
         } 
         else if (!isCompletedStatus && wasCompleted) {
-          // СЦЕНАРИЙ Б: ОТКАТЫВАЕМ назад из выполненных!
-          // Проверяем, успел ли следующий исполнитель сдвинуть задачу с "В очереди"
           if (nextAssignment.statusId !== "status-todo" && !isAdmin) {
             throw new Error(
               "Вы не можете отменить выполнение, так как следующий исполнитель в цепочке уже начал работу над своим этапом."
             );
           }
 
-          // Если он еще не начал работу, блокируем его задачу обратно и сбрасываем статус
           await tx.taskAssignment.update({
             where: { id: nextAssignment.id },
             data: {
@@ -222,13 +211,12 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
     }
   });
 
-  // Отправляем уведомления только при успешной разблокировке новой задачи в фоне
   if (nextAssigneeId) {
     try {
       await createNotification(
         nextAssigneeId,
         `Задача "${taskTitle}" разблокирована для вас. Предыдущий этап завершен, ваша очередь выполнять задачу!`,
-        `/app/tasks`
+        `/app/tasks?taskId=${currentAssignment.taskId}` // УЛУЧШЕНО: Прямая ссылка на чат задачи
       );
     } catch (err) {
       console.error("Не удалось разослать уведомление о разблокировке цепочки:", err);
@@ -238,7 +226,6 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
   revalidatePath("/app/tasks");
 }
 
-// 4. Редактирование цели (только для ADMIN)
 export async function updateGoal(id: string, title: string, color: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -260,7 +247,6 @@ export async function updateGoal(id: string, title: string, color: string) {
   revalidatePath("/app/tasks");
 }
 
-// 5. Удаление цели (только для ADMIN)
 export async function deleteGoal(id: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -286,7 +272,6 @@ export async function deleteGoal(id: string) {
   revalidatePath("/app/tasks");
 }
 
-// 6. Добавление комментария в задачу
 export async function addComment(taskId: string, text: string) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -337,7 +322,7 @@ export async function addComment(taskId: string, text: string) {
       await createNotification(
         userId,
         `${session.user.name} оставил новый комментарий в задаче "${task.title}": "${text.slice(0, 40)}..."`,
-        `/app/tasks`
+        `/app/tasks?taskId=${task.id}` // УЛУЧШЕНО: Ведет прямо в открытый чат задачи
       );
     }
   } catch (err) {
@@ -348,7 +333,6 @@ export async function addComment(taskId: string, text: string) {
   return comment;
 }
 
-// 7. Создание кастомного статуса задачи (только для ADMIN)
 export async function createTaskStatus(name: string, color: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -377,7 +361,6 @@ export async function createTaskStatus(name: string, color: string) {
   return status;
 }
 
-// 8. Удаление кастомного статуса задачи (только для ADMIN)
 export async function deleteTaskStatus(id: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -413,7 +396,6 @@ export async function deleteTaskStatus(id: string) {
   revalidatePath("/app/tasks");
 }
 
-// 9. Редактирование задачи администратором (только для ADMIN)
 export async function updateTask(taskId: string, input: CreateTaskInput) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
