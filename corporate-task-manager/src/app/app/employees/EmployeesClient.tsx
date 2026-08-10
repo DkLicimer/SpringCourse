@@ -3,7 +3,7 @@
 
 import React, { useState, useTransition } from "react";
 import { createEmployee, deleteEmployee, updateEmployee } from "@/server/actions/users";
-import { UserPlus, Shield, X, Search, Trash2, Pencil } from "lucide-react";
+import { UserPlus, Shield, X, Search, Trash2, Pencil, CalendarRange } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type TableAccess = {
@@ -18,6 +18,9 @@ type UserWithAccess = {
   email: string;
   initials: string;
   role: string;
+  reportingPeriodType?: string;
+  periodStartDate?: string | null;
+  periodEndDate?: string | null;
   tableAccesses: TableAccess[];
 };
 
@@ -34,6 +37,11 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   const [error, setError] = useState<string | null>(null);
 
   const [editingUser, setEditingUser] = useState<UserWithAccess | null>(null);
+
+  // Стейты для индивидуального отчетного периода сотрудника
+  const [reportingPeriodType, setReportingPeriodType] = useState("MONTH");
+  const [periodStartDate, setPeriodStartDate] = useState("");
+  const [periodEndDate, setPeriodEndDate] = useState("");
 
   const [access, setAccess] = useState({
     canReadSocial: false,
@@ -54,6 +62,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
 
   const openCreateModal = () => {
     setEditingUser(null);
+    setReportingPeriodType("MONTH");
+    setPeriodStartDate("");
+    setPeriodEndDate("");
     setAccess({
       canReadSocial: false,
       canWriteSocial: false,
@@ -69,6 +80,10 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
 
   const openEditModal = (user: UserWithAccess) => {
     setEditingUser(user);
+    setReportingPeriodType(user.reportingPeriodType || "MONTH");
+    setPeriodStartDate(user.periodStartDate ? user.periodStartDate.split("T")[0] : "");
+    setPeriodEndDate(user.periodEndDate ? user.periodEndDate.split("T")[0] : "");
+
     const social = user.tableAccesses.find(a => a.tableName === "social_passport");
     const team = user.tableAccesses.find(a => a.tableName === "teambuilding");
     const content = user.tableAccesses.find(a => a.tableName === "content_plan");
@@ -100,6 +115,11 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     formData.append("canWriteContent", String(access.canWriteContent));
     formData.append("canReadPost", String(access.canReadPost));
     formData.append("canWritePost", String(access.canWritePost));
+
+    // Передаем отчетные периоды в Server Actions
+    formData.append("reportingPeriodType", reportingPeriodType);
+    formData.append("periodStartDate", periodStartDate);
+    formData.append("periodEndDate", periodEndDate);
 
     startTransition(async () => {
       try {
@@ -166,7 +186,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
           <thead className="bg-slate-50">
             <tr>
               <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Сотрудник</th>
-              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Роль</th>
+              <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Роль / Период</th>
               <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Состав коллектива</th>
               <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Тимбилдинг</th>
               <th className="px-6 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Контент-План</th>
@@ -194,12 +214,18 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                  <td className="px-6 py-4 whitespace-nowrap space-y-1">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
                       user.role === "ADMIN" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-800"
                     }`}>
                       {user.role === "ADMIN" ? "Администратор" : "Сотрудник"}
                     </span>
+                    {user.role !== "ADMIN" && (
+                      <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+                        <CalendarRange className="h-3 w-3 text-blue-500" />
+                        Период: {user.reportingPeriodType === "MONTH" ? "Месяц" : user.reportingPeriodType === "QUARTER" ? "Квартал" : "Индивидуальный"}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(socialAccess?.canRead || false, socialAccess?.canWrite || false)}
@@ -317,7 +343,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         )}
       </div>
 
-      {/* Модальное окно */}
+      {/* Модальное окно создания/редактирования */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
@@ -371,6 +397,52 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     placeholder={editingUser ? "••••••••" : "Укажите сложный пароль"}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
+                </div>
+              </div>
+
+              {/* 📊 УПРАВЛЕНИЕ ИНДИВИДУАЛЬНЫМ ПЕРИОДОМ ОТЧЕТНОСТИ ДЛЯ KPI */}
+              <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-3">
+                <div className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1">
+                  <CalendarRange className="h-4 w-4 text-blue-600 animate-pulse" /> Настройка отчетного периода для KPI
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Интервал отчетности</label>
+                    <select
+                      value={reportingPeriodType}
+                      onChange={(e) => setReportingPeriodType(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="MONTH">Каждый месяц</option>
+                      <option value="QUARTER">Каждый квартал</option>
+                      <option value="CUSTOM">Произвольный период</option>
+                    </select>
+                  </div>
+
+                  {reportingPeriodType === "CUSTOM" && (
+                    <>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Дата начала</label>
+                        <input
+                          type="date"
+                          required
+                          value={periodStartDate}
+                          onChange={(e) => setPeriodStartDate(e.target.value)}
+                          className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Дата окончания</label>
+                        <input
+                          type="date"
+                          required
+                          value={periodEndDate}
+                          onChange={(e) => setPeriodEndDate(e.target.value)}
+                          className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

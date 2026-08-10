@@ -17,6 +17,7 @@ interface CreateTaskInput {
   goalId: string;
   assigneeIds: string[];
   isPriority: boolean;
+  isRecurring?: boolean; // Добавлено поле регулярности
 }
 
 export async function createGoal(title: string, color: string) {
@@ -56,6 +57,7 @@ export async function createTask(input: CreateTaskInput) {
     goalId,
     assigneeIds,
     isPriority,
+    isRecurring,
   } = input;
 
   if (!title || !goalId || assigneeIds.length === 0) {
@@ -72,6 +74,7 @@ export async function createTask(input: CreateTaskInput) {
         adminNotes,
         assignmentType,
         isPriority,
+        isRecurring: isRecurring || false,
         goalId,
         createdById: session.user.id,
       },
@@ -109,13 +112,13 @@ export async function createTask(input: CreateTaskInput) {
         await createNotification(
           userId,
           `Вам назначена новая задача: "${title}". Она уже доступна для выполнения.`,
-          `/app/tasks?taskId=${task.id}` // УЛУЧШЕНО: Прямая ссылка на чат задачи
+          `/app/tasks?taskId=${task.id}`
         );
       } else {
         await createNotification(
           userId,
           `Вы добавлены в последовательную цепочку по задаче "${title}" (задача временно заблокирована до вашей очереди).`,
-          `/app/tasks?taskId=${task.id}` // УЛУЧШЕНО: Прямая ссылка на чат задачи
+          `/app/tasks?taskId=${task.id}`
         );
       }
     }
@@ -216,7 +219,7 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
       await createNotification(
         nextAssigneeId,
         `Задача "${taskTitle}" разблокирована для вас. Предыдущий этап завершен, ваша очередь выполнять задачу!`,
-        `/app/tasks?taskId=${currentAssignment.taskId}` // УЛУЧШЕНО: Прямая ссылка на чат задачи
+        `/app/tasks?taskId=${currentAssignment.taskId}`
       );
     } catch (err) {
       console.error("Не удалось разослать уведомление о разблокировке цепочки:", err);
@@ -322,7 +325,7 @@ export async function addComment(taskId: string, text: string) {
       await createNotification(
         userId,
         `${session.user.name} оставил новый комментарий в задаче "${task.title}": "${text.slice(0, 40)}..."`,
-        `/app/tasks?taskId=${task.id}` // УЛУЧШЕНО: Ведет прямо в открытый чат задачи
+        `/app/tasks?taskId=${task.id}`
       );
     }
   } catch (err) {
@@ -390,7 +393,9 @@ export async function deleteTaskStatus(id: string) {
   }
 
   await prisma.taskStatus.delete({
-    where: { id },
+    where: {
+      id,
+    },
   });
 
   revalidatePath("/app/tasks");
@@ -410,6 +415,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     adminNotes,
     assignmentType,
     isPriority,
+    isRecurring,
     goalId,
     assigneeIds,
   } = input;
@@ -429,6 +435,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         adminNotes,
         assignmentType,
         isPriority,
+        isRecurring: isRecurring || false,
         goalId,
       },
     });
@@ -458,4 +465,238 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
   });
 
   revalidatePath("/app/tasks");
+}
+
+// =========================================================================
+// ⚡ НОВЫЕ ФУНКЦИИ: ЗАПРОСЫ НА ПРОДЛЕНИЕ И ДУБЛИРОВАНИЕ ЗАДАЧ
+// =========================================================================
+
+// Отправка сотрудником запроса на продление срока дедлайна
+export async function requestExtension(taskId: string, reason?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    throw new Error("Вы не авторизованы");
+  }
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { assignments: true },
+  });
+
+  if (!task) {
+    throw new Error("Задача не найдена");
+  }
+
+  const isAssigned = task.assignments.some((as) => as.userId === session.user.id);
+  if (!isAssigned && session.user.role !== "ADMIN") {
+    throw new Error("Вы не назначены на выполнение этой задачи");
+  }
+
+  // Защита от дублей ожидающих (PENDING) запросов
+  const existingRequest = await prisma.extensionRequest.findFirst({
+    where: {
+      taskId,
+      userId: session.user.id,
+      status: "PENDING",
+    },
+  });
+
+  if (existingRequest) {
+    throw new Error("Вы уже отправили запрос на продление этой задачи. Ожидайте ответа руководителя.");
+  }
+
+  const request = await prisma.extensionRequest.create({
+    data: {
+      taskId,
+      userId: session.user.id,
+      reason: reason || "Причина не указана",
+      status: "PENDING",
+    },
+  });
+
+  // Уведомление руководителя
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+
+    for (const admin of admins) {
+      await createNotification(
+        admin.id,
+        `Сотрудник ${session.user.name} запросил продление срока по задаче "${task.title}".`,
+        `/app/tasks?taskId=${task.id}`
+      );
+    }
+  } catch (err) {
+    console.error("Не удалось уведомить руководителя о запросе продления:", err);
+  }
+
+  revalidatePath("/app/tasks");
+  return request;
+}
+
+// Одобрение запроса руководителем (установка нового срока)
+export async function approveExtension(requestId: string, newDeadline: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  if (!newDeadline) {
+    throw new Error("Укажите новый дедлайн для задачи");
+  }
+
+  const request = await prisma.extensionRequest.findUnique({
+    where: { id: requestId },
+    include: { task: true, user: true },
+  });
+
+  if (!request) {
+    throw new Error("Запрос на продление не найден");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Одобряем статус запроса
+    await tx.extensionRequest.update({
+      where: { id: requestId },
+      data: { status: "APPROVED" },
+    });
+
+    // 2. Сдвигаем дедлайн по задаче
+    await tx.task.update({
+      where: { id: request.taskId },
+      data: { deadline: new Date(newDeadline) },
+    });
+  });
+
+  // Уведомление сотрудника
+  try {
+    await createNotification(
+      request.userId,
+      `Руководитель утвердил новый срок по задаче "${request.task.title}": ${new Date(newDeadline).toLocaleDateString("ru-RU")}.`,
+      `/app/tasks?taskId=${request.taskId}`
+    );
+  } catch (err) {
+    console.error("Не удалось уведомить сотрудника об одобрении продления:", err);
+  }
+
+  revalidatePath("/app/tasks");
+}
+
+// Отклонение запроса на перенос
+export async function rejectExtension(requestId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  const request = await prisma.extensionRequest.findUnique({
+    where: { id: requestId },
+    include: { task: true },
+  });
+
+  if (!request) {
+    throw new Error("Запрос на продление не найден");
+  }
+
+  await prisma.extensionRequest.update({
+    where: { id: requestId },
+    data: { status: "REJECTED" },
+  });
+
+  // Уведомление сотрудника
+  try {
+    await createNotification(
+      request.userId,
+      `Руководитель отклонил ваш запрос на перенос срока по задаче "${request.task.title}". Срок остается прежним.`,
+      `/app/tasks?taskId=${request.taskId}`
+    );
+  } catch (err) {
+    console.error("Не удалось уведомить сотрудника об отклонении продления:", err);
+  }
+
+  revalidatePath("/app/tasks");
+}
+
+// Получить список всех запросов для руководителя
+export async function getExtensionRequests() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    return [];
+  }
+
+  return await prisma.extensionRequest.findMany({
+    include: {
+      task: true,
+      user: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Быстрое дублирование/повтор задачи руководителем на новый срок
+export async function duplicateTask(taskId: string, newDeadline?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  const originalTask = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { assignments: true },
+  });
+
+  if (!originalTask) {
+    throw new Error("Оригинальная задача не найдена");
+  }
+
+  const duplicatedTask = await prisma.$transaction(async (tx) => {
+    const newTask = await tx.task.create({
+      data: {
+        title: `${originalTask.title} (Повтор)`,
+        description: originalTask.description,
+        deadline: newDeadline ? new Date(newDeadline) : null,
+        intermediateControl: originalTask.intermediateControl,
+        adminNotes: originalTask.adminNotes,
+        assignmentType: originalTask.assignmentType,
+        isPriority: originalTask.isPriority,
+        isRecurring: originalTask.isRecurring,
+        goalId: originalTask.goalId,
+        createdById: session.user.id,
+      },
+    });
+
+    const assignmentsData = originalTask.assignments.map((as) => {
+      return {
+        taskId: newTask.id,
+        userId: as.userId,
+        statusId: "status-todo",
+        sequenceOrder: as.sequenceOrder,
+        isBlocked: as.isBlocked,
+      };
+    });
+
+    await tx.taskAssignment.createMany({
+      data: assignmentsData,
+    });
+
+    return newTask;
+  });
+
+  // Уведомление исполнителей о запуске новой задачи
+  try {
+    for (const as of originalTask.assignments) {
+      await createNotification(
+        as.userId,
+        `Запущена регулярная или повторная задача: "${duplicatedTask.title}". Спешите ознакомиться с деталями.`,
+        `/app/tasks?taskId=${duplicatedTask.id}`
+      );
+    }
+  } catch (err) {
+    console.error("Не удалось разослать уведомления о продублированной задаче:", err);
+  }
+
+  revalidatePath("/app/tasks");
+  return duplicatedTask;
 }

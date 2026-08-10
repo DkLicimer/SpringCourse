@@ -20,7 +20,7 @@ type CalendarEvent = {
   title: string;
   startTime: string;
   endTime: string;
-  type: "MEETING" | "BLOCKED";
+  type: "FREE" | "GC" | "BUSY";
   description: string | null;
   bookedById: string;
   bookedBy: { name: string; initials: string; email: string };
@@ -37,7 +37,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [type, setType] = useState<"MEETING" | "BLOCKED">("MEETING");
+
+  // Стейт выбора режима (по умолчанию "FREE" — Свободное время)
+  const [type, setType] = useState<"FREE" | "GC" | "BUSY">("FREE");
 
   // Инициализация текущей недели
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
@@ -56,9 +58,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     return d;
   });
 
-  // Состояние выбранного дня для мобильной версии (по умолчанию текущий день недели)
+  // Состояние выбранного дня для мобильной версии
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(() => {
-    const today = new Date().getDay(); // 0 - воскресенье, 1 - понедельник
+    const today = new Date().getDay();
     return today === 0 ? 6 : today - 1;
   });
 
@@ -147,7 +149,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full md:w-auto cursor-pointer"
         >
           <Plus className="h-4 w-4" />
-          {isAdmin ? "Блокировка / Встреча" : "Забронировать встречу"}
+          {isAdmin ? "Добавить событие / Блок" : "Забронировать встречу"}
         </button>
       </div>
 
@@ -172,9 +174,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 📱 МОБИЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ДНЕЙ (Вкладки) */}
-      {/* ========================================================================= */}
+      {/* 📱 МОБИЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ДНЕЙ */}
       <div className="grid grid-cols-7 gap-1 bg-slate-200/60 p-1 rounded-xl border border-slate-200 md:hidden shadow-inner">
         {weekDays.map((day, idx) => {
           const isSelected = selectedDayIndex === idx;
@@ -205,10 +205,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         
         {/* ========================================================================= */}
-        {/* ВЕРСИЯ ДЛЯ МОБИЛЬНЫХ ТЕЛЕФОНОВ (ОДНОКОЛОНОЧНЫЙ ДЕНЬ) */}
+        {/* ВЕРСИЯ ДЛЯ МОБИЛЬНЫХ ТЕЛЕФОНОВ */}
         {/* ========================================================================= */}
         <div className="md:hidden relative grid grid-cols-[70px_1fr]">
-          {/* Левая шкала часов */}
           <div className="flex flex-col bg-slate-50/50 border-r border-slate-200 shrink-0">
             {hours.map((hour) => (
               <div 
@@ -220,13 +219,11 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
             ))}
           </div>
 
-          {/* Колонка выбранного дня */}
           <div className="flex flex-col relative">
             {hours.map((hour) => (
               <div key={hour} className="h-16 border-b border-slate-100" />
             ))}
 
-            {/* Рендерим события только для выбранного дня */}
             {initialEvents
               .filter((event) => {
                 const eventDate = new Date(event.startTime);
@@ -244,17 +241,27 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 const durationMins = (end.getTime() - start.getTime()) / (1000 * 60);
                 const heightVal = (durationMins / 60) * cellHeight;
 
-                const isBlocked = event.type === "BLOCKED";
+                const isBusy = event.type === "BUSY";
+                const isGc = event.type === "GC";
                 const isOwner = event.bookedById === currentUserId;
+
+                // ⚡ Скрываем тему и описание для обычных сотрудников в режиме BUSY
+                const displayTitle = (isBusy && !isAdmin) ? "Занято" : event.title;
+                const displayDescription = (isBusy && !isAdmin) ? null : event.description;
+                const showBookedBy = !isBusy || isAdmin;
+
+                // Цветовое оформление рамки и фона
+                let bgBorderClass = "bg-emerald-500/10 border-emerald-500 text-emerald-950";
+                if (isBusy) {
+                  bgBorderClass = "bg-red-500/10 border-red-500 text-red-700 font-bold";
+                } else if (isGc) {
+                  bgBorderClass = "bg-yellow-500/10 border-yellow-500 text-yellow-950 font-bold";
+                }
 
                 return (
                   <div
                     key={event.id}
-                    className={`absolute left-2 right-2 rounded-xl p-2.5 shadow-sm flex flex-col justify-between overflow-hidden border transition-all ${
-                      isBlocked 
-                        ? "bg-amber-500/10 border-amber-500 text-amber-950" 
-                        : "bg-blue-600/10 border-blue-600 text-blue-950"
-                    }`}
+                    className={`absolute left-2 right-2 rounded-xl p-2.5 shadow-sm flex flex-col justify-between overflow-hidden border transition-all ${bgBorderClass}`}
                     style={{ 
                       top: `${topOffset}px`, 
                       height: `${heightVal}px`,
@@ -264,9 +271,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                     <div className="space-y-0.5">
                       <div className="flex justify-between items-start gap-1">
                         <h4 className="font-bold text-[11px] leading-tight line-clamp-2">
-                          {event.title}
+                          {displayTitle}
                         </h4>
-                        {(isOwner || isAdmin) && (
+                        {(isOwner || isAdmin) && (!isBusy || isAdmin) && (
                           <button
                             onClick={(e) => handleDelete(event.id, event.title, e)}
                             className="text-red-600 hover:text-red-800 p-0.5 hover:bg-white/50 rounded transition-colors cursor-pointer shrink-0"
@@ -275,21 +282,21 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                           </button>
                         )}
                       </div>
-                      {event.description && (
+                      {displayDescription && (
                         <p className="text-[10px] text-slate-500 line-clamp-1 leading-relaxed">
-                          {event.description}
+                          {displayDescription}
                         </p>
                       )}
                     </div>
                     
                     <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mt-1">
-                      <span className="flex items-center gap-0.5">
+                      <span className="flex items-center gap-0.5 text-slate-500">
                         <Clock className="h-2.5 w-2.5" />
                         {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                         {"-"}
                         {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                       </span>
-                      {!isBlocked && (
+                      {showBookedBy && (
                         <span className="truncate max-w-[80px]">👤 {event.bookedBy.name.split(" ")[0]}</span>
                       )}
                     </div>
@@ -300,7 +307,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
         </div>
 
         {/* ========================================================================= */}
-        {/* ДЕСКТОПНАЯ ВЕРСИЯ (КЛАССИЧЕСКИЕ СЕМЬ КОЛОНОК) */}
+        {/* ДЕСКТОПНАЯ ВЕРСИЯ (СЕМЬ КОЛОНОК) */}
         {/* ========================================================================= */}
         <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[850px] relative flex flex-col">
@@ -328,9 +335,8 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
               })}
             </div>
 
-            {/* Сетка часов и дней */}
+            {/* Сетка */}
             <div className="relative grid grid-cols-[80px_repeat(7,1fr)]">
-              {/* Левая шкала часов */}
               <div className="flex flex-col bg-slate-50/30 border-r border-slate-200 shrink-0">
                 {hours.map((hour) => (
                   <div 
@@ -342,14 +348,12 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 ))}
               </div>
 
-              {/* Фоновые ячейки сетки дней */}
               {Array.from({ length: 7 }).map((_, colIdx) => (
                 <div key={colIdx} className="flex flex-col border-r border-slate-100 last:border-0 relative">
                   {hours.map((hour) => (
                     <div key={hour} className="h-16 border-b border-slate-100" />
                   ))}
 
-                  {/* События поверх колонок */}
                   {initialEvents
                     .filter((event) => {
                       const eventDate = new Date(event.startTime);
@@ -367,17 +371,27 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                       const durationMins = (end.getTime() - start.getTime()) / (1000 * 60);
                       const heightVal = (durationMins / 60) * cellHeight;
 
-                      const isBlocked = event.type === "BLOCKED";
+                      const isBusy = event.type === "BUSY";
+                      const isGc = event.type === "GC";
                       const isOwner = event.bookedById === currentUserId;
+
+                      // ⚡ Скрываем тему и описание для обычных сотрудников в режиме BUSY
+                      const displayTitle = (isBusy && !isAdmin) ? "Занято" : event.title;
+                      const displayDescription = (isBusy && !isAdmin) ? null : event.description;
+                      const showBookedBy = !isBusy || isAdmin;
+
+                      // Цветовое оформление рамки и фона
+                      let bgBorderClass = "bg-emerald-500/10 border-emerald-500 text-emerald-950";
+                      if (isBusy) {
+                        bgBorderClass = "bg-red-500/10 border-red-500 text-red-700 font-bold";
+                      } else if (isGc) {
+                        bgBorderClass = "bg-yellow-500/10 border-yellow-500 text-yellow-950 font-bold";
+                      }
 
                       return (
                         <div
                           key={event.id}
-                          className={`absolute left-1 right-1 rounded-xl p-2.5 shadow-sm flex flex-col justify-between overflow-hidden border transition-all hover:shadow-md ${
-                            isBlocked 
-                              ? "bg-amber-500/10 border-amber-500 text-amber-900" 
-                              : "bg-blue-600/10 border-blue-600 text-blue-900"
-                          }`}
+                          className={`absolute left-1 right-1 rounded-xl p-2.5 shadow-sm flex flex-col justify-between overflow-hidden border transition-all hover:shadow-md ${bgBorderClass}`}
                           style={{ 
                             top: `${topOffset}px`, 
                             height: `${heightVal}px`,
@@ -387,9 +401,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                           <div className="space-y-0.5">
                             <div className="flex justify-between items-start gap-1">
                               <h4 className="font-bold text-[11px] leading-tight line-clamp-2">
-                                {event.title}
+                                {displayTitle}
                               </h4>
-                              {(isOwner || isAdmin) && (
+                              {(isOwner || isAdmin) && (!isBusy || isAdmin) && (
                                 <button
                                   onClick={(e) => handleDelete(event.id, event.title, e)}
                                   className="text-red-600 hover:text-red-800 p-0.5 hover:bg-white/50 rounded transition-colors cursor-pointer shrink-0"
@@ -398,21 +412,21 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                                 </button>
                               )}
                             </div>
-                            {event.description && (
+                            {displayDescription && (
                               <p className="text-[10px] text-slate-500 line-clamp-1 leading-relaxed">
-                                {event.description}
+                                {displayDescription}
                               </p>
                             )}
                           </div>
                           
                           <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mt-1">
-                            <span className="flex items-center gap-0.5">
+                            <span className="flex items-center gap-0.5 text-slate-500">
                               <Clock className="h-2.5 w-2.5" />
                               {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                               {"-"}
                               {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                             </span>
-                            {!isBlocked && (
+                            {showBookedBy && (
                               <span className="truncate max-w-[80px]">👤 {event.bookedBy.name.split(" ")[0]}</span>
                             )}
                           </div>
@@ -422,7 +436,6 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </div>
@@ -445,31 +458,43 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 </div>
               )}
 
+              {/* ⚡ ВЫБОР 3-Х РЕЖИМОВ ДЛЯ РУКОВОДИТЕЛЯ */}
               {isAdmin && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Тип события</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Режим события</label>
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => setType("MEETING")}
+                      onClick={() => setType("FREE")}
                       className={`px-3 py-2 rounded-lg border text-xs font-bold text-center cursor-pointer ${
-                        type === "MEETING"
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
+                        type === "FREE"
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-700"
                           : "border-slate-200 text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      Создать встречу
+                      Свободно (Зеленый)
                     </button>
                     <button
                       type="button"
-                      onClick={() => setType("BLOCKED")}
+                      onClick={() => setType("GC")}
                       className={`px-3 py-2 rounded-lg border text-xs font-bold text-center cursor-pointer ${
-                        type === "BLOCKED"
-                          ? "border-amber-600 bg-amber-50 text-amber-700"
+                        type === "GC"
+                          ? "border-yellow-600 bg-yellow-50 text-yellow-700"
                           : "border-slate-200 text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      Заблокировать время
+                      Главный Корпус (Желтый)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setType("BUSY")}
+                      className={`px-3 py-2 rounded-lg border text-xs font-bold text-center cursor-pointer ${
+                        type === "BUSY"
+                          ? "border-red-600 bg-red-50 text-red-700"
+                          : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      Занято (Красный)
                     </button>
                   </div>
                 </div>
@@ -477,13 +502,13 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {type === "BLOCKED" ? "Причина блокировки времени" : "Тема встречи / Совещания"}
+                  {type === "BUSY" ? "Причина блокировки времени" : "Тема встречи / Совещания"}
                 </label>
                 <input
                   type="text"
                   name="title"
                   required
-                  placeholder={type === "BLOCKED" ? "Личный отпуск / Выездное совещание" : "Обсуждение проекта Контент-плана"}
+                  placeholder={type === "BUSY" ? "Личный отпуск / Конфиденциальное совещание" : "Обсуждение проекта Контент-плана"}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                 />
               </div>
@@ -545,7 +570,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                   disabled={isPending}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:bg-blue-400 cursor-pointer"
                 >
-                  {type === "BLOCKED" ? "Заблокировать" : "Забронировать"}
+                  {type === "BUSY" ? "Заблокировать" : "Забронировать"}
                 </button>
               </div>
             </form>

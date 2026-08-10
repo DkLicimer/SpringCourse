@@ -29,7 +29,15 @@ export async function createEmployee(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   
-  // Права доступа
+  // Отчетный период сотрудника
+  const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
+  const periodStartDateRaw = formData.get("periodStartDate") as string;
+  const periodEndDateRaw = formData.get("periodEndDate") as string;
+
+  const periodStartDate = periodStartDateRaw ? new Date(periodStartDateRaw) : null;
+  const periodEndDate = periodEndDateRaw ? new Date(periodEndDateRaw) : null;
+
+  // Права доступа к таблицам
   const canReadSocial = formData.get("canReadSocial") === "true";
   const canWriteSocial = formData.get("canWriteSocial") === "true";
   const canReadTeam = formData.get("canReadTeam") === "true";
@@ -62,6 +70,9 @@ export async function createEmployee(formData: FormData) {
         passwordHash,
         initials,
         role: "EMPLOYEE",
+        reportingPeriodType,
+        periodStartDate,
+        periodEndDate,
       },
     });
 
@@ -113,6 +124,14 @@ export async function updateEmployee(userId: string, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   
+  // Отчетный период сотрудника
+  const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
+  const periodStartDateRaw = formData.get("periodStartDate") as string;
+  const periodEndDateRaw = formData.get("periodEndDate") as string;
+
+  const periodStartDate = periodStartDateRaw ? new Date(periodStartDateRaw) : null;
+  const periodEndDate = periodEndDateRaw ? new Date(periodEndDateRaw) : null;
+
   const canReadSocial = formData.get("canReadSocial") === "true";
   const canWriteSocial = formData.get("canWriteSocial") === "true";
   const canReadTeam = formData.get("canReadTeam") === "true";
@@ -127,7 +146,13 @@ export async function updateEmployee(userId: string, formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
-    const updateData: any = { name, email };
+    const updateData: any = { 
+      name, 
+      email,
+      reportingPeriodType,
+      periodStartDate,
+      periodEndDate,
+    };
     
     if (password && password.trim().length > 0) {
       updateData.passwordHash = await bcrypt.hash(password, 10);

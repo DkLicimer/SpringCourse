@@ -12,7 +12,8 @@ import {
   Printer,
   CheckCircle2,
   Lock,
-  UserCheck
+  UserCheck,
+  CalendarRange
 } from "lucide-react";
 
 type Goal = { title: string; color: string };
@@ -38,6 +39,9 @@ type Employee = {
   name: string;
   initials: string;
   email: string;
+  reportingPeriodType?: string;
+  periodStartDate?: string | null;
+  periodEndDate?: string | null;
   assignments: {
     id: string;
     statusId: string;
@@ -64,7 +68,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
   endOfThreeDays.setDate(startOfToday.getDate() + 3);
   endOfThreeDays.setHours(23, 59, 59, 999);
 
-  // Фильтр проверки принадлежности даты выбранному периоду
   const isDateInPeriod = (dateStr: string) => {
     if (!dateStr) return false;
     const date = new Date(dateStr);
@@ -83,25 +86,20 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     return true;
   };
 
-  // Ищем данные выбранного сотрудника (если выбран не "all")
   const currentEmployee = selectedEmployeeId !== "all" 
     ? employees.find(e => e.id === selectedEmployeeId) 
     : null;
 
-  // =========================================================================
-  // РАСЧЕТ ПОКАЗАТЕЛЕЙ (KPI)
-  // =========================================================================
+  // Расчет KPI показателей
   let companyCompletionRate = 0;
   let totalTasksCount = 0;
   let overdueTasksCount = 0;
   let urgentTasksCount = 0;
 
-  // Вспомогательные переменные для личного отчета сотрудника
   let personalActiveCount = 0;
   let personalCompletedCount = 0;
   let personalBlockedCount = 0;
 
-  // Списки задач сотрудника для отображения на экране
   let personalTasksList: {
     id: string;
     title: string;
@@ -113,7 +111,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
   }[] = [];
 
   if (currentEmployee) {
-    // 1. Расчеты для конкретного выбранного сотрудника
     const periodAssignments = currentEmployee.assignments.filter((as) => {
       const taskObj = tasks.find(t => t.id === as.task.id);
       return taskObj ? isDateInPeriod(taskObj.createdAt) : false;
@@ -138,7 +135,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     companyCompletionRate = totalTasksCount > 0 ? Math.round((personalCompletedCount / totalTasksCount) * 100) : 0;
 
     personalTasksList = periodAssignments.map(as => {
-      const isOverdue = as.statusId !== "status-done" && as.task.deadline && new Date(as.task.deadline) < startOfToday ? true : false;
+      const isOverdue = as.statusId !== "status-done" && as.task.deadline && new Date(as.task.deadline) < startOfToday;
       let statusName = "В очереди";
       let statusColor = "#64748b";
       if (as.statusId === "status-in-progress") {
@@ -156,11 +153,10 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         statusName,
         statusColor,
         isBlocked: as.isBlocked,
-        isOverdue,
+        isOverdue: !!isOverdue,
       };
     });
   } else {
-    // 2. Расчеты в целом по организации (Все сотрудники)
     const filteredTasks = tasks.filter((t) => isDateInPeriod(t.createdAt));
     totalTasksCount = filteredTasks.length;
 
@@ -194,7 +190,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     companyCompletionRate = totalAssignments > 0 ? Math.round((totalCompleted / totalAssignments) * 100) : 0;
   }
 
-  // Расчет детальной статистики сотрудников для общей таблицы
+  // Расчет детальной статистики для таблицы
   const employeeStats = employees.map((emp) => {
     const periodAssignments = emp.assignments.filter((as) => {
       const taskObj = tasks.find(t => t.id === as.task.id);
@@ -213,7 +209,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // Определение цветового статуса загрузки для вывода
     let workloadText = "Свободен";
     let workloadClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
     if (active >= 9) {
@@ -232,6 +227,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       name: emp.name,
       initials: emp.initials,
       email: emp.email,
+      reportingPeriodType: emp.reportingPeriodType || "MONTH",
       total,
       completed,
       active,
@@ -243,14 +239,10 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     };
   });
 
-  // Расчет суммарного ресурса команды (для сводного виджета загруженности)
   const lowLoadCount = employeeStats.filter(emp => emp.active <= 2).length;
   const normalLoadCount = employeeStats.filter(emp => emp.active >= 3 && emp.active <= 5).length;
   const highLoadCount = employeeStats.filter(emp => emp.active >= 6).length;
 
-  // =========================================================================
-  // ЭКСПОРТ В CSV
-  // =========================================================================
   const handleExportCSV = () => {
     startTransition(() => {
       let headers: string[] = [];
@@ -274,6 +266,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         headers = [
           "ФИО сотрудника",
           "Email",
+          "Установленный отчетный период",
           "Всего задач",
           "Выполнено",
           "Активно в работе",
@@ -285,6 +278,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         csvRows = employeeStats.map((emp) => [
           `"${emp.name}"`,
           emp.email,
+          emp.reportingPeriodType === "MONTH" ? "Месяц" : emp.reportingPeriodType === "QUARTER" ? "Квартал" : "Индивидуальный",
           emp.total,
           emp.completed,
           emp.active,
@@ -322,7 +316,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
       {/* ПАНЕЛЬ СЕЛЕКТОРОВ И ФИЛЬТРОВ */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between print:hidden">
-        {/* Выбор периода */}
         <div className="flex bg-slate-200/60 p-1 rounded-xl max-w-sm border border-slate-200">
           {(["all", "month", "quarter"] as const).map((p) => (
             <button
@@ -341,7 +334,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           ))}
         </div>
 
-        {/* Выбор сотрудника */}
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm max-w-sm">
           <Users className="h-4 w-4 text-slate-400 shrink-0" />
           <select
@@ -359,9 +351,8 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* СЕТКА С КАРТОЧКАМИ МЕТРИК (KPI) */}
+      {/* KPI МЕТРИКИ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 print:grid-cols-4">
-        {/* Карточка 1 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl print:bg-slate-100 print:text-slate-800">
             <TrendingUp className="h-6 w-6" />
@@ -374,7 +365,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Карточка 2 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none">
           <div className="p-3 bg-slate-50 text-slate-600 rounded-xl print:bg-slate-100 print:text-slate-800">
             <Activity className="h-6 w-6" />
@@ -387,7 +377,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Карточка 3 */}
         <div className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none ${
           overdueTasksCount > 0 ? "bg-red-50/20 border-red-200" : "bg-white border-slate-200"
         }`}>
@@ -404,7 +393,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* Карточка 4 */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 print:border-slate-300 print:shadow-none">
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl print:bg-slate-100 print:text-slate-800">
             <Clock className="h-6 w-6" />
@@ -416,9 +404,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 📊 СВОДНЫЙ БАЛАНС РЕСУРСОВ КОМАНДЫ (Только в режиме общего отчета) */}
-      {/* ========================================================================= */}
       {selectedEmployeeId === "all" && (
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 print:hidden">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -442,10 +427,8 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       )}
 
-      {/* ОТОБРАЖЕНИЕ РЕЗУЛЬТАТОВ (ДЕТАЛЬНАЯ ТАБЛИЦА) */}
+      {/* ТАБЛИЦА РЕЗУЛЬТАТОВ */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm print:border-slate-300 print:shadow-none">
-        
-        {/* Заголовок блока с кнопками экспорта */}
         <div className="p-5 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
           <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm sm:text-base">
             {currentEmployee ? (
@@ -480,12 +463,8 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* СИТУАЦИЯ 1: ОТОБРАЖЕНИЕ ЛИЧНОГО СПИСКА ЗАДАЧ СОТРУДНИКА */}
-        {/* ========================================================================= */}
         {currentEmployee ? (
           <div className="p-6 space-y-4">
-            {/* Сводный блок аналитики внутри отчета */}
             <div className="grid grid-cols-3 gap-3 max-w-md text-xs border border-slate-100 rounded-xl p-3 bg-slate-50/50 print:border-slate-300">
               <div className="flex flex-col gap-0.5">
                 <span className="text-slate-400 font-medium">Активных:</span>
@@ -546,7 +525,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
                             </span>
                           ) : task.statusName === "Исполнено" ? (
                             <span className="text-emerald-600 font-bold uppercase text-[10px] flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" /> Успешно завершена
+                              <CheckCircle2 className="h-3 w-3" /> Исполнено
                             </span>
                           ) : (
                             <span className="text-blue-600 font-bold uppercase text-[10px] flex items-center gap-1">
@@ -564,14 +543,11 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
         ) : (
           
-          // =========================================================================
-          // СИТУАЦИЯ 2: ОБЩАЯ СВОДНАЯ ТАБЛИЦА С ИНДИКАТОРАМИ НАГРУЗКИ
-          // =========================================================================
           <div className="overflow-x-auto print:overflow-visible">
             <table className="min-w-full divide-y divide-slate-200 print:divide-slate-300 text-xs sm:text-sm">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Имя сотрудника</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Имя сотрудника / Отчетный период</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Всего задач</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Выполнено</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Просрочено</th>
@@ -589,7 +565,10 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
                         </div>
                         <div>
                           <div className="font-semibold text-slate-900">{emp.name}</div>
-                          <div className="text-xs text-slate-400 print:hidden">{emp.email}</div>
+                          <div className="text-[10px] text-blue-600 font-bold flex items-center gap-0.5 mt-0.5">
+                            <CalendarRange className="h-3 w-3" />
+                            Период: {emp.reportingPeriodType === "MONTH" ? "Месяц" : emp.reportingPeriodType === "QUARTER" ? "Квартал" : "Произвольный"}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -603,7 +582,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
                       {emp.overdue > 0 ? emp.overdue : "—"}
                     </td>
                     
-                    {/* 🚦 ИНДИКАТОР ЗАГРУЖЕННОСТИ В РЕАЛЬНОМ ВРЕМЕНИ */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wider ${emp.workloadClass}`}>

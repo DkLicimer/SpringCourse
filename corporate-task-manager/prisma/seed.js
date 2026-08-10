@@ -34,6 +34,7 @@ async function main() {
   await prisma.goal.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.taskStatus.deleteMany({});
+  await prisma.extensionRequest.deleteMany({});
 
   console.log('🚀 Наполнение базы данных тестовыми записями...');
 
@@ -78,7 +79,7 @@ async function main() {
     },
   });
 
-  // Создаем трех сотрудников
+  // Создаем трех сотрудников с дефолтным месячным периодом отчетности
   const petrov = await prisma.user.create({
     data: {
       email: 'petrov@mail.com',
@@ -86,6 +87,7 @@ async function main() {
       name: 'Петров Петр Петрович',
       initials: 'ПП',
       role: 'EMPLOYEE',
+      reportingPeriodType: 'MONTH',
     },
   });
 
@@ -96,6 +98,7 @@ async function main() {
       name: 'Иванова Анна Сергеевна',
       initials: 'ИА',
       role: 'EMPLOYEE',
+      reportingPeriodType: 'QUARTER',
     },
   });
 
@@ -106,6 +109,9 @@ async function main() {
       name: 'Смирнов Алексей Игоревич',
       initials: 'СА',
       role: 'EMPLOYEE',
+      reportingPeriodType: 'CUSTOM',
+      periodStartDate: new Date('2026-08-01T00:00:00Z'),
+      periodEndDate: new Date('2026-08-31T23:59:59Z'),
     },
   });
 
@@ -161,6 +167,7 @@ async function main() {
       assignmentType: 'SIMULTANEOUS',
       goalId: goalMarketing.id,
       createdById: adminUser.id,
+      isRecurring: true, // Регулярная задача
     },
   });
 
@@ -205,7 +212,7 @@ async function main() {
     ],
   });
 
-  // 7. Состав коллектива (ПЕРЕИМЕНОВАНО И ИСПРАВЛЕНО!)
+  // 7. Состав коллектива
   await prisma.socialPassport.createMany({
     data: [
       { department: 'Администрация ДДМа', accountUrl: 'Сидоренко Наталья Владимировна', followers: 101, notes: 'Директор, общий контроль процессов' },
@@ -290,13 +297,13 @@ async function main() {
 
   await prisma.calendarEvent.createMany({
     data: [
-      { title: 'Еженедельная планерка команды', startTime: startMon, endTime: endMon, type: 'MEETING', bookedById: petrov.id, description: 'Обсуждение задач на неделю и планов по маркетингу' },
-      { title: 'Согласование бюджета тимбилдинга', startTime: startTue, endTime: endTue, type: 'MEETING', bookedById: ivanova.id },
-      { title: 'Личные задачи (Время занято)', startTime: startWed, endTime: endWed, type: 'BLOCKED', bookedById: adminUser.id, description: 'Выездное совещание в министерстве' },
+      { title: 'Еженедельная планерка команды', startTime: startMon, endTime: endMon, type: 'FREE', bookedById: petrov.id, description: 'Обсуждение задач на неделю и планов по маркетингу' },
+      { title: 'Время для согласования в Главном Корпусе', startTime: startTue, endTime: endTue, type: 'GC', bookedById: ivanova.id, description: 'Ректор определила приемные часы' },
+      { title: 'Конфиденциальная работа (Время занято)', startTime: startWed, endTime: endWed, type: 'BUSY', bookedById: adminUser.id, description: 'Выездное совещание в министерстве' },
     ],
   });
 
-  // 11. Пару начальных уведомлений
+  // 11. Одно начальное уведомление
   await prisma.notification.create({
     data: {
       userId: petrov.id,

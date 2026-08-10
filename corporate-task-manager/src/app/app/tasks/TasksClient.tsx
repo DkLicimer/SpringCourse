@@ -11,7 +11,11 @@ import {
   addComment,
   createTaskStatus,
   deleteTaskStatus,
-  updateTask
+  updateTask,
+  requestExtension,
+  approveExtension,
+  rejectExtension,
+  duplicateTask
 } from "@/server/actions/tasks";
 import { 
   Plus, 
@@ -37,7 +41,10 @@ import {
   Filter,
   LayoutGrid,
   TableProperties,
-  Briefcase
+  CalendarDays,
+  Repeat,
+  History,
+  AlertTriangle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -83,9 +90,20 @@ type Task = {
   adminNotes: string | null;
   assignmentType: "INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL";
   isPriority: boolean;
+  isRecurring: boolean;
   goal: Goal;
   assignments: Assignment[];
   comments: Comment[];
+};
+
+type ExtensionRequest = {
+  id: string;
+  taskId: string;
+  status: string;
+  createdAt: string;
+  reason: string | null;
+  task: { title: string; deadline: string | null };
+  user: { name: string; initials: string };
 };
 
 interface TasksClientProps {
@@ -98,6 +116,13 @@ interface TasksClientProps {
   currentPage: number;
   totalPages: number;
   taskToOpen: Task | null;
+  currentUserPeriod?: {
+    type: string;
+    start: string;
+    end: string;
+    completionRate: number;
+  };
+  extensionRequests?: ExtensionRequest[];
 }
 
 export function TasksClient({
@@ -110,12 +135,15 @@ export function TasksClient({
   currentPage,
   totalPages,
   taskToOpen,
+  currentUserPeriod,
+  extensionRequests = [],
 }: TasksClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isGoalOpen, setIsGoalOpen] = useState(false);
   const [isManageGoalsOpen, setIsManageGoalsOpen] = useState(false);
   const [isManageStatusesOpen, setIsManageStatusesOpen] = useState(false);
+  const [isManageExtensionsOpen, setIsManageExtensionsOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -149,25 +177,27 @@ export function TasksClient({
   const [newStatusColor, setNewStatusColor] = useState("#3b82f6");
 
   const [commentText, setCommentText] = useState("");
+  const [extensionReason, setExtensionReason] = useState("");
+  const [isExtensionModalOpen, setIsExtensionReasonOpen] = useState(false);
 
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [assignmentType, setAssignmentType] = useState<"INDIVIDUAL" | "SIMULTANEOUS" | "SEQUENTIAL">("INDIVIDUAL");
   const [isPriorityState, setIsPriorityState] = useState(false);
+  const [isRecurringState, setIsRecurringState] = useState(false);
+
+  const [newDeadlines, setNewDeadlines] = useState<Record<string, string>>({});
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  // Реф-якорь для автоматической прокрутки чата вниз
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Автоматически открываем задачу при переходе из уведомлений
   useEffect(() => {
     if (taskToOpen) {
       setActiveTask(taskToOpen);
     }
   }, [taskToOpen]);
 
-  // Реактивная синхронизация открытого чата/статуса при обновлении на сервере
   useEffect(() => {
     if (activeTask) {
       const updated = initialTasks.find(t => t.id === activeTask.id);
@@ -177,7 +207,6 @@ export function TasksClient({
     }
   }, [initialTasks]);
 
-  // Умный фоновый опрос (опрашивает только при открытой модалке чата)
   useEffect(() => {
     if (!activeTask) return;
 
@@ -185,19 +214,18 @@ export function TasksClient({
       startTransition(() => {
         router.refresh();
       });
-    }, 4000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [activeTask, router]);
 
-  // Автоматическая прокрутка чата вниз при открытии и при появлении новых сообщений
   useEffect(() => {
     if (activeTask && chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [activeTask?.comments?.length, activeTask?.id]);
 
-  // Фильтрация задач на клиенте
+  // Фильтрация и УМНАЯ СОРТИРОВКА (завершенные задачи уходят в самый низ списка)
   const filteredTasks = initialTasks.filter((task) => {
     const matchesSearch = 
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -209,6 +237,33 @@ export function TasksClient({
     const matchesPriority = !filterPriorityOnly || task.isPriority;
 
     return matchesSearch && matchesGoal && matchesStatus && matchesAssignee && matchesPriority;
+  });
+
+  // Умный алгоритм сортировки: сначала активные (приоритетные, затем по дедлайну), а сданные/выполненные — строго в конец.
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const aCompleted = isAdmin 
+      ? a.assignments.every(as => as.statusId === "status-done")
+      : a.assignments.find(as => as.userId === currentUserId)?.statusId === "status-done";
+
+    const bCompleted = isAdmin 
+      ? b.assignments.every(as => as.statusId === "status-done")
+      : b.assignments.find(as => as.userId === currentUserId)?.statusId === "status-done";
+
+    if (aCompleted && !bCompleted) return 1;
+    if (!aCompleted && bCompleted) return -1;
+
+    // Второстепенная сортировка для однородных групп: сначала срочные задачи
+    if (a.isPriority && !b.isPriority) return -1;
+    if (!a.isPriority && b.isPriority) return 1;
+
+    // Сортировка по дедлайну
+    if (a.deadline && b.deadline) {
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    }
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const handleCreateGoal = async (e: React.FormEvent) => {
@@ -244,11 +299,7 @@ export function TasksClient({
   };
 
   const handleDeleteGoal = async (goalId: string, title: string) => {
-    if (
-      !window.confirm(
-        `ВНИМАНИЕ! Удаление цели "${title}" приведет к БЕЗВОЗВРАТНОМУ удалению ВСЕХ привязанных к ней задач! Вы уверены?`
-      )
-    ) {
+    if (!window.confirm(`ВНИМАНИЕ! Удаление цели "${title}" приведет к БЕЗВОЗВРАТНОМУ удалению ВСЕХ связанных задач! Вы уверены?`)) {
       return;
     }
     startTransition(async () => {
@@ -297,6 +348,7 @@ export function TasksClient({
     setAssignmentType("INDIVIDUAL");
     setSelectedAssignees([]);
     setIsPriorityState(false);
+    setIsRecurringState(false);
     setIsTaskOpen(true);
   };
 
@@ -306,6 +358,7 @@ export function TasksClient({
     setAssignmentType(task.assignmentType);
     setSelectedAssignees(task.assignments.map(as => as.userId));
     setIsPriorityState(task.isPriority);
+    setIsRecurringState(task.isRecurring);
     setIsTaskOpen(true);
   };
 
@@ -327,6 +380,7 @@ export function TasksClient({
       goalId: formData.get("goalId") as string,
       assigneeIds: selectedAssignees,
       isPriority: isPriorityState,
+      isRecurring: isRecurringState,
     };
 
     startTransition(async () => {
@@ -394,6 +448,75 @@ export function TasksClient({
     });
   };
 
+  // Метод отправки запроса сотрудника на перенос дедлайна
+  const handleRequestExtension = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTask) return;
+
+    startTransition(async () => {
+      try {
+        await requestExtension(activeTask.id, extensionReason);
+        setExtensionReason("");
+        setIsExtensionReasonOpen(false);
+        showToast("Запрос на продление успешно направлен руководителю", "info");
+        router.refresh();
+      } catch (err: any) {
+        showToast(err.message || "Ошибка отправки запроса", "error");
+      }
+    });
+  };
+
+  // Метод одобрения продления руководителем
+  const handleApproveExtension = async (requestId: string) => {
+    const newDate = newDeadlines[requestId];
+    if (!newDate) {
+      showToast("Укажите новый срок перед одобрением", "error");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        await approveExtension(requestId, newDate);
+        showToast("Перенос срока утвержден", "success");
+        router.refresh();
+      } catch (err: any) {
+        showToast(err.message || "Ошибка применения переноса", "error");
+      }
+    });
+  };
+
+  // Метод отклонения продления руководителем
+  const handleRejectExtension = async (requestId: string) => {
+    if (!window.confirm("Отклонить данный запрос на перенос срока?")) return;
+
+    startTransition(async () => {
+      try {
+        await rejectExtension(requestId);
+        showToast("Запрос на перенос отклонен", "info");
+        router.refresh();
+      } catch (err: any) {
+        showToast(err.message || "Ошибка отклонения", "error");
+      }
+    });
+  };
+
+  // Метод дублирования/повтора задачи руководителем
+  const handleDuplicateTask = async (taskId: string) => {
+    const rawDate = window.prompt("Укажите новый дедлайн для дублированной задачи (в формате ГГГГ-ММ-ДД) или оставьте пустым:");
+    if (rawDate === null) return; // Отмена
+
+    startTransition(async () => {
+      try {
+        await duplicateTask(taskId, rawDate || undefined);
+        showToast("Регулярная задача успешно продублирована на новый срок!", "success");
+        setActiveTask(null);
+        router.refresh();
+      } catch (err: any) {
+        showToast(err.message || "Ошибка дублирования задачи", "error");
+      }
+    });
+  };
+
   const toggleAssignee = (userId: string) => {
     if (assignmentType === "INDIVIDUAL") {
       setSelectedAssignees([userId]);
@@ -436,9 +559,11 @@ export function TasksClient({
     setFilterPriorityOnly(false);
   };
 
+  const pendingExtensionsCount = extensionRequests.filter((req) => req.status === "PENDING").length;
+
   return (
     <div className="space-y-6">
-      {/* 🔔 КЛИЕНТСКИЙ КРАСИВЫЙ TOAST */}
+      {/* 🔔 КЛИЕНТСКИЙ TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-xs font-semibold animate-slide-up transition-all ${
           toast.type === "success" 
@@ -459,12 +584,33 @@ export function TasksClient({
 
       {/* Шапка модуля задач */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
-        <div>
+        <div className="space-y-1">
           <h2 className="text-2xl font-bold text-slate-800">Задачи и цели</h2>
           <p className="text-slate-500 text-sm">Оперативное управление задачами и глобальными направлениями</p>
         </div>
 
-        {/* ПЕРЕКЛЮЧАТЕЛЬ ВИДА (СТАНДАРТНЫЙ / ТАБЛИЦА) */}
+        {/* 📊 ВИДЖЕТ УСПЕВАЕМОСТИ СОТРУДНИКА ЗА ЕГО ОТЧЕТНЫЙ ПЕРИОД */}
+        {!isAdmin && currentUserPeriod && (
+          <div className="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm self-stretch md:self-auto">
+            <CalendarDays className="h-5 w-5 text-blue-500 shrink-0" />
+            <div className="text-xs">
+              <div className="text-slate-400 font-semibold uppercase text-[9px] tracking-wider">
+                Моя успеваемость ({currentUserPeriod.type})
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="font-bold text-slate-800 text-sm">{currentUserPeriod.completionRate}%</span>
+                <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="bg-blue-600 h-1.5 rounded-full" 
+                    style={{ width: `${currentUserPeriod.completionRate}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ПЕРЕКЛЮЧАТЕЛЬ ВИДА (ПЛИТКИ / ТАБЛИЦА) */}
         <div className="flex items-center gap-2 self-stretch sm:self-auto bg-white p-1 rounded-xl border border-slate-200 shadow-sm shrink-0">
           <button
             onClick={() => setViewMode("standard")}
@@ -492,10 +638,18 @@ export function TasksClient({
 
         {isAdmin && (
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
+            {pendingExtensionsCount > 0 && (
+              <button
+                onClick={() => setIsManageExtensionsOpen(true)}
+                className="flex items-center justify-center gap-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 px-3.5 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer animate-pulse shrink-0"
+              >
+                <History className="h-3.5 w-3.5 text-red-600" />
+                Переносы ({pendingExtensionsCount})
+              </button>
+            )}
             <button
               onClick={() => setIsManageStatusesOpen(true)}
-              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
-              title="Управление статусами"
+              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               <Sliders className="h-3.5 w-3.5 text-slate-500" />
               Статусы
@@ -503,21 +657,20 @@ export function TasksClient({
             <button
               onClick={() => setIsManageGoalsOpen(true)}
               className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-              title="Управление целями"
             >
               <Settings className="h-3.5 w-3.5 text-slate-500" />
               Цели
             </button>
             <button
               onClick={() => setIsGoalOpen(true)}
-              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              className="flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               <FolderPlus className="h-3.5 w-3.5 text-slate-500" />
               Добавить цель
             </button>
             <button
               onClick={openCreateTaskModal}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
               Добавить задачу
@@ -526,21 +679,20 @@ export function TasksClient({
         )}
       </div>
 
-      {/* 🔍 ПАНЕЛЬ ИНТЕРАКТИВНОЙ ФИЛЬТРАЦИИ */}
+      {/* 🔍 ПАНЕЛЬ ФИЛЬТРАЦИИ */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
           <Filter className="h-3.5 w-3.5 text-slate-400" /> Фильтрация бэклога задач
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
-          {/* Поиск */}
-          <div className="relative col-span-1 md:col-span-1">
+          <div className="relative">
             <label className="block text-[10px] font-semibold text-slate-500 mb-1">Поиск</label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Поиск по названию..."
+                placeholder="Поиск..."
                 className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -548,7 +700,6 @@ export function TasksClient({
             </div>
           </div>
 
-          {/* Цель */}
           <div>
             <label className="block text-[10px] font-semibold text-slate-500 mb-1">Глобальная цель</label>
             <select
@@ -563,7 +714,6 @@ export function TasksClient({
             </select>
           </div>
 
-          {/* Статус */}
           <div>
             <label className="block text-[10px] font-semibold text-slate-500 mb-1">Статус выполнения</label>
             <select
@@ -578,7 +728,6 @@ export function TasksClient({
             </select>
           </div>
 
-          {/* Исполнитель */}
           <div>
             <label className="block text-[10px] font-semibold text-slate-500 mb-1">Исполнитель</label>
             <select
@@ -593,7 +742,6 @@ export function TasksClient({
             </select>
           </div>
 
-          {/* Опции и Сброс */}
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-semibold cursor-pointer select-none">
               <input
@@ -618,42 +766,44 @@ export function TasksClient({
       </div>
 
       {/* ========================================================================= */}
-      {/* РЕЖИМ 1: КОМПАКТНАЯ ТАБЛИЦА (УЛУЧШЕННАЯ КЛИКАБЕЛЬНОСТЬ!) */}
+      {/* РЕЖИМ 1: КОМПАКТНАЯ ТАБЛИЦА С УПОРЯДОЧЕННОЙ СОРТИРОВКОЙ */}
       {/* ========================================================================= */}
       {viewMode === "table" ? (
         <div className="space-y-4">
-          
-          {/* Десктопная версия таблицы */}
           <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <table className="min-w-full divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Цель / Задача</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Срок (Дедлайн)</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Приоритет</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Приоритет / Регулярность</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Исполнители</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Примечания и Указания</th>
                   <th className="px-4 py-3 text-right font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredTasks.length === 0 ? (
+                {sortedTasks.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">Задач пока нет</td>
                   </tr>
                 ) : (
-                  filteredTasks.map((task) => {
+                  sortedTasks.map((task) => {
                     const myAs = !isAdmin ? task.assignments.find(as => as.userId === currentUserId) : null;
-                    const isOverdue = task.deadline && new Date(task.deadline) < startOfToday && (!isAdmin ? myAs?.statusId !== "status-done" : task.assignments.some(as => as.statusId !== "status-done"));
+                    const isCompleted = isAdmin 
+                      ? task.assignments.every(as => as.statusId === "status-done")
+                      : myAs?.statusId === "status-done";
+
+                    const isOverdue = !isCompleted && task.deadline && new Date(task.deadline) < startOfToday;
 
                     return (
-                      // КЛИКАБЕЛЬНАЯ СТРОКА ТАБЛИЦЫ (Рекомендация №4)
                       <tr 
                         key={task.id} 
                         onClick={() => setActiveTask(task)}
-                        className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                        className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${
+                          isCompleted ? "opacity-60 bg-slate-50/30" : ""
+                        }`}
                       >
-                        {/* Название и цель */}
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-1 items-start">
                             <span 
@@ -662,29 +812,37 @@ export function TasksClient({
                             >
                               {task.goal.title}
                             </span>
-                            <span className="font-bold text-slate-900 text-sm leading-snug">{task.title}</span>
+                            <span className={`font-bold text-slate-900 text-sm leading-snug ${isCompleted ? "line-through text-slate-400" : ""}`}>
+                              {task.title}
+                            </span>
                           </div>
                         </td>
-                        {/* Дедлайн */}
                         <td className="px-4 py-3 whitespace-nowrap">
                           {task.deadline ? (
-                            <span className={`font-bold flex items-center gap-1 ${isOverdue ? "text-red-500" : "text-slate-600"}`}>
+                            <span className={`font-bold flex items-center gap-1 ${isOverdue ? "text-red-500" : isCompleted ? "text-slate-400" : "text-slate-600"}`}>
                               <Clock className="h-3.5 w-3.5 shrink-0" />
                               {new Date(task.deadline).toLocaleDateString("ru-RU")}
+                              {isOverdue && <span className="text-[9px] font-black text-red-500 uppercase tracking-wide">(Просрочена)</span>}
                             </span>
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
                         </td>
-                        {/* Приоритет */}
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {task.isPriority ? (
-                            <span className="text-[9px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">Срочно!</span>
-                          ) : (
-                            <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">Обычный</span>
-                          )}
+                          <div className="flex flex-col gap-1 items-start">
+                            {task.isPriority && (
+                              <span className="text-[9px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">Срочно!</span>
+                            )}
+                            {task.isRecurring && (
+                              <span className="text-[9px] bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-0.5">
+                                <Repeat className="h-2.5 w-2.5" /> Регулярная
+                              </span>
+                            )}
+                            {!task.isPriority && !task.isRecurring && (
+                              <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">Обычная</span>
+                            )}
+                          </div>
                         </td>
-                        {/* Исполнители */}
                         <td className="px-4 py-3">
                           <div className="flex -space-x-1.5 overflow-hidden">
                             {task.assignments.map((as) => (
@@ -698,7 +856,6 @@ export function TasksClient({
                             ))}
                           </div>
                         </td>
-                        {/* Примечания */}
                         <td className="px-4 py-3 max-w-xs truncate text-slate-500" title={task.adminNotes || task.description || ""}>
                           {task.adminNotes ? (
                             <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10px]">
@@ -708,12 +865,11 @@ export function TasksClient({
                             task.description || "—"
                           )}
                         </td>
-                        {/* Действия */}
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <div className="flex justify-end gap-1.5">
                             {isAdmin && (
                               <button
-                                onClick={(e) => openEditTaskModal(task, e)} // Останавливает всплытие клика строки
+                                onClick={(e) => openEditTaskModal(task, e)}
                                 className="p-1 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded transition-colors cursor-pointer"
                               >
                                 <Pencil className="h-4 w-4" />
@@ -735,22 +891,26 @@ export function TasksClient({
             </table>
           </div>
 
-          {/* Мобильная ультракомпактная версия для таблицы */}
+          {/* Мобильная версия списка */}
           <div className="block md:hidden space-y-2">
-            {filteredTasks.length === 0 ? (
+            {sortedTasks.length === 0 ? (
               <div className="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200 italic text-sm">Задач пока нет</div>
             ) : (
-              filteredTasks.map((task) => {
+              sortedTasks.map((task) => {
                 const myAs = !isAdmin ? task.assignments.find(as => as.userId === currentUserId) : null;
-                const isOverdue = task.deadline && new Date(task.deadline) < startOfToday && (!isAdmin ? myAs?.statusId !== "status-done" : task.assignments.some(as => as.statusId !== "status-done"));
+                const isCompleted = isAdmin 
+                  ? task.assignments.every(as => as.statusId === "status-done")
+                  : myAs?.statusId === "status-done";
+
+                const isOverdue = !isCompleted && task.deadline && new Date(task.deadline) < startOfToday;
 
                 return (
                   <div 
                     key={task.id} 
                     onClick={() => setActiveTask(task)}
                     className={`bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1.5 cursor-pointer hover:border-slate-300 relative ${
-                      task.isPriority ? "border-l-4 border-l-red-500" : ""
-                    }`}
+                      isCompleted ? "opacity-60 bg-slate-50/50" : ""
+                    } ${task.isPriority ? "border-l-4 border-l-red-500" : ""}`}
                   >
                     <div className="flex justify-between items-start gap-2">
                       <span 
@@ -766,42 +926,41 @@ export function TasksClient({
                       )}
                     </div>
                     
-                    <h4 className="font-bold text-slate-900 text-xs leading-snug line-clamp-1">{task.title}</h4>
-                    
-                    {task.adminNotes && (
-                      <span className="bg-amber-50 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-100 self-start">
-                        {task.adminNotes}
-                      </span>
-                    )}
+                    <h4 className={`font-bold text-slate-900 text-xs leading-snug line-clamp-1 ${isCompleted ? "line-through text-slate-400" : ""}`}>{task.title}</h4>
                   </div>
                 );
               })
             )}
           </div>
-
         </div>
       ) : (
 
         // =========================================================================
-        // РЕЖИМ 2: СТАНДАРТНЫЙ (ПЛИТКИ ДЛЯ АДМИНА / КАНБАН ДЛЯ СОТРУДНИКОВ)
+        // РЕЖИМ 2: ПЛИТКИ / КАНБАН
         // =========================================================================
         <>
-          {/* РЕНДЕР ПЛИТОК ДЛЯ АДМИНИСТРАТОРА */}
           {isAdmin && (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 text-sm">Все задачи организации</h3>
-                <span className="text-xs text-slate-500 font-medium">Отображено задач: {filteredTasks.length}</span>
+                <span className="text-xs text-slate-500 font-medium">Отображено задач: {sortedTasks.length}</span>
               </div>
               <div className="divide-y divide-slate-100">
-                {filteredTasks.length === 0 ? (
+                {sortedTasks.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 text-sm">Задач пока нет</div>
                 ) : (
-                  filteredTasks.map((task) => {
+                  sortedTasks.map((task) => {
                     const isExpanded = expandedTaskIds.includes(task.id);
+                    const isCompleted = task.assignments.every(as => as.statusId === "status-done");
+                    const isOverdue = !isCompleted && task.deadline && new Date(task.deadline) < startOfToday;
 
                     return (
-                      <div key={task.id} className="p-5 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row justify-between gap-4">
+                      <div 
+                        key={task.id} 
+                        className={`p-5 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row justify-between gap-4 ${
+                          isCompleted ? "opacity-60 bg-slate-50/40" : ""
+                        }`}
+                      >
                         <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2.5 flex-wrap">
                             <span
@@ -810,18 +969,23 @@ export function TasksClient({
                             >
                               {task.goal.title}
                             </span>
+                            {task.isPriority && (
+                              <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
+                                Срочно
+                              </span>
+                            )}
+                            {task.isRecurring && (
+                              <span className="text-[10px] bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-0.5">
+                                <Repeat className="h-3 w-3" /> Регулярная
+                              </span>
+                            )}
                             <span className="text-xs text-slate-400 font-medium">
                               {task.assignmentType === "SEQUENTIAL" && "Последовательная"}
                               {task.assignmentType === "SIMULTANEOUS" && "Параллельная"}
                               {task.assignmentType === "INDIVIDUAL" && "Индивидуальная"}
                             </span>
-                            {task.isPriority && (
-                              <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                                Срочно
-                              </span>
-                            )}
                           </div>
-                          <h4 className="font-bold text-slate-900 text-base">{task.title}</h4>
+                          <h4 className={`font-bold text-slate-900 text-base ${isCompleted ? "line-through text-slate-400" : ""}`}>{task.title}</h4>
                           
                           {task.description && (
                             <div className="space-y-1">
@@ -842,8 +1006,9 @@ export function TasksClient({
                           )}
 
                           {task.deadline && (
-                            <div className="text-xs text-slate-400 flex items-center gap-1">
+                            <div className={`text-xs font-semibold flex items-center gap-1 ${isOverdue ? "text-red-500" : "text-slate-400"}`}>
                               <Clock className="h-3.5 w-3.5" /> Дедлайн: {new Date(task.deadline).toLocaleDateString("ru-RU")}
+                              {isOverdue && <span className="text-red-600 font-bold uppercase text-[9px] tracking-wide ml-1">(Срок истек!)</span>}
                             </div>
                           )}
                         </div>
@@ -863,7 +1028,7 @@ export function TasksClient({
                                   {as.isBlocked ? (
                                     <span className="flex items-center text-red-500 gap-0.5"><Lock className="h-2.5 w-2.5" /> Ожидает</span>
                                   ) : (
-                                    <span>{as.status.name}</span>
+                                    <span className={as.statusId === "status-done" ? "text-emerald-600 font-bold" : ""}>{as.status.name}</span>
                                   )}
                                 </div>
                               </div>
@@ -873,14 +1038,12 @@ export function TasksClient({
                             <button
                               onClick={(e) => openEditTaskModal(task, e)}
                               className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                              title="Редактировать задачу"
                             >
                               <Pencil className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => setActiveTask(task)}
                               className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                              title="Просмотреть детали"
                             >
                               <Eye className="h-5 w-5" />
                             </button>
@@ -894,11 +1057,10 @@ export function TasksClient({
             </div>
           )}
 
-          {/* РЕНДЕР КАНБАН-БОРДА ДЛЯ СОТРУДНИКА */}
           {!isAdmin && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
               {statuses.map((status) => {
-                const myTasks = filteredTasks.filter((task) => {
+                const myTasks = sortedTasks.filter((task) => {
                   const myAssignment = task.assignments.find((as) => as.userId === currentUserId);
                   return myAssignment?.statusId === status.id;
                 });
@@ -918,13 +1080,16 @@ export function TasksClient({
                       ) : (
                         myTasks.map((task) => {
                           const myAs = task.assignments.find(as => as.userId === currentUserId)!;
+                          const isCompleted = myAs.statusId === "status-done";
+                          const isOverdue = !isCompleted && task.deadline && new Date(task.deadline) < startOfToday;
+
                           return (
                             <div
                               key={task.id}
                               onClick={() => setActiveTask(task)}
                               className={`bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow transition-all cursor-pointer relative ${
-                                task.isPriority ? "ring-2 ring-red-500/10" : ""
-                              }`}
+                                isCompleted ? "opacity-60 bg-slate-50/70" : ""
+                              } ${task.isPriority ? "ring-2 ring-red-500/10" : ""}`}
                               style={{ borderLeftColor: task.goal.color }}
                             >
                               <div className="flex justify-between items-start gap-2">
@@ -935,6 +1100,11 @@ export function TasksClient({
                                   {task.isPriority && (
                                     <span className="text-red-600 font-bold text-[9px] uppercase tracking-wider">Срочно</span>
                                   )}
+                                  {task.isRecurring && (
+                                    <span className="text-purple-600 font-bold text-[9px] uppercase tracking-wider flex items-center gap-0.5">
+                                      <Repeat className="h-2.5 w-2.5" /> Регулярная
+                                    </span>
+                                  )}
                                   {myAs.isBlocked && (
                                     <span className="text-red-600 flex items-center gap-0.5 text-[10px] font-bold">
                                       <Lock className="h-3 w-3" /> Ожидает
@@ -942,12 +1112,15 @@ export function TasksClient({
                                   )}
                                 </div>
                               </div>
-                              <h4 className="font-bold text-slate-800 text-sm mt-2">{task.title}</h4>
-                              {task.description && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>}
+                              <h4 className={`font-bold text-slate-800 text-sm mt-2 ${isCompleted ? "line-through text-slate-400" : ""}`}>{task.title}</h4>
                               
                               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 text-[10px] text-slate-400">
-                                <span>{task.assignmentType === "SEQUENTIAL" ? "Последовательная" : "Обычная"}</span>
-                                {task.deadline && <span>До {new Date(task.deadline).toLocaleDateString()}</span>}
+                                <span>{task.assignmentType === "SEQUENTIAL" ? "Цепочка" : "Обычная"}</span>
+                                {task.deadline && (
+                                  <span className={isOverdue ? "text-red-500 font-bold animate-pulse" : ""}>
+                                    До {new Date(task.deadline).toLocaleDateString()}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           );
@@ -962,7 +1135,7 @@ export function TasksClient({
         </>
       )}
 
-      {/* ПАНЕЛЬ ПАГИНАЦИИ */}
+      {/* ПАГИНАЦИЯ */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-3 bg-white px-4 py-3 rounded-xl border border-slate-200 max-w-xs mx-auto shadow-sm print:hidden">
           <button
@@ -1173,7 +1346,6 @@ export function TasksClient({
                             disabled={isPending}
                             onClick={() => handleUpdateGoal(g.id)}
                             className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                            title="Сохранить"
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
@@ -1181,7 +1353,6 @@ export function TasksClient({
                             type="button"
                             onClick={() => setEditingGoalId(null)}
                             className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors"
-                            title="Отмена"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -1203,7 +1374,6 @@ export function TasksClient({
                             <button
                               onClick={() => startEditingGoal(g)}
                               className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg transition-colors"
-                              title="Редактировать цель"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
@@ -1212,7 +1382,6 @@ export function TasksClient({
                                 onClick={() => handleDeleteGoal(g.id, g.title)}
                                 disabled={isPending}
                                 className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-colors"
-                                title="Удалить цель"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -1238,6 +1407,91 @@ export function TasksClient({
         </div>
       )}
 
+      {/* МОДАЛКА: УПРАВЛЕНИЕ ЗАПРОСАМИ НА ПРОДЛЕНИЕ СРОКОВ (РУКОВОДИТЕЛЬ) */}
+      {isManageExtensionsOpen && isAdmin && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-200 flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <History className="h-5 w-5 text-red-600" /> Запросы сотрудников на перенос сроков
+              </h3>
+              <button onClick={() => setIsManageExtensionsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {extensionRequests.length === 0 ? (
+                <div className="text-center text-slate-400 italic text-sm py-8">Активных запросов нет</div>
+              ) : (
+                <div className="space-y-3">
+                  {extensionRequests.map((req) => (
+                    <div key={req.id} className="p-4 bg-slate-50 border rounded-xl space-y-3 text-xs">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <div className="font-bold text-slate-800 text-sm">Задача: «{req.task.title}»</div>
+                          <div className="text-slate-500 mt-1">
+                            Исполнитель: <strong>{req.user.name}</strong> | Текущий срок: {req.task.deadline ? new Date(req.task.deadline).toLocaleDateString() : "Не указан"}
+                          </div>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          req.status === "PENDING" ? "bg-amber-100 text-amber-800 animate-pulse" : req.status === "APPROVED" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                        }`}>
+                          {req.status === "PENDING" ? "Ожидает решения" : req.status === "APPROVED" ? "Одобрено" : "Отклонено"}
+                        </span>
+                      </div>
+
+                      {req.reason && (
+                        <div className="p-2.5 bg-white border rounded-lg italic text-slate-600">
+                          Причина переноса: "{req.reason}"
+                        </div>
+                      )}
+
+                      {req.status === "PENDING" && (
+                        <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-slate-100">
+                          <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                            <label className="font-bold text-slate-700">Установить новый срок:</label>
+                            <input
+                              type="date"
+                              required
+                              className="px-2 py-1 border rounded-lg text-xs"
+                              onChange={(e) => setNewDeadlines(prev => ({ ...prev, [req.id]: e.target.value }))}
+                            />
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={() => handleApproveExtension(req.id)}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg"
+                            >
+                              Одобрить срок
+                            </button>
+                            <button
+                              onClick={() => handleRejectExtension(req.id)}
+                              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg"
+                            >
+                              Отклонить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setIsManageExtensionsOpen(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* МОДАЛКА: СОЗДАНИЕ ИЛИ РЕДАКТИРОВАНИЕ ЗАДАЧИ */}
       {isTaskOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -1251,17 +1505,32 @@ export function TasksClient({
               </button>
             </div>
             <form onSubmit={handleSaveTask} className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="flex items-center justify-between p-3 bg-red-50/50 border border-red-100 rounded-xl">
-                <div className="space-y-0.5">
-                  <h4 className="text-xs font-bold text-slate-800">Приоритетная задача (Срочно)</h4>
-                  <p className="text-[10px] text-slate-500">Закрепить вверху списка и подсветить красным</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between p-3 bg-red-50/50 border border-red-100 rounded-xl">
+                  <div className="space-y-0.5">
+                    <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Срочная задача</h4>
+                    <p className="text-[9px] text-slate-500">Закрепить вверху списка</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isPriorityState}
+                    onChange={(e) => setIsPriorityState(e.target.checked)}
+                    className="h-4 w-4 text-red-600 border-slate-300 rounded focus:ring-red-500 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isPriorityState}
-                  onChange={(e) => setIsPriorityState(e.target.checked)}
-                  className="h-4 w-4 text-red-600 border-slate-300 rounded focus:ring-red-500 cursor-pointer"
-                />
+
+                <div className="flex items-center justify-between p-3 bg-purple-50/50 border border-purple-100 rounded-xl">
+                  <div className="space-y-0.5">
+                    <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Регулярная</h4>
+                    <p className="text-[9px] text-slate-500">Маркер повторения</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isRecurringState}
+                    onChange={(e) => setIsRecurringState(e.target.checked)}
+                    className="h-4 w-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500 cursor-pointer"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1428,21 +1697,42 @@ export function TasksClient({
         </div>
       )}
 
-      {/* МОДАЛКА: ПРОСМОТР ДЕТАЛЕЙ ЗАДАЧИ */}
+      {/* МОДАЛКА: ПРОСМОТР ДЕТАЛЕЙ ЗАДАЧИ С НОВЫМИ КНОПКАМИ УПРАВЛЕНИЯ СРОКАМИ */}
       {activeTask && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-200 flex flex-col h-[85vh] lg:h-[80vh] overflow-hidden">
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
               <h3 className="text-lg font-bold text-slate-800 font-sans tracking-wide">Рабочее пространство задачи</h3>
-              <button onClick={() => setActiveTask(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* 🔁 КНОПКА ПОВТОРА/ДУБЛИРОВАНИЯ ДЛЯ РУКОВОДИТЕЛЯ */}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDuplicateTask(activeTask.id)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition-all hover:bg-purple-100 cursor-pointer"
+                    title="Повторить / Продублировать задачу на новый срок"
+                  >
+                    <Repeat className="h-4 w-4" /> Повторить задачу
+                  </button>
+                )}
+                
+                {/* ⏳ КНОПКА ЗАПРОСА ПРОДЛЕНИЯ СРОКА ДЛЯ СОТРУДНИКА */}
+                {!isAdmin && (
+                  <button
+                    onClick={() => setIsExtensionReasonOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition-all hover:bg-amber-100 cursor-pointer"
+                    title="Запросить перенос дедлайна у руководителя"
+                  >
+                    <History className="h-4 w-4" /> Запросить продление
+                  </button>
+                )}
+
+                <button onClick={() => setActiveTask(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             
-            {/* ДВУХКОЛОНОЧНЫЙ СЕТОЧНЫЙ КОНТЕНТ (УЛУЧШЕНО!) */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden h-full">
-              
-              {/* ЛЕВАЯ КОЛОНКА: ДЕТАЛИ И ОПИСАНИЕ (7 из 12) */}
               <div className="lg:col-span-7 p-6 overflow-y-auto border-r border-slate-100 space-y-5 h-full scrollbar-thin">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
@@ -1455,8 +1745,13 @@ export function TasksClient({
                     {activeTask.assignmentType === "SEQUENTIAL" ? "Последовательная цепочка" : "Обычная задача"}
                   </span>
                   {activeTask.isPriority && (
-                    <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
                       Срочно
+                    </span>
+                  )}
+                  {activeTask.isRecurring && (
+                    <span className="text-[10px] bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-0.5">
+                      <Repeat className="h-3 w-3 animate-spin-slow" /> Регулярная
                     </span>
                   )}
                 </div>
@@ -1483,10 +1778,12 @@ export function TasksClient({
                   <div className="text-xs text-slate-500 font-bold flex items-center gap-1.5 bg-slate-100/50 p-2.5 rounded-lg border self-start">
                     <Clock className="h-4 w-4 text-slate-400" />
                     Срок выполнения: {new Date(activeTask.deadline).toLocaleDateString("ru-RU")}
+                    {new Date(activeTask.deadline) < startOfToday && (
+                      <span className="text-red-600 uppercase font-black text-[9px] tracking-wider flex items-center gap-0.5"><AlertTriangle className="h-3 w-3" /> Срок просрочен!</span>
+                    )}
                   </div>
                 )}
 
-                {/* Управление статусом сотрудника */}
                 {!isAdmin && (
                   <div className="border-t border-slate-100 pt-4 space-y-2">
                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Мой статус по задаче</h5>
@@ -1530,7 +1827,6 @@ export function TasksClient({
                   </div>
                 )}
 
-                {/* Прогресс всех участников */}
                 <div className="border-t border-slate-100 pt-4 space-y-2">
                   <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Исполнители</h5>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1564,14 +1860,12 @@ export function TasksClient({
                 </div>
               </div>
 
-              {/* ПРАВАЯ КОЛОНКА: ЧАТ И ОБСУЖДЕНИЕ (5 из 12) */}
               <div className="lg:col-span-5 p-6 bg-slate-50/50 flex flex-col h-full overflow-hidden border-t lg:border-t-0 lg:border-l border-slate-200">
                 <div className="border-b border-slate-100 pb-3 mb-3 flex items-center gap-2 shrink-0">
                   <Send className="h-4 w-4 text-blue-500" />
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Обсуждение и лог</span>
                 </div>
 
-                {/* Лента сообщений с независимым скроллом */}
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 scrollbar-thin">
                   {activeTask.comments.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-xs text-slate-400 italic">
@@ -1593,11 +1887,9 @@ export function TasksClient({
                       </div>
                     ))
                   )}
-                  {/* Невидимый элемент-якорь для автоматического сдерживания скролла внизу */}
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Форма отправки сообщений, всегда закрепленная внизу */}
                 <form onSubmit={handleSendComment} className="flex gap-2 items-center shrink-0 border-t border-slate-100 pt-3">
                   <input
                     type="text"
@@ -1611,14 +1903,63 @@ export function TasksClient({
                     type="submit"
                     disabled={isPending || !commentText.trim()}
                     className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:bg-blue-400 shrink-0 cursor-pointer"
-                    title="Отправить сообщение"
                   >
                     <Send className="h-4 w-4" />
                   </button>
                 </form>
               </div>
-
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* МОДАЛКА: ВВОД ОБОСНОВАНИЯ ПЕРЕНОСА ДЕДЛАЙНА (СОТРУДНИК) */}
+      {isExtensionModalOpen && activeTask && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-200 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                <History className="h-5 w-5 text-amber-500 animate-spin-slow" /> Запросить перенос срока
+              </h3>
+              <button onClick={() => setIsExtensionReasonOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleRequestExtension} className="space-y-4">
+              <div className="text-xs text-slate-500 leading-relaxed bg-amber-50 border border-amber-100 p-3 rounded-xl">
+                Ваш запрос будет направлен руководителю. Он изучит причину и установит новую справедливую дату выполнения.
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Обоснуйте причину задержки</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Например, Ожидаю информацию от смежного ИТ-отдела, данные будут завтра утром..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                  value={extensionReason}
+                  onChange={(e) => setExtensionReason(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsExtensionReasonOpen(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold disabled:bg-blue-400"
+                >
+                  Отправить руководителю
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

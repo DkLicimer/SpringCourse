@@ -21,25 +21,31 @@ enum AssignmentType {
 
 // Модель пользователя
 model User {
-  id            String             @id @default(uuid())
-  email         String             @unique
-  passwordHash  String
-  name          String             // ФИО
-  initials      String             // Инициалы (например, "ЛК")
-  role          Role               @default(EMPLOYEE)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  passwordHash        String
+  name                String             // ФИО
+  initials            String             // Инициалы (например, "ЛК")
+  role                Role               @default(EMPLOYEE)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  // Индивидуальный отчетный период сотрудника
+  reportingPeriodType String             @default("MONTH") // MONTH, QUARTER, CUSTOM
+  periodStartDate     DateTime?          // Дата начала (для CUSTOM)
+  periodEndDate       DateTime?          // Дата окончания (для CUSTOM)
 
   // Связи
-  assignments   TaskAssignment[]   // Задачи, в которых пользователь участвует
-  createdTasks  Task[]             @relation("CreatedBy")
-  comments      Comment[]
-  bookedEvents  CalendarEvent[]    @relation("BookedBy")
-  tableAccesses TableAccess[]      // Индивидуальные права доступа к таблицам
+  assignments         TaskAssignment[]   // Задачи, в которых пользователь участвует
+  createdTasks        Task[]             @relation("CreatedBy")
+  comments            Comment[]
+  bookedEvents        CalendarEvent[]    @relation("BookedBy")
+  tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
+  extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
 
   // Авторство в контент-плане
-  contentPlans  ContentPlan[]
-  postRequests  PostRequest[]
+  contentPlans        ContentPlan[]
+  postRequests        PostRequest[]
 }
 
 // Глобальные цели
@@ -67,27 +73,29 @@ model TaskStatus {
 
 // Основная модель задачи
 model Task {
-  id                  String           @id @default(uuid())
+  id                  String             @id @default(uuid())
   title               String
   description         String?
   deadline            DateTime?
-  intermediateControl Boolean          @default(false)
+  intermediateControl Boolean            @default(false)
   controlReport       String?
   adminNotes          String?
-  assignmentType      AssignmentType   @default(INDIVIDUAL)
-  isPriority          Boolean          @default(false) // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ (Приоритетная задача)
+  assignmentType      AssignmentType     @default(INDIVIDUAL)
+  isPriority          Boolean            @default(false) // Приоритетная задача (Срочно)
+  isRecurring         Boolean            @default(false) // Метка регулярной задачи
   
   goalId              String
-  goal                Goal             @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goal                Goal               @relation(fields: [goalId], references: [id], onDelete: Cascade)
   
   createdById         String
-  createdBy           User             @relation("CreatedBy", fields: [createdById], references: [id])
+  createdBy           User               @relation("CreatedBy", fields: [createdById], references: [id])
   
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   assignments         TaskAssignment[]
   comments            Comment[]
+  extensionRequests   ExtensionRequest[] // Запросы на продление срока
 }
 
 // Промежуточная таблица назначений (для поддержки параллельных и последовательных задач)
@@ -111,6 +119,19 @@ model TaskAssignment {
   updatedAt     DateTime    @updatedAt
 
   @@unique([taskId, userId]) // Один пользователь назначен на задачу один раз
+}
+
+// Запросы сотрудников на продление дедлайна
+model ExtensionRequest {
+  id            String      @id @default(uuid())
+  taskId        String
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason        String?     // Обоснование переноса
+  status        String      @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 // Комментарии (мини-чат внутри задачи)
@@ -204,8 +225,9 @@ model TableAccess {
 // ==========================================
 
 enum CalendarEventType {
-  MEETING // Встреча, забронированная сотрудником
-  BLOCKED // "Отдых/Занят" — заблокировано руководителем
+  FREE    // Свободно (зеленый)
+  GC      // Главный корпус (желтый)
+  BUSY    // Занято (красный)
 }
 
 model CalendarEvent {
@@ -213,10 +235,10 @@ model CalendarEvent {
   title       String
   startTime   DateTime
   endTime     DateTime
-  type        CalendarEventType @default(MEETING)
+  type        CalendarEventType @default(FREE)
   description String?
   
-  // Кем создано (если MEETING, то сотрудником; если BLOCKED, то админом)
+  // Кем создано
   bookedById  String
   bookedBy    User              @relation("BookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
   
@@ -232,6 +254,6 @@ model Notification {
   userId    String
   text      String
   isRead    Boolean  @default(false)
-  link      String?  // Ссылка для перехода внутри приложения (например, к конкретной задаче)
+  link      String?  // Ссылка для перехода внутри приложения
   createdAt DateTime @default(now())
 }
