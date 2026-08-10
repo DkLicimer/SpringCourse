@@ -94,6 +94,7 @@ type Task = {
   goal: Goal;
   assignments: Assignment[];
   comments: Comment[];
+  createdAt: string;
 };
 
 type ExtensionRequest = {
