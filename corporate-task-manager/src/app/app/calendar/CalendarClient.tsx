@@ -11,7 +11,8 @@ import {
   X, 
   AlertCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -24,21 +25,26 @@ type CalendarEvent = {
   description: string | null;
   bookedById: string;
   bookedBy: { name: string; initials: string; email: string };
+  participants?: { id: string; name: string; initials: string }[]; // <-- Поле участников в типе
 };
 
 interface CalendarClientProps {
   initialEvents: CalendarEvent[];
   isAdmin: boolean;
   currentUserId: string;
+  users?: { id: string; name: string; initials: string }[]; // <-- Проп списка сотрудников
 }
 
-export function CalendarClient({ initialEvents, isAdmin, currentUserId }: CalendarClientProps) {
+export function CalendarClient({ initialEvents, isAdmin, currentUserId, users = [] }: CalendarClientProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const [type, setType] = useState<"FREE" | "GC" | "BUSY">("FREE");
+
+  // Стейт выбранных участников (для встреч для штата)
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
 
   // Инициализация текущей недели
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
@@ -82,7 +88,6 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     });
   };
 
-  // ⚡ УЛУЧШЕНО: Ограничиваем время отображения строго с 8:00 до 20:00 (13 часов)
   const hours = Array.from({ length: 13 }, (_, i) => 8 + i);
   const cellHeight = 64; 
 
@@ -95,7 +100,6 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     const startHour = formData.get("startTime") as string;
     const endHour = formData.get("endTime") as string;
 
-    // Передаем дату с явным указанием зоны UTC (.000Z), убирая часовые сдвиги
     const startTimeISO = `${date}T${startHour}:00.000Z`;
     const endTimeISO = `${date}T${endHour}:00.000Z`;
 
@@ -105,12 +109,14 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
       endTime: endTimeISO,
       type,
       description: formData.get("description") as string,
+      participantIds: selectedParticipants, // <-- Передаем участников в Action
     };
 
     startTransition(async () => {
       try {
         await createCalendarEvent(input);
         setIsOpen(false);
+        setSelectedParticipants([]); // Очищаем выбор
         router.refresh();
       } catch (err: any) {
         setError(err.message || "Ошибка бронирования");
@@ -132,6 +138,12 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     });
   };
 
+  const toggleParticipant = (userId: string) => {
+    setSelectedParticipants((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
   const todayStr = new Date().toISOString().split("T")[0];
 
   return (
@@ -144,7 +156,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
         </div>
 
         <button
-          onClick={() => { setError(null); setIsOpen(true); }}
+          onClick={() => { setError(null); setSelectedParticipants([]); setIsOpen(true); }}
           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full md:w-auto cursor-pointer"
         >
           <Plus className="h-4 w-4" />
@@ -233,7 +245,6 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 const start = new Date(event.startTime);
                 const end = new Date(event.endTime);
                 
-                // ИСПОЛЬЗУЕМ UTC-ВРЕМЯ ДЛЯ РАСЧЕТА СЕТКИ
                 const startMins = start.getUTCHours() * 60 + start.getUTCMinutes();
                 const gridStartMins = 8 * 60;
                 
@@ -362,7 +373,6 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                       const start = new Date(event.startTime);
                       const end = new Date(event.endTime);
                       
-                      // ИСПОЛЬЗУЕМ UTC-ВРЕМЯ ДЛЯ РАСЧЕТА СЕТКИ ДЕСКТОПА
                       const startMins = start.getUTCHours() * 60 + start.getUTCMinutes();
                       const gridStartMins = 8 * 60;
                       
@@ -427,6 +437,21 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                               <span className="truncate max-w-[80px]">👤 {event.bookedBy.name.split(" ")[0]}</span>
                             )}
                           </div>
+
+                          {/* ⚡ НОВОЕ: Отрисовка кругляшков приглашенных сотрудников внутри встречи */}
+                          {event.participants && event.participants.length > 0 && (
+                            <div className="flex -space-x-1 overflow-hidden mt-1.5 self-start">
+                              {event.participants.map((p) => (
+                                <div
+                                  key={p.id}
+                                  className="inline-block h-5.5 w-5.5 rounded-full ring-2 ring-white bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[8px]"
+                                  title={`Приглашен принять участие: ${p.name}`}
+                                >
+                                  {p.initials}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -533,7 +558,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                     type="time"
                     name="startTime"
                     required
-                    step="600" // <-- УСТАНОВЛЕН ШАГ 10 МИНУТ (600 секунд) по требованию заказчика
+                    step="600" // Шаг 10 минут
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>
@@ -543,11 +568,42 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                     type="time"
                     name="endTime"
                     required
-                    step="600" // <-- УСТАНОВЛЕН ШАГ 10 МИНУТ (600 секунд) по требованию заказчика
+                    step="600" // Шаг 10 минут
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>
               </div>
+
+              {/* ⚡ НОВОЕ: Множественный выбор сотрудников для совещания (ВСТРЕЧА ДЛЯ ШТАТА) */}
+              {type === "FREE" && users.length > 0 && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                    <Users className="h-4 w-4 text-blue-500" /> Пригласить сотрудников (Встреча для штата)
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 border rounded-lg bg-slate-50">
+                    {users.map((u) => {
+                      const isSelected = selectedParticipants.includes(u.id);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => toggleParticipant(u.id)}
+                          className={`px-2 py-1 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                              : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          {u.name.split(" ")[0]} {u.name.split(" ")[1]?.[0] || ""}.
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[9px] text-slate-400 leading-normal">
+                    * Выбранные сотрудники автоматически получат системное уведомление-задачу и email-приглашение.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Комментарий (Опционально)</label>

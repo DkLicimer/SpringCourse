@@ -3,7 +3,7 @@
 
 import React, { useState, useTransition } from "react";
 import { createEmployee, deleteEmployee, updateEmployee } from "@/server/actions/users";
-import { UserPlus, Shield, X, Search, Trash2, Pencil, CalendarRange, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Shield, X, Search, Trash2, Pencil, CalendarRange, Eye, EyeOff, Briefcase } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type TableAccess = {
@@ -18,6 +18,7 @@ type UserWithAccess = {
   email: string;
   initials: string;
   role: string;
+  department?: string | null; // <-- Добавлено подразделение сотрудника
   reportingPeriodType?: string;
   periodStartDate?: string | null;
   periodEndDate?: string | null;
@@ -43,6 +44,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   const [periodStartDate, setPeriodStartDate] = useState("");
   const [periodEndDate, setPeriodEndDate] = useState("");
 
+  // Стейт для подразделения сотрудника
+  const [department, setDepartment] = useState("");
+
   // Стейты для ручных инициалов
   const [initials, setInitials] = useState("");
 
@@ -63,7 +67,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   const filteredUsers = initialUsers.filter(
     (u) =>
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const openCreateModal = () => {
@@ -72,6 +77,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setPeriodStartDate("");
     setPeriodEndDate("");
     setInitials("");
+    setDepartment(""); // Сбрасываем подразделение
     setShowPassword(false);
     setAccess({
       canReadSocial: false,
@@ -92,6 +98,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setPeriodStartDate(user.periodStartDate ? user.periodStartDate.split("T")[0] : "");
     setPeriodEndDate(user.periodEndDate ? user.periodEndDate.split("T")[0] : "");
     setInitials(user.initials || "");
+    setDepartment(user.department || ""); // Заполняем подразделение
     setShowPassword(false);
 
     const social = user.tableAccesses.find(a => a.tableName === "social_passport");
@@ -126,11 +133,12 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     formData.append("canReadPost", String(access.canReadPost));
     formData.append("canWritePost", String(access.canWritePost));
 
-    // Передаем отчетные периоды и ручные инициалы в Server Actions
+    // Передаем отчетные периоды, ручные инициалы и подразделение
     formData.append("reportingPeriodType", reportingPeriodType);
     formData.append("periodStartDate", periodStartDate);
     formData.append("periodEndDate", periodEndDate);
     formData.append("initials", initials);
+    formData.append("department", department); // <-- Передаем подразделение в action
 
     startTransition(async () => {
       try {
@@ -176,7 +184,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Поиск по ФИО или Email..."
+            placeholder="Поиск по ФИО, подразделению или Email..."
             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -222,6 +230,13 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       <div>
                         <div className="text-sm font-medium text-slate-900">{user.name}</div>
                         <div className="text-xs text-slate-500">{user.email}</div>
+                        {/* 🏢 Вывод подразделения в строке сотрудника */}
+                        {user.department && (
+                          <div className="text-[10px] text-blue-600 font-extrabold uppercase mt-1 tracking-wider flex items-center gap-0.5">
+                            <Briefcase className="h-3 w-3 text-blue-500" />
+                            {user.department}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -301,6 +316,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     <div>
                       <div className="text-sm font-bold text-slate-900 leading-snug">{user.name}</div>
                       <div className="text-[10px] text-slate-500 leading-none">{user.email}</div>
+                      {user.department && <div className="text-[10px] text-blue-600 font-bold mt-1 uppercase">🏢 {user.department}</div>}
                     </div>
                   </div>
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
@@ -354,7 +370,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         )}
       </div>
 
-      {/* Модальное окно создания/редактирования */}
+      {/* Модальное окно */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
@@ -367,7 +383,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4" autoComplete="off">
               {error && (
                 <div className="rounded-lg bg-red-50 p-4 text-xs text-red-600 border border-red-100">
                   {error}
@@ -387,7 +403,6 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                     />
                   </div>
-                  {/* ⚡ НОВОЕ: Ввод ручных Инициалов сотрудника */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Инициалы</label>
                     <input
@@ -400,6 +415,19 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800 uppercase text-center"
                     />
                   </div>
+                </div>
+
+                {/* 🏢 НОВОЕ: Текстовое поле ввода подразделения/отдела */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Подразделение (Отдел)</label>
+                  <input
+                    type="text"
+                    name="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    placeholder="Например, IT-отдел, Отдел маркетинга..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
                 </div>
 
                 <div>
@@ -443,7 +471,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                 </div>
               </div>
 
-              {/* Настройка отчетного периода с эластичной адаптивной сеткой */}
+              {/* Настройка отчетного периода */}
               <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-3">
                 <div className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1">
                   <CalendarRange className="h-4 w-4 text-blue-600 animate-pulse" /> Настройка отчетного периода для KPI

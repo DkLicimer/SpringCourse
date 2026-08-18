@@ -18,7 +18,9 @@ interface CreateTaskInput {
   assigneeIds: string[];
   isPriority: boolean;
   isRecurring?: boolean; 
-  stepInstructions?: string[]; // Инструкции для этапов (индекс совпадает с assigneeIds)
+  isPerspective?: boolean; // Задача на перспективу
+  reminderDate?: string;    // Дата напоминания
+  stepInstructions?: string[]; 
 }
 
 export async function createGoal(title: string, color: string) {
@@ -59,6 +61,8 @@ export async function createTask(input: CreateTaskInput) {
     assigneeIds,
     isPriority,
     isRecurring,
+    isPerspective,
+    reminderDate,
     stepInstructions,
   } = input;
 
@@ -89,6 +93,8 @@ export async function createTask(input: CreateTaskInput) {
         assignmentType,
         isPriority,
         isRecurring: isRecurring || false,
+        isPerspective: isPerspective || false,
+        reminderDate: reminderDate ? new Date(reminderDate) : null,
         goalId,
         createdById: session.user.id,
       },
@@ -118,27 +124,30 @@ export async function createTask(input: CreateTaskInput) {
     return newTask;
   });
 
-  try {
-    for (let index = 0; index < assigneeIds.length; index++) {
-      const userId = assigneeIds[index];
-      const isBlocked = assignmentType === "SEQUENTIAL" && index > 0;
+  // Отправляем уведомления только если задача активна (не отложена на перспективу)
+  if (!isPerspective) {
+    try {
+      for (let index = 0; index < assigneeIds.length; index++) {
+        const userId = assigneeIds[index];
+        const isBlocked = assignmentType === "SEQUENTIAL" && index > 0;
 
-      if (!isBlocked) {
-        await createNotification(
-          userId,
-          `Вам назначена новая задача: "${title}". Она уже доступна для выполнения.`,
-          `/app/tasks?taskId=${task.id}`
-        );
-      } else {
-        await createNotification(
-          userId,
-          `Вы добавлены в последовательную цепочку по задаче "${title}" (задача временно заблокирована до вашей очереди).`,
-          `/app/tasks?taskId=${task.id}`
-        );
+        if (!isBlocked) {
+          await createNotification(
+            userId,
+            `Вам назначена новая задача: "${title}". Она уже доступна для выполнения.`,
+            `/app/tasks?taskId=${task.id}`
+          );
+        } else {
+          await createNotification(
+            userId,
+            `Вы добавлены в последовательную цепочку по задаче "${title}" (задача временно заблокирована до вашей очереди).`,
+            `/app/tasks?taskId=${task.id}`
+          );
+        }
       }
+    } catch (err) {
+      console.error("Не удалось разослать уведомления о новой задаче:", err);
     }
-  } catch (err) {
-    console.error("Не удалось разослать уведомления о новой задаче:", err);
   }
 
   revalidatePath("/app/tasks");
@@ -431,6 +440,8 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     assignmentType,
     isPriority,
     isRecurring,
+    isPerspective,
+    reminderDate,
     goalId,
     assigneeIds,
     stepInstructions,
@@ -464,6 +475,8 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         assignmentType,
         isPriority,
         isRecurring: isRecurring || false,
+        isPerspective: isPerspective || false,
+        reminderDate: reminderDate ? new Date(reminderDate) : null,
         goalId,
       },
     });
@@ -500,7 +513,6 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
 // ⚡ ЗАПРОСЫ НА ПРОДЛЕНИЕ, ДУБЛИРОВАНИЕ И УДАЛЕНИЕ ЗАДАЧ
 // =========================================================================
 
-// НОВОЕ: Полное удаление задачи руководителем
 export async function deleteTask(taskId: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -694,6 +706,8 @@ export async function duplicateTask(taskId: string, newDeadline?: string) {
         assignmentType: originalTask.assignmentType,
         isPriority: originalTask.isPriority,
         isRecurring: originalTask.isRecurring,
+        isPerspective: originalTask.isPerspective,
+        reminderDate: originalTask.reminderDate,
         goalId: originalTask.goalId,
         createdById: session.user.id,
       },
@@ -731,4 +745,37 @@ export async function duplicateTask(taskId: string, newDeadline?: string) {
 
   revalidatePath("/app/tasks");
   return duplicatedTask;
+}
+
+export async function activateTask(taskId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  const task = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      isPerspective: false,
+      reminderDate: null,
+    },
+    include: {
+      assignments: true,
+    },
+  });
+
+  try {
+    for (const as of task.assignments) {
+      await createNotification(
+        as.userId,
+        `Задача на перспективу "${task.title}" активирована руководителем и доступна для выполнения!`,
+        `/app/tasks?taskId=${task.id}`
+      );
+    }
+  } catch (err) {
+    console.error("Не удалось отправить уведомления при активации задачи:", err);
+  }
+
+  revalidatePath("/app/tasks");
+  return task;
 }

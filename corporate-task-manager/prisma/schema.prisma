@@ -29,6 +29,7 @@ model User {
   role                Role               @default(EMPLOYEE)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
+  department          String?            // <-- НОВОЕ: Подразделение сотрудника
 
   // Индивидуальный отчетный период сотрудника
   reportingPeriodType String             @default("MONTH") // MONTH, QUARTER, CUSTOM
@@ -42,6 +43,9 @@ model User {
   bookedEvents        CalendarEvent[]    @relation("BookedBy")
   tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
   extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
+
+  // Участие во встречах (многие-ко-многим)
+  participatingEvents CalendarEvent[]    @relation("EventParticipants") // <-- НОВОЕ: Связь участников встреч
 
   // Авторство в контент-плане
   contentPlans        ContentPlan[]
@@ -168,15 +172,16 @@ model Contact {
 
 // Table 1: Контент-план
 model ContentPlan {
-  id          String   @id @default(uuid())
-  topic       String   // Тема публикации
-  platform    String   // Площадка (VK, TG и т.д.)
-  publishDate DateTime
-  status      String   // Статус публикации (Черновик, Опубликовано)
-  authorId    String?
-  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  notes       String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  topic         String   // Тема публикации
+  platform      String   // Площадка (VK, TG и т.д.)
+  publishDate   DateTime
+  status        String   // Статус публикации (Черновик, Опубликовано)
+  authorId      String?
+  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  notes         String?
+  mediaMaterial String?  // <-- НОВОЕ: Медиаматериал публикации
+  createdAt     DateTime @default(now())
 }
 
 // Table 2: Заявка на пост (Форма отправки данных)
@@ -255,7 +260,10 @@ model CalendarEvent {
   // Кем создано
   bookedById  String
   bookedBy    User              @relation("BookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
-  
+
+  // Приглашенные сотрудники (Встреча для штата)
+  participants User[]           @relation("EventParticipants") // <-- НОВОЕ: Связь со списком приглашенных
+
   createdAt   DateTime          @default(now())
 }
 

@@ -3,7 +3,7 @@
 
 import React, { useState, useTransition } from "react";
 import { createContentPlanRow, deleteContentPlanRow } from "@/server/actions/tables";
-import { Plus, Trash2, ArrowLeft, Calendar, Search, X, User } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Calendar, Search, X, User, Image } from "lucide-react";
 import Link from "next/link";
 
 type ContentPlanRow = {
@@ -13,12 +13,13 @@ type ContentPlanRow = {
   publishDate: string;
   status: string;
   notes: string | null;
+  mediaMaterial: string | null; // <-- Добавлено поле в тип
   author: { name: string; initials: string } | null;
 };
 
 interface ContentPlanClientProps {
   initialRows: ContentPlanRow[];
-  canWrite: boolean; // Изменено с isAdmin на canWrite
+  canWrite: boolean;
 }
 
 export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientProps) {
@@ -30,7 +31,8 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
     (r) =>
       r.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.status.toLowerCase().includes(searchTerm.toLowerCase())
+      r.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (r.mediaMaterial && r.mediaMaterial.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -88,7 +90,7 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
         <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Поиск по теме, площадке, статусу..."
+          placeholder="Поиск по теме, площадке, медиаматериалу..."
           className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -104,6 +106,7 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Тема публикации</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Площадка</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Статус</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Медиаматериал</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Автор / Заявитель</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Примечания</th>
               {canWrite && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>}
@@ -112,7 +115,7 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
           <tbody className="divide-y divide-slate-200 bg-white">
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={canWrite ? 7 : 6} className="px-6 py-8 text-center text-slate-400 text-sm">
+                <td colSpan={canWrite ? 8 : 7} className="px-6 py-8 text-center text-slate-400 text-sm">
                   Публикации не найдены
                 </td>
               </tr>
@@ -137,6 +140,17 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
                     }`}>
                       {row.status}
                     </span>
+                  </td>
+                  {/* ⚡ НОВОЕ: Отображение колонки Медиаматериалов */}
+                  <td className="px-6 py-4 text-slate-500 max-w-xs truncate" title={row.mediaMaterial || ""}>
+                    {row.mediaMaterial ? (
+                      <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                        <Image className="h-4 w-4 text-blue-500 shrink-0" />
+                        {row.mediaMaterial}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-slate-600">
                     {row.author ? row.author.name : "—"}
@@ -209,6 +223,12 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
                   <User className="h-3.5 w-3.5 text-slate-400" />
                   <span>Автор: <strong className="text-slate-800">{row.author ? row.author.name : "Не указан"}</strong></span>
                 </div>
+                {row.mediaMaterial && (
+                  <div className="flex items-center gap-1.5">
+                    <Image className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                    <span className="text-blue-700 font-bold truncate">Медиа: {row.mediaMaterial}</span>
+                  </div>
+                )}
               </div>
 
               {row.notes && (
@@ -269,6 +289,18 @@ export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientPr
                     </select>
                   </div>
                 </div>
+
+                {/* ⚡ НОВОЕ: Поле ввода медиаматериала (картинка, ссылки и т.д.) */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Медиаматериал (ссылки, фото)</label>
+                  <input
+                    type="text"
+                    name="mediaMaterial"
+                    placeholder="Ссылка на Яндекс.Диск, фото, видеоархив..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Дата публикации</label>
                   <input

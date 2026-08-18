@@ -35,6 +35,9 @@ export async function createEmployee(formData: FormData) {
     ? initialsRaw.trim().toUpperCase() 
     : generateInitials(name);
 
+  // Новое: Подразделение сотрудника
+  const department = formData.get("department") as string || null;
+
   // Отчетный период сотрудника
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
@@ -73,8 +76,9 @@ export async function createEmployee(formData: FormData) {
         email,
         name,
         passwordHash,
-        initials, // <-- Применяем наши инициалы (авто или ручные)
+        initials,
         role: "EMPLOYEE",
+        department, // <-- Сохраняем подразделение в БД
         reportingPeriodType,
         periodStartDate,
         periodEndDate,
@@ -132,6 +136,9 @@ export async function updateEmployee(userId: string, formData: FormData) {
   // Ручные инициалы при обновлении
   const initialsRaw = formData.get("initials") as string;
 
+  // Новое: Подразделение сотрудника при обновлении
+  const department = formData.get("department") as string || null;
+
   // Отчетный период сотрудника
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
@@ -157,6 +164,7 @@ export async function updateEmployee(userId: string, formData: FormData) {
     const updateData: any = { 
       name, 
       email,
+      department, // <-- Обновляем подразделение в БД
       reportingPeriodType,
       periodStartDate,
       periodEndDate,
