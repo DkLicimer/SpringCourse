@@ -94,7 +94,7 @@ export function TeambuildingClient({ initialRows, canWrite }: TeambuildingClient
       {/* ========================================================================= */}
       {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
       {/* ========================================================================= */}
-      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>

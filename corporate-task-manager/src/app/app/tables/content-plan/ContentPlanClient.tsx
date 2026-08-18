@@ -18,10 +18,10 @@ type ContentPlanRow = {
 
 interface ContentPlanClientProps {
   initialRows: ContentPlanRow[];
-  isAdmin: boolean;
+  canWrite: boolean; // Изменено с isAdmin на canWrite
 }
 
-export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientProps) {
+export function ContentPlanClient({ initialRows, canWrite }: ContentPlanClientProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -72,7 +72,7 @@ export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientPro
           <p className="text-slate-500 text-sm">График выхода материалов по всем площадкам организации</p>
         </div>
 
-        {isAdmin && (
+        {canWrite && (
           <button
             onClick={() => setIsOpen(true)}
             className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto cursor-pointer"
@@ -95,10 +95,8 @@ export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientPro
         />
       </div>
 
-      {/* ========================================================================= */}
-      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
-      {/* ========================================================================= */}
-      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -108,13 +106,13 @@ export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientPro
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Статус</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Автор / Заявитель</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Примечания</th>
-              {isAdmin && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>}
+              {canWrite && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="px-6 py-8 text-center text-slate-400 text-sm">
+                <td colSpan={canWrite ? 7 : 6} className="px-6 py-8 text-center text-slate-400 text-sm">
                   Публикации не найдены
                 </td>
               </tr>
@@ -146,7 +144,7 @@ export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientPro
                   <td className="px-6 py-4 text-slate-500 max-w-xs truncate" title={row.notes || ""}>
                     {row.notes || "—"}
                   </td>
-                  {isAdmin && (
+                  {canWrite && (
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDelete(row.id, row.topic)}
@@ -165,9 +163,7 @@ export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientPro
         </table>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
-      {/* ========================================================================= */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ */}
       <div className="block md:hidden space-y-4">
         {filteredRows.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
@@ -184,7 +180,7 @@ export function ContentPlanClient({ initialRows, isAdmin }: ContentPlanClientPro
                     Выход: {new Date(row.publishDate).toLocaleDateString("ru-RU")}
                   </div>
                 </div>
-                {isAdmin && (
+                {canWrite && (
                   <button
                     onClick={() => handleDelete(row.id, row.topic)}
                     disabled={isPending}

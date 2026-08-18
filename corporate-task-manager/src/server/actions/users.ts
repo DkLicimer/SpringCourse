@@ -29,6 +29,12 @@ export async function createEmployee(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   
+  // Ручные инициалы
+  const initialsRaw = formData.get("initials") as string;
+  const initials = initialsRaw && initialsRaw.trim().length > 0 
+    ? initialsRaw.trim().toUpperCase() 
+    : generateInitials(name);
+
   // Отчетный период сотрудника
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
@@ -60,7 +66,6 @@ export async function createEmployee(formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const initials = generateInitials(name);
 
   await prisma.$transaction(async (tx) => {
     const newUser = await tx.user.create({
@@ -68,7 +73,7 @@ export async function createEmployee(formData: FormData) {
         email,
         name,
         passwordHash,
-        initials,
+        initials, // <-- Применяем наши инициалы (авто или ручные)
         role: "EMPLOYEE",
         reportingPeriodType,
         periodStartDate,
@@ -124,6 +129,9 @@ export async function updateEmployee(userId: string, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   
+  // Ручные инициалы при обновлении
+  const initialsRaw = formData.get("initials") as string;
+
   // Отчетный период сотрудника
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
@@ -154,6 +162,13 @@ export async function updateEmployee(userId: string, formData: FormData) {
       periodEndDate,
     };
     
+    // Если инициалы были введены, обновляем их
+    if (initialsRaw && initialsRaw.trim().length > 0) {
+      updateData.initials = initialsRaw.trim().toUpperCase();
+    } else {
+      updateData.initials = generateInitials(name);
+    }
+
     if (password && password.trim().length > 0) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }

@@ -84,6 +84,10 @@ model Task {
   isPriority          Boolean            @default(false) // Приоритетная задача (Срочно)
   isRecurring         Boolean            @default(false) // Метка регулярной задачи
   
+  // Новые поля для задач на перспективу
+  isPerspective       Boolean            @default(false) // Отложенная задача (На перспективу)
+  reminderDate        DateTime?          // Дата напоминания о задаче
+
   goalId              String
   goal                Goal               @relation(fields: [goalId], references: [id], onDelete: Cascade)
   
@@ -100,23 +104,24 @@ model Task {
 
 // Промежуточная таблица назначений (для поддержки параллельных и последовательных задач)
 model TaskAssignment {
-  id            String      @id @default(uuid())
-  taskId        String
-  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id              String      @id @default(uuid())
+  taskId          String
+  task            Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  statusId      String
-  status        TaskStatus  @relation(fields: [statusId], references: [id])
+  statusId        String
+  status          TaskStatus  @relation(fields: [statusId], references: [id])
   
   // Для последовательных задач:
-  sequenceOrder Int         @default(0)     // Порядковый номер в цепочке (0, 1, 2...)
-  isBlocked     Boolean     @default(false) // Заблокирована ли задача, пока не выполнит предыдущий в цепочке
+  sequenceOrder   Int         @default(0)     // Порядковый номер в цепочке (0, 1, 2...)
+  isBlocked       Boolean     @default(false) // Заблокирована ли задача, пока не выполнит предыдущий в цепочке
+  stepInstruction String?     // Индивидуальное указание/задание для конкретного этапа
   
-  completedAt   DateTime?   // Заполняется автоматически при переходе в статус "Исполнено"
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  completedAt     DateTime?   // Заполняется автоматически при переходе в статус "Исполнено"
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@unique([taskId, userId]) // Один пользователь назначен на задачу один раз
 }
@@ -161,7 +166,7 @@ model Contact {
   createdAt    DateTime @default(now())
 }
 
-// Таблица 1: Контент-план
+// Table 1: Контент-план
 model ContentPlan {
   id          String   @id @default(uuid())
   topic       String   // Тема публикации
@@ -174,7 +179,7 @@ model ContentPlan {
   createdAt   DateTime @default(now())
 }
 
-// Таблица 2: Заявка на пост (Форма отправки данных)
+// Table 2: Заявка на пост (Форма отправки данных)
 model PostRequest {
   id            String   @id @default(uuid())
   topic         String
@@ -187,7 +192,7 @@ model PostRequest {
   createdAt     DateTime @default(now())
 }
 
-// Таблица 3: Соц паспорт
+// Table 3: Соц паспорт
 model SocialPassport {
   id         String   @id @default(uuid())
   department String
@@ -197,7 +202,7 @@ model SocialPassport {
   createdAt  DateTime @default(now())
 }
 
-// Таблица 4: Командообразование
+// Table 4: Командообразование
 model Teambuilding {
   id               String   @id @default(uuid())
   eventName        String
@@ -218,6 +223,15 @@ model TableAccess {
   canWrite  Boolean  @default(false)
 
   @@unique([userId, tableName])
+}
+
+// Новая таблица: ИНФОпространство (три колонки: фио сотрудника, эл. адрес, примечание)
+model InfoSpace {
+  id        String   @id @default(uuid())
+  fullName  String   // ФИО сотрудника
+  email     String   // Электронный адрес
+  notes     String?  // Примечание
+  createdAt DateTime @default(now())
 }
 
 // ==========================================

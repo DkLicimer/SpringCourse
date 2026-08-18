@@ -1,5 +1,6 @@
 // prisma.config.ts
 import { defineConfig } from "prisma/config";
+import "dotenv/config"; // Импортируем загрузчик переменных из .env
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -8,6 +9,7 @@ export default defineConfig({
     seed: "node prisma/seed.js",
   },
   datasource: {
-    url: "postgresql://postgres:mysecretpassword@127.0.0.1:5433/task_manager_db?schema=public",
+    // Теперь Prisma берет адрес и сложный пароль прямо из вашего файла .env
+    url: process.env.DATABASE_URL,
   },
 });

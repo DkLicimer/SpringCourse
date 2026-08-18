@@ -12,6 +12,25 @@ export default async function ContentPlanPage() {
     redirect("/login");
   }
 
+  const isAdmin = session.user.role === "ADMIN";
+
+  // Считываем индивидуальные права доступа сотрудника к таблице контент-плана
+  const access = await prisma.tableAccess.findUnique({
+    where: {
+      userId_tableName: {
+        userId: session.user.id,
+        tableName: "content_plan",
+      },
+    },
+  });
+
+  const canRead = isAdmin || (access?.canRead ?? false);
+  const canWrite = isAdmin || (access?.canWrite ?? false);
+
+  if (!canRead) {
+    redirect("/app/tables"); // Перенаправляем, если нет доступа на чтение
+  }
+
   // Загружаем контент-план вместе с авторами
   const planRows = await prisma.contentPlan.findMany({
     orderBy: { publishDate: "asc" },
@@ -22,13 +41,11 @@ export default async function ContentPlanPage() {
     },
   });
 
-  const isAdmin = session.user.role === "ADMIN";
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <ContentPlanClient
         initialRows={JSON.parse(JSON.stringify(planRows))}
-        isAdmin={isAdmin}
+        canWrite={canWrite} // Пробрасываем права записи на клиент
       />
     </div>
   );

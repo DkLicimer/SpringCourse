@@ -17,7 +17,8 @@ interface CreateTaskInput {
   goalId: string;
   assigneeIds: string[];
   isPriority: boolean;
-  isRecurring?: boolean; // Добавлено поле регулярности
+  isRecurring?: boolean; 
+  stepInstructions?: string[]; // Инструкции для этапов (индекс совпадает с assigneeIds)
 }
 
 export async function createGoal(title: string, color: string) {
@@ -58,10 +59,23 @@ export async function createTask(input: CreateTaskInput) {
     assigneeIds,
     isPriority,
     isRecurring,
+    stepInstructions,
   } = input;
 
   if (!title || !goalId || assigneeIds.length === 0) {
     throw new Error("Заполните обязательные поля и выберите исполнителей");
+  }
+
+  // ВАЛИДАЦИЯ ДЕДЛАЙНА НА СТОРОНЕ СЕРВЕРА
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  if (deadline) {
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(23, 59, 59, 999);
+    if (deadlineDate < startOfToday) {
+      throw new Error("Дедлайн задачи не может быть в прошлом");
+    }
   }
 
   const task = await prisma.$transaction(async (tx) => {
@@ -93,6 +107,7 @@ export async function createTask(input: CreateTaskInput) {
         statusId: "status-todo",
         sequenceOrder: assignmentType === "SEQUENTIAL" ? index : 0,
         isBlocked,
+        stepInstruction: stepInstructions ? stepInstructions[index] || null : null,
       };
     });
 
@@ -418,10 +433,23 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     isRecurring,
     goalId,
     assigneeIds,
+    stepInstructions,
   } = input;
 
   if (!title || !goalId || assigneeIds.length === 0) {
     throw new Error("Заполните обязательные поля и выберите исполнителей");
+  }
+
+  // ВАЛИДАЦИЯ ДЕДЛАЙНА НА СТОРОНЕ СЕРВЕРА
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  if (deadline) {
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(23, 59, 59, 999);
+    if (deadlineDate < startOfToday) {
+      throw new Error("Дедлайн задачи не может быть в прошлом");
+    }
   }
 
   await prisma.$transaction(async (tx) => {
@@ -456,6 +484,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         statusId: "status-todo",
         sequenceOrder: assignmentType === "SEQUENTIAL" ? index : 0,
         isBlocked,
+        stepInstruction: stepInstructions ? stepInstructions[index] || null : null,
       };
     });
 
@@ -468,10 +497,23 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
 }
 
 // =========================================================================
-// ⚡ НОВЫЕ ФУНКЦИИ: ЗАПРОСЫ НА ПРОДЛЕНИЕ И ДУБЛИРОВАНИЕ ЗАДАЧ
+// ⚡ ЗАПРОСЫ НА ПРОДЛЕНИЕ, ДУБЛИРОВАНИЕ И УДАЛЕНИЕ ЗАДАЧ
 // =========================================================================
 
-// Отправка сотрудником запроса на продление срока дедлайна
+// НОВОЕ: Полное удаление задачи руководителем
+export async function deleteTask(taskId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  await prisma.task.delete({
+    where: { id: taskId },
+  });
+
+  revalidatePath("/app/tasks");
+}
+
 export async function requestExtension(taskId: string, reason?: string) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -492,7 +534,6 @@ export async function requestExtension(taskId: string, reason?: string) {
     throw new Error("Вы не назначены на выполнение этой задачи");
   }
 
-  // Защита от дублей ожидающих (PENDING) запросов
   const existingRequest = await prisma.extensionRequest.findFirst({
     where: {
       taskId,
@@ -514,7 +555,6 @@ export async function requestExtension(taskId: string, reason?: string) {
     },
   });
 
-  // Уведомление руководителя
   try {
     const admins = await prisma.user.findMany({
       where: { role: "ADMIN" },
@@ -536,7 +576,6 @@ export async function requestExtension(taskId: string, reason?: string) {
   return request;
 }
 
-// Одобрение запроса руководителем (установка нового срока)
 export async function approveExtension(requestId: string, newDeadline: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -557,20 +596,17 @@ export async function approveExtension(requestId: string, newDeadline: string) {
   }
 
   await prisma.$transaction(async (tx) => {
-    // 1. Одобряем статус запроса
     await tx.extensionRequest.update({
       where: { id: requestId },
       data: { status: "APPROVED" },
     });
 
-    // 2. Сдвигаем дедлайн по задаче
     await tx.task.update({
       where: { id: request.taskId },
       data: { deadline: new Date(newDeadline) },
     });
   });
 
-  // Уведомление сотрудника
   try {
     await createNotification(
       request.userId,
@@ -584,7 +620,6 @@ export async function approveExtension(requestId: string, newDeadline: string) {
   revalidatePath("/app/tasks");
 }
 
-// Отклонение запроса на перенос
 export async function rejectExtension(requestId: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -605,7 +640,6 @@ export async function rejectExtension(requestId: string) {
     data: { status: "REJECTED" },
   });
 
-  // Уведомление сотрудника
   try {
     await createNotification(
       request.userId,
@@ -619,7 +653,6 @@ export async function rejectExtension(requestId: string) {
   revalidatePath("/app/tasks");
 }
 
-// Получить список всех запросов для руководителя
 export async function getExtensionRequests() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -635,7 +668,6 @@ export async function getExtensionRequests() {
   });
 }
 
-// Быстрое дублирование/повтор задачи руководителем на новый срок
 export async function duplicateTask(taskId: string, newDeadline?: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -674,6 +706,7 @@ export async function duplicateTask(taskId: string, newDeadline?: string) {
         statusId: "status-todo",
         sequenceOrder: as.sequenceOrder,
         isBlocked: as.isBlocked,
+        stepInstruction: as.stepInstruction,
       };
     });
 
@@ -684,7 +717,6 @@ export async function duplicateTask(taskId: string, newDeadline?: string) {
     return newTask;
   });
 
-  // Уведомление исполнителей о запуске новой задачи
   try {
     for (const as of originalTask.assignments) {
       await createNotification(

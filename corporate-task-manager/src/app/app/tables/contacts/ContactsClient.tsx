@@ -104,10 +104,9 @@ export function ContactsClient({ initialContacts, isAdmin }: ContactsClientProps
       </div>
 
       {/* ========================================================================= */}
-      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ С ПРОКРУТКОЙ */}
       {/* ========================================================================= */}
-      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200">
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">        <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">ФИО</th>

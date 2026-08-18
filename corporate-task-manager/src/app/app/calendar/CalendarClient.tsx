@@ -38,7 +38,6 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Стейт выбора режима (по умолчанию "FREE" — Свободное время)
   const [type, setType] = useState<"FREE" | "GC" | "BUSY">("FREE");
 
   // Инициализация текущей недели
@@ -51,14 +50,12 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     return monday;
   });
 
-  // Получаем массив из 7 дней выбранной недели
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(currentWeekStart);
     d.setDate(currentWeekStart.getDate() + i);
     return d;
   });
 
-  // Состояние выбранного дня для мобильной версии
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(() => {
     const today = new Date().getDay();
     return today === 0 ? 6 : today - 1;
@@ -85,8 +82,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     });
   };
 
-  const hours = Array.from({ length: 14 }, (_, i) => 8 + i);
-  const cellHeight = 64; // Высота ячейки 1 часа
+  // ⚡ УЛУЧШЕНО: Ограничиваем время отображения строго с 8:00 до 20:00 (13 часов)
+  const hours = Array.from({ length: 13 }, (_, i) => 8 + i);
+  const cellHeight = 64; 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -97,8 +95,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
     const startHour = formData.get("startTime") as string;
     const endHour = formData.get("endTime") as string;
 
-    const startTimeISO = `${date}T${startHour}:00`;
-    const endTimeISO = `${date}T${endHour}:00`;
+    // Передаем дату с явным указанием зоны UTC (.000Z), убирая часовые сдвиги
+    const startTimeISO = `${date}T${startHour}:00.000Z`;
+    const endTimeISO = `${date}T${endHour}:00.000Z`;
 
     const input = {
       title: formData.get("title") as string,
@@ -145,7 +144,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
         </div>
 
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => { setError(null); setIsOpen(true); }}
           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm w-full md:w-auto cursor-pointer"
         >
           <Plus className="h-4 w-4" />
@@ -234,7 +233,8 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 const start = new Date(event.startTime);
                 const end = new Date(event.endTime);
                 
-                const startMins = start.getHours() * 60 + start.getMinutes();
+                // ИСПОЛЬЗУЕМ UTC-ВРЕМЯ ДЛЯ РАСЧЕТА СЕТКИ
+                const startMins = start.getUTCHours() * 60 + start.getUTCMinutes();
                 const gridStartMins = 8 * 60;
                 
                 const topOffset = ((startMins - gridStartMins) / 60) * cellHeight;
@@ -245,12 +245,10 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                 const isGc = event.type === "GC";
                 const isOwner = event.bookedById === currentUserId;
 
-                // ⚡ Скрываем тему и описание для обычных сотрудников в режиме BUSY
                 const displayTitle = (isBusy && !isAdmin) ? "Занято" : event.title;
                 const displayDescription = (isBusy && !isAdmin) ? null : event.description;
                 const showBookedBy = !isBusy || isAdmin;
 
-                // Цветовое оформление рамки и фона
                 let bgBorderClass = "bg-emerald-500/10 border-emerald-500 text-emerald-950";
                 if (isBusy) {
                   bgBorderClass = "bg-red-500/10 border-red-500 text-red-700 font-bold";
@@ -292,9 +290,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                     <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mt-1">
                       <span className="flex items-center gap-0.5 text-slate-500">
                         <Clock className="h-2.5 w-2.5" />
-                        {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                        {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
                         {"-"}
-                        {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                        {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
                       </span>
                       {showBookedBy && (
                         <span className="truncate max-w-[80px]">👤 {event.bookedBy.name.split(" ")[0]}</span>
@@ -307,7 +305,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
         </div>
 
         {/* ========================================================================= */}
-        {/* ДЕСКТОПНАЯ ВЕРСИЯ (СЕМЬ КОЛОНОК) */}
+        {/* ДЕСКТОПНАЯ ВЕРСИЯ */}
         {/* ========================================================================= */}
         <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[850px] relative flex flex-col">
@@ -364,7 +362,8 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                       const start = new Date(event.startTime);
                       const end = new Date(event.endTime);
                       
-                      const startMins = start.getHours() * 60 + start.getMinutes();
+                      // ИСПОЛЬЗУЕМ UTC-ВРЕМЯ ДЛЯ РАСЧЕТА СЕТКИ ДЕСКТОПА
+                      const startMins = start.getUTCHours() * 60 + start.getUTCMinutes();
                       const gridStartMins = 8 * 60;
                       
                       const topOffset = ((startMins - gridStartMins) / 60) * cellHeight;
@@ -375,12 +374,10 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                       const isGc = event.type === "GC";
                       const isOwner = event.bookedById === currentUserId;
 
-                      // ⚡ Скрываем тему и описание для обычных сотрудников в режиме BUSY
                       const displayTitle = (isBusy && !isAdmin) ? "Занято" : event.title;
                       const displayDescription = (isBusy && !isAdmin) ? null : event.description;
                       const showBookedBy = !isBusy || isAdmin;
 
-                      // Цветовое оформление рамки и фона
                       let bgBorderClass = "bg-emerald-500/10 border-emerald-500 text-emerald-950";
                       if (isBusy) {
                         bgBorderClass = "bg-red-500/10 border-red-500 text-red-700 font-bold";
@@ -422,9 +419,9 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                           <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mt-1">
                             <span className="flex items-center gap-0.5 text-slate-500">
                               <Clock className="h-2.5 w-2.5" />
-                              {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                              {start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
                               {"-"}
-                              {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                              {end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
                             </span>
                             {showBookedBy && (
                               <span className="truncate max-w-[80px]">👤 {event.bookedBy.name.split(" ")[0]}</span>
@@ -451,14 +448,19 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              
+              {/* Предупреждение о наложении */}
               {error && (
-                <div className="rounded-lg bg-red-50 p-4 text-xs text-red-600 border border-red-100 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <div>{error}</div>
+                <div className="rounded-xl bg-rose-50 p-4 text-xs text-rose-800 border border-rose-200 flex items-start gap-3 animate-pulse">
+                  <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <strong className="font-extrabold text-rose-950 block text-[10px] uppercase tracking-wider">Ошибка наложения времени!</strong>
+                    <p className="leading-relaxed font-medium">{error}</p>
+                  </div>
                 </div>
               )}
 
-              {/* ⚡ ВЫБОР 3-Х РЕЖИМОВ ДЛЯ РУКОВОДИТЕЛЯ */}
+              {/* ВЫБОР 3-Х РЕЖИМОВ ДЛЯ РУКОВОДИТЕЛЯ */}
               {isAdmin && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Режим события</label>
@@ -531,7 +533,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                     type="time"
                     name="startTime"
                     required
-                    step="900"
+                    step="600" // <-- УСТАНОВЛЕН ШАГ 10 МИНУТ (600 секунд) по требованию заказчика
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>
@@ -541,7 +543,7 @@ export function CalendarClient({ initialEvents, isAdmin, currentUserId }: Calend
                     type="time"
                     name="endTime"
                     required
-                    step="900"
+                    step="600" // <-- УСТАНОВЛЕН ШАГ 10 МИНУТ (600 секунд) по требованию заказчика
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>

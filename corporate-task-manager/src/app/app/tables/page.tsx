@@ -11,7 +11,8 @@ import {
   Globe, 
   Users, 
   Lock, 
-  ArrowRight 
+  ArrowRight,
+  Database
 } from "lucide-react";
 
 export default async function TablesHubPage() {
@@ -58,7 +59,7 @@ export default async function TablesHubPage() {
     },
     {
       id: "social-passport",
-      title: "Состав коллектива", // ИСПРАВЛЕНО НА УРОВНЕ ХАБА!
+      title: "Состав коллектива",
       description: "Кадровая структура, ФИО, должности и внутренние контакты сотрудников вашего ДДМа.",
       icon: <Globe className="h-8 w-8 text-teal-500" />,
       href: "/app/tables/social-passport",
@@ -71,6 +72,15 @@ export default async function TablesHubPage() {
       icon: <Users className="h-8 w-8 text-purple-500" />,
       href: "/app/tables/teambuilding",
       hasAccess: canReadTeam,
+    },
+    // ⚡ НОВОЕ: Карточка ИНФОпространства в хабе таблиц
+    {
+      id: "info-space",
+      title: "ИНФОпространство",
+      description: "Общий реестр информационных ресурсов, почтовых адресов и учетных записей компании.",
+      icon: <Database className="h-8 w-8 text-rose-500" />,
+      href: "/app/tables/info-space",
+      hasAccess: true, // Свободно доступен на чтение всем, аналогично Справочнику контактов
     },
   ];
 

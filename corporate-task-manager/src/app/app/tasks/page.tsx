@@ -11,7 +11,6 @@ interface PageProps {
   searchParams: Promise<{ page?: string; taskId?: string }>;
 }
 
-// Помощник для вычисления границ отчетного периода
 function getReportingPeriodDates(
   type: string,
   customStart: Date | null,
@@ -32,7 +31,6 @@ function getReportingPeriodDates(
     start = new Date(customStart);
     end = new Date(customEnd);
   } else {
-    // Дефолтный откат на текущий месяц
     start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   }
@@ -54,7 +52,6 @@ export default async function TasksPage(props: PageProps) {
   const taskId = searchParams.taskId;
   const isAdmin = session.user.role === "ADMIN";
 
-  // Регистрируем присутствие в чате задачи
   if (session?.user?.id) {
     if (taskId) {
       activeChats.set(session.user.id, {
@@ -66,7 +63,45 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // Загружаем отчетный период текущего сотрудника и вычисляем KPI успеваемости
+  // ⚡ НОВОЕ: Автоматическая серверная проверка дат напоминаний для отложенных задач
+  if (isAdmin) {
+    try {
+      const now = new Date();
+      const tasksWithPendingReminders = await prisma.task.findMany({
+        where: {
+          isPerspective: true,
+          reminderDate: {
+            lte: now,
+          },
+        },
+      });
+
+      for (const task of tasksWithPendingReminders) {
+        // Защита от дублей спама уведомлений
+        const existingNotification = await prisma.notification.findFirst({
+          where: {
+            userId: session.user.id,
+            text: {
+              startsWith: `Напоминание по отложенной задаче: "${task.title}"`,
+            },
+          },
+        });
+
+        if (!existingNotification) {
+          await prisma.notification.create({
+            data: {
+              userId: session.user.id,
+              text: `Напоминание по отложенной задаче: "${task.title}". Срок ожидания вышел, пора перевести её исполнителям!`,
+              link: `/app/tasks?taskId=${task.id}`,
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Ошибка при проверке дат напоминаний отложенных задач:", err);
+    }
+  }
+
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -82,8 +117,6 @@ export default async function TasksPage(props: PageProps) {
     currentUser?.periodEndDate || null
   );
 
-  // Считаем KPI сотрудника за его отчетный период
-  // Учитываем все его назначенные задачи, которые были созданы ИЛИ дедлайн которых попадает в этот период
   const periodTasks = await prisma.task.findMany({
     where: {
       OR: [
@@ -117,23 +150,19 @@ export default async function TasksPage(props: PageProps) {
     completionRate,
   };
 
-  // Загружаем все цели
   const goals = await prisma.goal.findMany({
     orderBy: { createdAt: "desc" },
   });
 
-  // Загружаем сотрудников
   const users = await prisma.user.findMany({
     where: { role: "EMPLOYEE" },
     orderBy: { name: "asc" },
   });
 
-  // Загружаем системные статусы
   const statuses = await prisma.taskStatus.findMany({
     orderBy: { position: "asc" },
   });
 
-  // Загружаем запросы на продление дедлайнов (только для руководителя)
   let extensionRequests: any[] = [];
   if (isAdmin) {
     extensionRequests = await prisma.extensionRequest.findMany({
@@ -145,7 +174,6 @@ export default async function TasksPage(props: PageProps) {
     });
   }
 
-  // Общие связи для выборки задач
   const includeRelations = {
     goal: true,
     assignments: {
@@ -165,7 +193,6 @@ export default async function TasksPage(props: PageProps) {
     },
   };
 
-  // Загружаем конкретную задачу, если передан taskId
   let taskToOpen = null;
   if (taskId) {
     taskToOpen = await prisma.task.findUnique({
@@ -174,7 +201,6 @@ export default async function TasksPage(props: PageProps) {
     });
   }
 
-  // Загружаем задачи с пагинацией и сортировкой по приоритету
   let tasks = [];
   let totalTasksCount = 0;
 

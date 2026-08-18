@@ -3,7 +3,7 @@
 
 import React, { useState, useTransition } from "react";
 import { createEmployee, deleteEmployee, updateEmployee } from "@/server/actions/users";
-import { UserPlus, Shield, X, Search, Trash2, Pencil, CalendarRange } from "lucide-react";
+import { UserPlus, Shield, X, Search, Trash2, Pencil, CalendarRange, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type TableAccess = {
@@ -43,6 +43,12 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   const [periodStartDate, setPeriodStartDate] = useState("");
   const [periodEndDate, setPeriodEndDate] = useState("");
 
+  // Стейты для ручных инициалов
+  const [initials, setInitials] = useState("");
+
+  // Стейт для показа/скрытия вводимого пароля
+  const [showPassword, setShowPassword] = useState(false);
+
   const [access, setAccess] = useState({
     canReadSocial: false,
     canWriteSocial: false,
@@ -65,6 +71,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setReportingPeriodType("MONTH");
     setPeriodStartDate("");
     setPeriodEndDate("");
+    setInitials("");
+    setShowPassword(false);
     setAccess({
       canReadSocial: false,
       canWriteSocial: false,
@@ -83,6 +91,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setReportingPeriodType(user.reportingPeriodType || "MONTH");
     setPeriodStartDate(user.periodStartDate ? user.periodStartDate.split("T")[0] : "");
     setPeriodEndDate(user.periodEndDate ? user.periodEndDate.split("T")[0] : "");
+    setInitials(user.initials || "");
+    setShowPassword(false);
 
     const social = user.tableAccesses.find(a => a.tableName === "social_passport");
     const team = user.tableAccesses.find(a => a.tableName === "teambuilding");
@@ -116,10 +126,11 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     formData.append("canReadPost", String(access.canReadPost));
     formData.append("canWritePost", String(access.canWritePost));
 
-    // Передаем отчетные периоды в Server Actions
+    // Передаем отчетные периоды и ручные инициалы в Server Actions
     formData.append("reportingPeriodType", reportingPeriodType);
     formData.append("periodStartDate", periodStartDate);
     formData.append("periodEndDate", periodEndDate);
+    formData.append("initials", initials);
 
     startTransition(async () => {
       try {
@@ -180,8 +191,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </button>
       </div>
 
-      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ */}
-      <div className="hidden lg:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* 💻 ДЕСКТОПНАЯ ВЕРСИЯ ТАБЛИЦЫ С УЛУЧШЕННОЙ ПРОКРУТКОЙ */}
+      <div className="hidden lg:block bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
         <table className="min-w-full divide-y divide-slate-200 text-xs">
           <thead className="bg-slate-50">
             <tr>
@@ -267,7 +278,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </table>
       </div>
 
-      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ */}
       <div className="block lg:hidden space-y-4">
         {filteredUsers.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
@@ -364,17 +375,33 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
               )}
 
               <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">ФИО сотрудника</label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    defaultValue={editingUser?.name || ""}
-                    placeholder="Например, Петров Петр"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="sm:col-span-3">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ФИО сотрудника</label>
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      defaultValue={editingUser?.name || ""}
+                      placeholder="Например, Петров Петр"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                    />
+                  </div>
+                  {/* ⚡ НОВОЕ: Ввод ручных Инициалов сотрудника */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Инициалы</label>
+                    <input
+                      type="text"
+                      name="initials"
+                      maxLength={2}
+                      placeholder="ПП"
+                      value={initials}
+                      onChange={(e) => setInitials(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800 uppercase text-center"
+                    />
+                  </div>
                 </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Email</label>
                   <input
@@ -386,32 +413,48 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                   />
                 </div>
+                
+                {/* Пароль с кнопкой-глазиком */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     {editingUser ? "Новый пароль (оставьте пустым для сохранения прежнего)" : "Пароль"}
                   </label>
-                  <input
-                    type="password"
-                    name="password"
-                    required={!editingUser}
-                    placeholder={editingUser ? "••••••••" : "Укажите сложный пароль"}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      required={!editingUser}
+                      placeholder={editingUser ? "••••••••" : "Укажите сложный пароль"}
+                      className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800 font-sans"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                      title={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4.5 w-4.5" />
+                      ) : (
+                        <Eye className="h-4.5 w-4.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* 📊 УПРАВЛЕНИЕ ИНДИВИДУАЛЬНЫМ ПЕРИОДОМ ОТЧЕТНОСТИ ДЛЯ KPI */}
+              {/* Настройка отчетного периода с эластичной адаптивной сеткой */}
               <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-3">
                 <div className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1">
                   <CalendarRange className="h-4 w-4 text-blue-600 animate-pulse" /> Настройка отчетного периода для KPI
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">Интервал отчетности</label>
                     <select
                       value={reportingPeriodType}
                       onChange={(e) => setReportingPeriodType(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:border-blue-500"
+                      className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
                     >
                       <option value="MONTH">Каждый месяц</option>
                       <option value="QUARTER">Каждый квартал</option>
