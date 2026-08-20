@@ -137,6 +137,12 @@ class TaskCreate(BaseModel):
     points: int = Field(default=0, ge=0)
     requirements: Optional[str] = None
     confirmation_requirements: Optional[str] = None
+    
+    # Параметры таргетинга массового назначения (Раздел 37 ТЗ)
+    target_type: str = Field(default="all")  # "all", "course", "faculty", "group"
+    target_course: Optional[int] = Field(default=None, ge=1, le=6)
+    target_faculty: Optional[str] = None
+    target_group_ids: Optional[List[uuid.UUID]] = None
 
 class TaskResponse(BaseModel):
     id: uuid.UUID

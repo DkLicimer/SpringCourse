@@ -6,34 +6,54 @@ from typing import List, Optional
 
 from ..database import get_db
 from .. import models, schemas, auth
-from .notifications import add_notification # Импортируем утилиту
+from .notifications import add_notification 
 
 router = APIRouter(
     prefix="/tasks",
     tags=["Задачи, Мероприятия и Календарь"]
 )
 
-# 1. Создание задачи Администратором (и рассылка уведомлений всем кураторам)
+# 1. Создание задачи Администратором (с рассылкой уведомлений в соответствии с таргетингом)
 @router.post("/", response_model=schemas.TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(
     task_in: schemas.TaskCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.require_admin)
 ):
-    new_task = models.Task(**task_in.model_dump())
+    # Извлекаем параметры таргетинга и исключаем их для создания чистой сущности Task
+    task_data = task_in.model_dump()
+    target_type = task_data.pop("target_type", "all")
+    target_course = task_data.pop("target_course", None)
+    target_faculty = task_data.pop("target_faculty", None)
+    target_group_ids = task_data.pop("target_group_ids", None)
+
+    # Создаем и сохраняем саму задачу
+    new_task = models.Task(**task_data)
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
 
-    active_curators = db.query(models.User).filter(models.User.system_role == "USER").all()
-    for curator in active_curators:
-        is_curator = db.query(models.GroupAssignment).filter(
-            models.GroupAssignment.user_id == curator.id,
+    # Формируем выборку целевых групп на основе выбранного таргетинга
+    group_query = db.query(models.AcademicGroup)
+    if target_type == "course" and target_course is not None:
+        group_query = group_query.filter(models.AcademicGroup.course == target_course)
+    elif target_type == "faculty" and target_faculty:
+        group_query = group_query.filter(models.AcademicGroup.faculty.ilike(target_faculty.strip()))
+    elif target_type == "group" and target_group_ids:
+        group_query = group_query.filter(models.AcademicGroup.id.in_(target_group_ids))
+    
+    targeted_groups = group_query.all()
+    targeted_group_ids = [g.id for g in targeted_groups]
+
+    # Если целевые группы определены, находим всех активных кураторов, закрепленных за ними
+    if targeted_group_ids:
+        curators = db.query(models.User).join(models.GroupAssignment).filter(
+            models.GroupAssignment.academic_group_id.in_(targeted_group_ids),
             models.GroupAssignment.role_code == "CURATOR",
             models.GroupAssignment.unassigned_at.is_(None)
-        ).first()
+        ).distinct().all()
 
-        if is_curator:
+        for curator in curators:
             execution = models.TaskExecution(
                 task_id=new_task.id,
                 curator_id=curator.id,
@@ -41,15 +61,16 @@ def create_task(
             )
             db.add(execution)
             
-            # ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ: Новая задача (Раздел 34 ТЗ)
+            # Отправляем уведомление (Раздел 34 ТЗ)
             add_notification(
                 db, 
                 curator_id=curator.id, 
-                text=f"Вам назначена новая задача: '{new_task.title}' с дедлайном до {new_task.due_date.strftime('%d.%m.%Y')}", 
+                text=f"Вам назначена новая задача: '{new_task.title}' с дедлайном до {new_task.due_date.strftime('%d.%m.%Y %H:%M')}", 
                 n_type="task"
             )
             
-    db.commit()
+        db.commit()
+
     return new_task
 
 
@@ -129,7 +150,7 @@ def review_task_execution(
         execution.admin_comment = None
         execution.completed_at = datetime.utcnow()
         
-        # ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ: Подтверждение выполнения и начисление баллов (Раздел 34 ТЗ)
+        # Отправляем уведомление
         add_notification(
             db,
             curator_id=execution.curator_id,
@@ -145,7 +166,7 @@ def review_task_execution(
         execution.status = "REVISION"
         execution.admin_comment = review_in.comment
 
-        # ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ: Необходимость исправления / доработки (Раздел 34 ТЗ)
+        # Отправляем уведомление
         add_notification(
             db,
             curator_id=execution.curator_id,
@@ -195,7 +216,6 @@ def create_event(
     ).distinct().all()
 
     for curator in curators:
-        # ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ: Новое мероприятие (Раздел 34 ТЗ)
         add_notification(
             db,
             curator_id=curator.id,

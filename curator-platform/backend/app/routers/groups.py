@@ -162,6 +162,73 @@ def assign_role_to_group(
     return response
 
 
+# 4.1 Снять ответственное лицо с роли в группе (Раздел 7 и 17 ТЗ)
+@router.post("/{group_id}/unassign", response_model=schemas.AssignmentResponse)
+def unassign_role_from_group(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    role_code: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)
+):
+    assignment = db.query(models.GroupAssignment).filter(
+        models.GroupAssignment.academic_group_id == group_id,
+        models.GroupAssignment.user_id == user_id,
+        models.GroupAssignment.role_code == role_code,
+        models.GroupAssignment.unassigned_at.is_(None)
+    ).first()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Активное назначение для данного пользователя и роли не найдено"
+        )
+
+    assignment.unassigned_at = datetime.utcnow()
+    db.add(assignment)
+    db.commit()
+    db.refresh(assignment)
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    response = schemas.AssignmentResponse.model_validate(assignment)
+    response.username = user.username if user else "Удаленный пользователь"
+    return response
+
+
+# 4.2 Получение истории всех назначений группы (Раздел 7 и 17 ТЗ)
+@router.get("/{group_id}/history", response_model=List[schemas.AssignmentResponse])
+def get_group_assignment_history(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # Если пользователь не админ, проверяем его причастность к группе
+    if current_user.system_role != "ADMIN":
+        is_assigned = db.query(models.GroupAssignment).filter(
+            models.GroupAssignment.user_id == current_user.id,
+            models.GroupAssignment.academic_group_id == group_id,
+            models.GroupAssignment.unassigned_at.is_(None)
+        ).first()
+        if not is_assigned:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="У вас нет прав для просмотра истории назначений этой группы"
+            )
+
+    assignments = db.query(models.GroupAssignment).filter(
+        models.GroupAssignment.academic_group_id == group_id
+    ).order_by(models.GroupAssignment.assigned_at.desc()).all()
+
+    result = []
+    for assign in assignments:
+        user = db.query(models.User).filter(models.User.id == assign.user_id).first()
+        assign_schema = schemas.AssignmentResponse.model_validate(assign)
+        assign_schema.username = user.username if user else "Удаленный пользователь"
+        result.append(assign_schema)
+
+    return result
+
+
 # 5. Добавление студентов в группу (с автоматической привязкой справочников!)
 @router.post("/{group_id}/students", response_model=schemas.StudentResponse, status_code=status.HTTP_201_CREATED)
 def add_student_to_group(
@@ -187,7 +254,6 @@ def add_student_to_group(
     if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Академическая группа не найдена")
 
-    # Ищем загружаемые категории и организации
     categories = db.query(models.SocialCategory).filter(
         models.SocialCategory.id.in_(student_in.social_category_ids)
     ).all() if student_in.social_category_ids else []
@@ -243,3 +309,53 @@ def get_group_students(
         )
 
     return query.all()
+
+
+# 7. Обновление карточки студента (Раздел 10 и 39 ТЗ)
+@router.put("/{group_id}/students/{student_id}", response_model=schemas.StudentResponse)
+def update_student_in_group(
+    group_id: uuid.UUID,
+    student_id: uuid.UUID,
+    student_in: schemas.StudentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.system_role != "ADMIN":
+        is_curator = db.query(models.GroupAssignment).filter(
+            models.GroupAssignment.user_id == current_user.id,
+            models.GroupAssignment.academic_group_id == group_id,
+            models.GroupAssignment.role_code == "CURATOR",
+            models.GroupAssignment.unassigned_at.is_(None)
+        ).first()
+        if not is_curator:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Редактировать студентов в этой группе могут только Администраторы или назначенные Кураторы"
+            )
+
+    student = db.query(models.Student).filter(
+        models.Student.id == student_id,
+        models.Student.academic_group_id == group_id
+    ).first()
+    
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Студент не найден в этой группе")
+
+    categories = db.query(models.SocialCategory).filter(
+        models.SocialCategory.id.in_(student_in.social_category_ids)
+    ).all() if student_in.social_category_ids else []
+
+    organizations = db.query(models.StudentOrganization).filter(
+        models.StudentOrganization.id.in_(student_in.organization_ids)
+    ).all() if student_in.organization_ids else []
+
+    student.first_name = student_in.first_name
+    student.last_name = student_in.last_name
+    student.middle_name = student_in.middle_name
+    student.is_union_member = student_in.is_union_member
+    student.social_categories = categories
+    student.organizations = organizations
+
+    db.commit()
+    db.refresh(student)
+    return student
