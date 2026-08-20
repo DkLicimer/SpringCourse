@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+
+// Импортируем официальные логотипы ЗабГУ
+import logoHorizontal from '../assets/logo_horizontal.png';
+import logoCrest from '../assets/logo_crest.png';
+
 import { 
   Users, Award, Calendar, CheckSquare, LogOut, RefreshCw, 
   Search, UserPlus, PlusCircle, Check, X, Shield, BookOpen, Clock, Tag, Briefcase, AlertTriangle, ShieldAlert, ArrowUpCircle, ArrowDownCircle, FileText, HelpCircle, Save, Bell, ChevronLeft, ChevronRight, Upload
@@ -791,18 +796,18 @@ function Dashboard({ onLogout }) {
       {/* Шапка (Включает векторный герб ЗабГУ и темно-синий фон #051d2f) */}
       <nav className="bg-[#051d2f] sticky top-0 z-10 px-6 py-4 flex items-center justify-between shadow-md text-white">
         <div className="flex items-center space-x-3.5">
-          {/* Официальный Герб ЗабГУ в векторе (Щит с вертикальным посохом и соболем) */}
-          <svg viewBox="0 0 100 100" className="h-10 w-10 text-[#2daabd]" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M20,20 L80,20 L80,55 C80,75 50,92 50,92 C50,92 20,75 20,55 Z" strokeWidth="3" />
-            <line x1="50" y1="5" x2="50" y2="92" strokeWidth="3" strokeLinecap="round" />
-            <path d="M50,15 C38,15 33,5 44,5 C55,5 60,15 50,25 C45,28 42,22 46,18" strokeLinecap="round" />
-            <path d="M50,82 C62,82 67,92 56,92 C45,92 40,82 50,72" strokeLinecap="round" />
-            <path d="M42,48 C42,40 48,34 52,36 C55,38 54,46 48,50 C45,53 46,60 50,63 C54,66 55,73 52,76" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <div>
-            <h1 className="text-lg font-extrabold tracking-wider leading-none">ЗАБГУ</h1>
-            <span className="text-[10px] text-slate-300 font-semibold tracking-widest uppercase">Электронная Книжка Куратора</span>
-          </div>
+          {/* Полный логотип-плашка для ПК */}
+          <img 
+            src={logoHorizontal} 
+            alt="ЗабГУ" 
+            className="hidden md:block h-11 w-auto object-contain" 
+          />
+          {/* Маленький герб для мобильных устройств */}
+          <img 
+            src={logoCrest} 
+            alt="ЗабГУ" 
+            className="block md:hidden h-10 w-auto object-contain" 
+          />
         </div>
 
         <div className="flex items-center space-x-6">
@@ -1705,7 +1710,7 @@ function Dashboard({ onLogout }) {
           </div>
         )}
 
-        {/* ================= Вкладка 5.1: СТАТИСТИКА (С КНОПКАМИ ЭКСПОРТА ОТЧЕТОВ - Разделы 3.1 и 36 ТЗ) ================= */}
+        {/* ================= Вкладка 5.1: СТАТИСТИКА ================= */}
         {activeTab === 'statistics' && (
           <div className="space-y-6 animate-fadeIn">
             
@@ -1864,7 +1869,7 @@ function Dashboard({ onLogout }) {
                   <div>
                     <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Позиция в рейтинге</span>
                     <h4 className="text-3xl font-black text-slate-800">
-                      {currentCuratorRating ? `# ${currentCuratorRating.place}` : '—'}
+                      {currentCalItem ? `# ${currentCalItem.place}` : '—'}
                     </h4>
                     <p className="text-xs text-slate-500 mt-2 font-semibold">место среди всех кураторов университета</p>
                   </div>
@@ -2330,7 +2335,7 @@ function Dashboard({ onLogout }) {
 
       {/* МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ СОБЫТИЯ */}
       {selectedCalItem && (
-        <div className="fixed inset-0 z-50 bg-[#051d2f]/70 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 bg-[#051d2f]/70 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-100 shadow-xl border-t-8 border-t-[#2daabd] animate-fadeIn">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <span className={`px-2.5 py-1 rounded text-xs font-bold ${
