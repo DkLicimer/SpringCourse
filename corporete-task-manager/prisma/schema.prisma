@@ -1,0 +1,281 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Роли пользователей
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+// Типы назначения задач
+enum AssignmentType {
+  INDIVIDUAL   // Один исполнитель
+  SIMULTANEOUS // Несколько параллельно
+  SEQUENTIAL   // Последовательно (цепочка)
+}
+
+// Модель пользователя
+model User {
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  passwordHash        String
+  name                String             // ФИО
+  initials            String             // Инициалы (например, "ЛК")
+  role                Role               @default(EMPLOYEE)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  department          String?            // <-- НОВОЕ: Подразделение сотрудника
+
+  // Индивидуальный отчетный период сотрудника
+  reportingPeriodType String             @default("MONTH") // MONTH, QUARTER, CUSTOM
+  periodStartDate     DateTime?          // Дата начала (для CUSTOM)
+  periodEndDate       DateTime?          // Дата окончания (для CUSTOM)
+
+  // Связи
+  assignments         TaskAssignment[]   // Задачи, в которых пользователь участвует
+  createdTasks        Task[]             @relation("CreatedBy")
+  comments            Comment[]
+  bookedEvents        CalendarEvent[]    @relation("BookedBy")
+  tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
+  extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
+
+  // Участие во встречах (многие-ко-многим)
+  participatingEvents CalendarEvent[]    @relation("EventParticipants") // <-- НОВОЕ: Связь участников встреч
+
+  // Авторство в контент-плане
+  contentPlans        ContentPlan[]
+  postRequests        PostRequest[]
+}
+
+// Глобальные цели
+model Goal {
+  id          String   @id @default(uuid())
+  title       String
+  color       String   // HEX или CSS-класс цвета для подсветки задач
+  isTemplate  Boolean  @default(false) // Флаг для шаблона "Текучка"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       Task[]
+}
+
+// Кастомные и системные статусы задач (создаются админом)
+model TaskStatus {
+  id          String           @id @default(uuid())
+  name        String           // "Взял в работу", "Исполнено" и т.д.
+  color       String?          // Цвет плашки статуса
+  isDefault   Boolean          @default(false) // Системные статусы, которые нельзя удалить
+  position    Int              @default(0)     // Порядок отображения
+  
+  assignments TaskAssignment[]
+}
+
+// Основная модель задачи
+model Task {
+  id                  String             @id @default(uuid())
+  title               String
+  description         String?
+  deadline            DateTime?
+  intermediateControl Boolean            @default(false)
+  controlReport       String?
+  adminNotes          String?
+  assignmentType      AssignmentType     @default(INDIVIDUAL)
+  isPriority          Boolean            @default(false) // Приоритетная задача (Срочно)
+  isRecurring         Boolean            @default(false) // Метка регулярной задачи
+  
+  // Новые поля для задач на перспективу
+  isPerspective       Boolean            @default(false) // Отложенная задача (На перспективу)
+  reminderDate        DateTime?          // Дата напоминания о задаче
+
+  goalId              String
+  goal                Goal               @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  
+  createdById         String
+  createdBy           User               @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  assignments         TaskAssignment[]
+  comments            Comment[]
+  extensionRequests   ExtensionRequest[] // Запросы на продление срока
+}
+
+// Промежуточная таблица назначений (для поддержки параллельных и последовательных задач)
+model TaskAssignment {
+  id              String      @id @default(uuid())
+  taskId          String
+  task            Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  statusId        String
+  status          TaskStatus  @relation(fields: [statusId], references: [id])
+  
+  // Для последовательных задач:
+  sequenceOrder   Int         @default(0)     // Порядковый номер в цепочке (0, 1, 2...)
+  isBlocked       Boolean     @default(false) // Заблокирована ли задача, пока не выполнит предыдущий в цепочке
+  stepInstruction String?     // Индивидуальное указание/задание для конкретного этапа
+  
+  completedAt     DateTime?   // Заполняется автоматически при переходе в статус "Исполнено"
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([taskId, userId]) // Один пользователь назначен на задачу один раз
+}
+
+// Запросы сотрудников на продление дедлайна
+model ExtensionRequest {
+  id            String      @id @default(uuid())
+  taskId        String
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason        String?     // Обоснование переноса
+  status        String      @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Комментарии (мини-чат внутри задачи)
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// МОДУЛЬ «ИНТЕРАКТИВНЫЕ ТАБЛИЦЫ»
+// ==========================================
+
+// Справочник контактов (Доступен всем на чтение, поиск)
+model Contact {
+  id           String   @id @default(uuid())
+  fullName     String
+  department   String
+  position     String
+  phone        String?
+  email        String?
+  notes        String?
+  createdAt    DateTime @default(now())
+}
+
+// Table 1: Контент-план
+model ContentPlan {
+  id            String   @id @default(uuid())
+  topic         String   // Тема публикации
+  platform      String   // Площадка (VK, TG и т.д.)
+  publishDate   DateTime
+  status        String   // Статус публикации (Черновик, Опубликовано)
+  authorId      String?
+  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  notes         String?
+  mediaMaterial String?  // <-- НОВОЕ: Медиаматериал публикации
+  createdAt     DateTime @default(now())
+}
+
+// Table 2: Заявка на пост (Форма отправки данных)
+model PostRequest {
+  id            String   @id @default(uuid())
+  topic         String
+  description   String
+  platform      String
+  requestedDate DateTime
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+}
+
+// Table 3: Соц паспорт
+model SocialPassport {
+  id         String   @id @default(uuid())
+  department String
+  accountUrl String
+  followers  Int      @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+// Table 4: Командообразование
+model Teambuilding {
+  id               String   @id @default(uuid())
+  eventName        String
+  date             DateTime
+  budget           Float    @default(0.0)
+  participantsCount Int     @default(0)
+  notes            String?
+  createdAt        DateTime @default(now())
+}
+
+// Управление доступом к таблицам (для Соц паспорта и Командообразования)
+model TableAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tableName String   // "social_passport" или "teambuilding"
+  canRead   Boolean  @default(false)
+  canWrite  Boolean  @default(false)
+
+  @@unique([userId, tableName])
+}
+
+// Новая таблица: ИНФОпространство (три колонки: фио сотрудника, эл. адрес, примечание)
+model InfoSpace {
+  id        String   @id @default(uuid())
+  fullName  String   // ФИО сотрудника
+  email     String   // Электронный адрес
+  notes     String?  // Примечание
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// МОДУЛЬ «КАЛЕНДАРЬ»
+// ==========================================
+
+enum CalendarEventType {
+  FREE    // Свободно (зеленый)
+  GC      // Главный корпус (желтый)
+  BUSY    // Занято (красный)
+}
+
+model CalendarEvent {
+  id          String            @id @default(uuid())
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  type        CalendarEventType @default(FREE)
+  description String?
+  
+  // Кем создано
+  bookedById  String
+  bookedBy    User              @relation("BookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
+
+  // Приглашенные сотрудники (Встреча для штата)
+  participants User[]           @relation("EventParticipants") // <-- НОВОЕ: Связь со списком приглашенных
+
+  createdAt   DateTime          @default(now())
+}
+
+// ==========================================
+// МОДУЛЬ УВЕДОМЛЕНИЙ
+// ==========================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  text      String
+  isRead    Boolean  @default(false)
+  link      String?  // Ссылка для перехода внутри приложения
+  createdAt DateTime @default(now())
+}
