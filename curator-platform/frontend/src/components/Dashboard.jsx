@@ -1,95 +1,127 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
+import { Html5Qrcode } from 'html5-qrcode';
 
-// Импортируем официальные логотипы ЗабГУ
 import logoHorizontal from '../assets/logo_horizontal.png';
 import logoCrest from '../assets/logo_crest.png';
 
 import { 
   Users, Award, Calendar, CheckSquare, LogOut, RefreshCw, 
-  Search, UserPlus, PlusCircle, Check, X, Shield, BookOpen, Clock, Tag, Briefcase, AlertTriangle, ShieldAlert, ArrowUpCircle, ArrowDownCircle, FileText, HelpCircle, Save, Bell, ChevronLeft, ChevronRight, Upload
+  Search, UserPlus, PlusCircle, Check, X, Shield, BookOpen, Clock, Tag, Briefcase, 
+  AlertTriangle, ShieldAlert, ArrowUpCircle, ArrowDownCircle, FileText, HelpCircle, 
+  Save, Bell, ChevronLeft, ChevronRight, Upload, Sliders, ToggleLeft, ToggleRight, Trash2,
+  QrCode, Camera, CheckCircle2, XCircle, UserCheck, ExternalLink, MapPin, Layers
 } from 'lucide-react';
 
+const formatChitaTime = (dateStr, options = {}) => {
+  if (!dateStr) return '—';
+  const defaultOptions = {
+    timeZone: 'Asia/Chita',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...options
+  };
+  return new Date(dateStr).toLocaleString('ru-RU', defaultOptions);
+};
+
 function Dashboard({ onLogout }) {
-  const [activeTab, setActiveTab] = useState('overview'); // overview, students, tasks, rating, surveys, statistics, admin
+  const [activeTab, setActiveTab] = useState('overview');
+  const [adminSubTab, setAdminSubTab] = useState('events'); // events, fields, assignments, tasks, surveys, directories, sanctions
   const [user, setUser] = useState(null);
+  const [allUsersList, setAllUsersList] = useState([]);
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [groupDetails, setGroupDetails] = useState(null);
   const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
   
-  // Справочники, анкеты и уведомления
+  // Справочники
   const [socialCategories, setSocialCategories] = useState([]);
   const [organizations, setOrganizations] = useState([]);
+  const [dynamicFields, setDynamicFields] = useState([]);
   const [activeSurveys, setActiveSurveys] = useState([]);
   const [selectedSurvey, setSelectedSurvey] = useState(null); 
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false); // Открытие выпадающего списка уведомлений
-
-  // Результаты опросов для администратора
   const [surveyResponsesSummary, setSurveyResponsesSummary] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  // Состояния для задач, календаря и рейтинга
+  // Задачи, календарь и рейтинг
   const [myTasks, setMyTasks] = useState([]);
   const [allExecutions, setAllExecutions] = useState([]); 
   const [calendar, setCalendar] = useState([]);
   const [ratingList, setRatingList] = useState([]);
-
-  // Настройки календаря на месяц
+  const [ratingPeriod, setRatingPeriod] = useState('all');
   const [currentCalDate, setCurrentCalDate] = useState(new Date());
-  const [selectedCalItem, setSelectedCalItem] = useState(null); // Модальное окно деталей события
+  const [selectedCalItem, setSelectedCalItem] = useState(null);
 
-  // Состояния интерактивной карточки студента
+  // Модальные окна и карточки
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editStudentForm, setEditStudentForm] = useState({
     first_name: '', last_name: '', middle_name: '', is_union_member: false,
-    social_category_ids: [], organization_ids: [],
-    phone: '', address: '', parent_info: ''
+    social_category_ids: [], organization_ids: [], dynamic_values: {}
   });
 
-  // Состояния интерактивной загрузки отчетов
-  const [submittingTaskExe, setSubmittingTaskExe] = useState(null); // Текущая сдаваемая задача
-  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState(''); // Ссылка на загруженное фото на сервере
-  const [isUploadingFile, setIsUploadingFile] = useState(false); // Процесс загрузки
-  const [confirmedRequirements, setConfirmedRequirements] = useState(false); // Чекбокс подтверждения требований
-
-  // История назначений группы
-  const [assignmentHistory, setAssignmentHistory] = useState([]);
+  const [submittingTaskExe, setSubmittingTaskExe] = useState(null);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState('');
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [confirmedRequirements, setConfirmedRequirements] = useState(false);
   
+  // Посещаемость и QR
+  const [attendanceSessions, setAttendanceSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [sessionRecords, setSessionRecords] = useState([]);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [newSessionForm, setNewSessionForm] = useState({ title: 'Кураторский час', date: new Date().toISOString().substring(0, 10) });
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerMessage, setScannerMessage] = useState(null);
+  const [manualQrInput, setManualQrInput] = useState('');
+  const html5QrCodeRef = useRef(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Формы ввода
+  // Формы админки
   const [newStudent, setNewStudent] = useState({ 
     first_name: '', last_name: '', middle_name: '', is_union_member: false,
-    social_category_ids: [], organization_ids: []
+    social_category_ids: [], organization_ids: [], dynamic_values: {}
   });
   const [newGroup, setNewGroup] = useState({ name: '', faculty: '', training_direction: '', course: 1 });
-  const [newAssignment, setNewAssignment] = useState({ user_id: '', role_code: 'CURATOR', protocol_number: '', protocol_date: '' });
-  
-  // Создание задачи с параметрами таргетинга
-  const [newTask, setNewTask] = useState({ 
-    title: '', description: '', category: 'mandatory', type: 'photo_proof', 
-    due_date: '', points: 10, requirements: '', confirmation_requirements: '',
-    target_type: 'all', target_course: 1, target_faculty: '', target_group_ids: []
+  const [newAssignment, setNewAssignment] = useState({ 
+    user_id: '', role_code: 'CURATOR', protocol_number: '', protocol_date: '', protocol_file_url: '' 
   });
   
-  // Формы справочников и санкций
+  // ФОРМА СОЗДАНИЯ ПЛАНОВОГО МЕРОПРИЯТИЯ АДМИНИСТРАТОРОМ
+  const [newEventPlan, setNewEventPlan] = useState({
+    title: '',
+    description: '',
+    date_time: '',
+    location: '',
+    category: 'Воспитательное',
+    is_mandatory: true,
+    target_type: 'all', // all, course, group
+    target_course: 1,
+    target_group_ids: [],
+    // Настройки отчета, которые жестко задает админ:
+    report_type: 'photo_proof', // photo_proof, no_proof, info_only
+    points: 15,
+    confirmation_requirements: 'Общее фото куратора с группой на мероприятии'
+  });
+
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newOrgName, setNewOrgName] = useState('');
+  const [newFieldForm, setNewFieldForm] = useState({ name: '', label: '', type: 'text', is_required: false });
   const [pointsAdjustment, setPointsAdjustment] = useState({ curator_id: '', points: 0, reason: '' });
   const [disciplinaryMark, setDisciplinaryMark] = useState({ curator_id: '', reason: '' });
 
-  // Форма КОНСТРУКТОРА АНКЕТ
+  // Конструктор анкет
   const [newSurveyForm, setNewSurveyForm] = useState({ title: '', description: '', is_mandatory: false, expires_at: '' });
   const [surveyQuestions, setSurveyQuestions] = useState([]); 
   const [tempQuestion, setTempQuestion] = useState({ text: '', type: 'text', options: '' });
-
-  // Ответы на анкету
   const [surveyAnswers, setSurveyAnswers] = useState({}); 
-
   const [reviewComment, setReviewComment] = useState({});
 
   const loadData = async () => {
@@ -109,15 +141,22 @@ function Dashboard({ onLogout }) {
       const orgsRes = await api.get('/directories/organizations');
       setOrganizations(orgsRes.data);
 
+      const fieldsRes = await api.get('/directories/dynamic-fields');
+      setDynamicFields(fieldsRes.data);
+
       const ratingRes = await api.get('/rating/');
       setRatingList(ratingRes.data);
 
       const surveysRes = await api.get('/surveys/');
       setActiveSurveys(surveysRes.data);
 
-      // Загружаем Уведомления куратора
       const notifsRes = await api.get('/notifications/');
       setNotifications(notifsRes.data);
+
+      if (userRes.data.system_role === 'ADMIN') {
+        const usersListRes = await api.get('/auth/users');
+        setAllUsersList(usersListRes.data);
+      }
 
       if (groupsRes.data.length > 0) {
         const defaultGroupId = selectedGroupId || groupsRes.data[0].id;
@@ -151,183 +190,314 @@ function Dashboard({ onLogout }) {
       const studentsRes = await api.get(`/groups/${groupId}/students?search=${searchQuery}`);
       setStudents(studentsRes.data);
 
-      // Загружаем историю назначений группы
-      const historyRes = await api.get(`/groups/${groupId}/history`);
-      setAssignmentHistory(historyRes.data);
+      const sessionsRes = await api.get(`/groups/${groupId}/attendance/sessions`);
+      setAttendanceSessions(sessionsRes.data);
+      if (sessionsRes.data.length > 0) {
+        setSelectedSession(sessionsRes.data[0]);
+        setSessionRecords(sessionsRes.data[0].records || []);
+      } else {
+        setSelectedSession(null);
+        setSessionRecords([]);
+      }
+
     } catch (err) {
-      setError('Ошибка при загрузке данных группы и ее истории.');
+      setError('Ошибка при загрузке сведений о группе.');
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [selectedGroupId]);
+  useEffect(() => { loadData(); }, [selectedGroupId]);
 
   useEffect(() => {
     if (selectedGroupId) {
-      const delayDebounce = setTimeout(() => {
-        loadGroupData(selectedGroupId);
-      }, 300);
+      const delayDebounce = setTimeout(() => { loadGroupData(selectedGroupId); }, 300);
       return () => clearTimeout(delayDebounce);
     }
   }, [searchQuery]);
 
-  // --- ОБРАБОТЧИКИ ДЕЙСТВИЙ (API ЗАПРОСЫ) ---
-
-  const handleAddStudent = async (e) => {
+  // --- СОЗДАНИЕ ПЛАНОВОГО МЕРОПРИЯТИЯ АДМИНИСТРАТОРОМ ---
+  const handleCreateEventPlan = async (e) => {
     e.preventDefault();
     try {
-      await api.post(`/groups/${selectedGroupId}/students`, newStudent);
-      setNewStudent({ 
-        first_name: '', last_name: '', middle_name: '', is_union_member: false,
-        social_category_ids: [], organization_ids: []
+      // 1. Если мероприятие предполагает отчет куратора — создаем задачу с требованиями
+      let linkedTaskId = null;
+      if (newEventPlan.report_type !== 'info_only') {
+        const taskRes = await api.post('/tasks/', {
+          title: `Участие в мероприятии: ${newEventPlan.title}`,
+          description: newEventPlan.description,
+          category: newEventPlan.is_mandatory ? 'mandatory' : 'optional',
+          type: newEventPlan.report_type, // photo_proof или no_proof
+          due_date: new Date(newEventPlan.date_time).toISOString(),
+          points: parseInt(newEventPlan.points) || 10,
+          confirmation_requirements: newEventPlan.report_type === 'photo_proof' ? newEventPlan.confirmation_requirements : 'Отметка о посещении',
+          target_type: newEventPlan.target_type,
+          target_course: newEventPlan.target_type === 'course' ? parseInt(newEventPlan.target_course) : null,
+          target_group_ids: newEventPlan.target_type === 'group' ? newEventPlan.target_group_ids : null
+        });
+        linkedTaskId = taskRes.data.id;
+      }
+
+      // 2. Определяем группы для события в календаре
+      let targetGroupIds = [];
+      if (newEventPlan.target_type === 'all') {
+        targetGroupIds = groups.map(g => g.id);
+      } else if (newEventPlan.target_type === 'course') {
+        targetGroupIds = groups.filter(g => g.course === parseInt(newEventPlan.target_course)).map(g => g.id);
+      } else {
+        targetGroupIds = newEventPlan.target_group_ids;
+      }
+
+      // 3. Создаем мероприятие и связываем с задачей
+      await api.post('/tasks/events', {
+        title: newEventPlan.title,
+        description: newEventPlan.description,
+        date_time: new Date(newEventPlan.date_time).toISOString(),
+        location: newEventPlan.location,
+        category: newEventPlan.category,
+        is_mandatory: newEventPlan.is_mandatory,
+        associated_task_id: linkedTaskId,
+        group_ids: targetGroupIds
       });
-      setSuccessMsg('Студент успешно добавлен в социальный паспорт!');
-      loadGroupData(selectedGroupId);
+
+      setSuccessMsg('Мероприятие успешно внесено в университетский план и разослано кураторам!');
+      setNewEventPlan({
+        title: '', description: '', date_time: '', location: '', category: 'Воспитательное',
+        is_mandatory: true, target_type: 'all', target_course: 1, target_group_ids: [],
+        report_type: 'photo_proof', points: 15, confirmation_requirements: 'Общее фото куратора с группой'
+      });
+      loadData();
     } catch (err) {
-      setError('Не удалось добавить студента.');
+      setError(err.response?.data?.detail || 'Не удалось сохранить мероприятие в план.');
     }
   };
 
+  // Выполнение задачи без фото (если админ установил no_proof)
+  const handleSubmitTaskWithoutPhoto = async (executionId) => {
+    try {
+      await api.post(`/tasks/my-tasks/${executionId}/submit`, { photo_url: null });
+      setSuccessMsg('Отметка об участии зафиксирована и отправлена администратору!');
+      loadData();
+    } catch (err) {
+      setError('Не удалось отправить отметку.');
+    }
+  };
+
+  // --- ОБРАБОТЧИКИ СТУДЕНТОВ ---
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    try {
+      const dynamicPayload = Object.keys(newStudent.dynamic_values).map(fieldId => ({
+        field_id: fieldId,
+        value: String(newStudent.dynamic_values[fieldId])
+      }));
+
+      await api.post(`/groups/${selectedGroupId}/students`, {
+        ...newStudent,
+        dynamic_values: dynamicPayload
+      });
+
+      setNewStudent({ 
+        first_name: '', last_name: '', middle_name: '', is_union_member: false,
+        social_category_ids: [], organization_ids: [], dynamic_values: {}
+      });
+      setSuccessMsg('Студент успешно внесен в социальный паспорт!');
+      loadGroupData(selectedGroupId);
+    } catch (err) { setError('Не удалось добавить студента.'); }
+  };
+
+  const handleOpenStudentCard = (student) => {
+    setSelectedStudent(student);
+    const dynValuesMap = {};
+    if (student.dynamic_values) {
+      student.dynamic_values.forEach(item => { dynValuesMap[item.field_id] = item.value; });
+    }
+
+    setEditStudentForm({
+      first_name: student.first_name,
+      last_name: student.last_name,
+      middle_name: student.middle_name || '',
+      is_union_member: student.is_union_member,
+      social_category_ids: student.social_categories?.map(c => c.id) || [],
+      organization_ids: student.organizations?.map(o => o.id) || [],
+      dynamic_values: dynValuesMap
+    });
+  };
+
+  const handleSaveStudentCard = async (e) => {
+    e.preventDefault();
+    try {
+      const dynamicPayload = Object.keys(editStudentForm.dynamic_values).map(fieldId => ({
+        field_id: fieldId,
+        value: String(editStudentForm.dynamic_values[fieldId])
+      }));
+
+      await api.put(`/groups/${selectedGroupId}/students/${selectedStudent.id}`, {
+        first_name: editStudentForm.first_name,
+        last_name: editStudentForm.last_name,
+        middle_name: editStudentForm.middle_name,
+        is_union_member: editStudentForm.is_union_member,
+        social_category_ids: editStudentForm.social_category_ids,
+        organization_ids: editStudentForm.organization_ids,
+        dynamic_values: dynamicPayload
+      });
+
+      setSuccessMsg('Карточка студента сохранена!');
+      setSelectedStudent(null);
+      loadGroupData(selectedGroupId);
+    } catch (err) { setError('Ошибка сохранения карточки.'); }
+  };
+
+  // --- ПОСЕЩАЕМОСТЬ И QR ---
+  const handleCreateSession = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post(`/groups/${selectedGroupId}/attendance/sessions`, {
+        title: newSessionForm.title,
+        date: new Date(newSessionForm.date).toISOString()
+      });
+      setSuccessMsg('Занятие создано!');
+      setIsCreatingSession(false);
+      await loadGroupData(selectedGroupId);
+      setSelectedSession(res.data);
+      setSessionRecords(res.data.records);
+    } catch (err) { setError('Ошибка создания занятия.'); }
+  };
+
+  const handleToggleStudentRecord = (studentId) => {
+    setSessionRecords(prev => prev.map(rec => rec.student_id === studentId ? { ...rec, is_present: !rec.is_present, method: 'manual' } : rec));
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!selectedSession) return;
+    try {
+      const payload = sessionRecords.map(r => ({ student_id: r.student_id, is_present: r.is_present, method: r.method }));
+      await api.post(`/groups/${selectedGroupId}/attendance/sessions/${selectedSession.id}/records-bulk`, payload);
+      setSuccessMsg('Ведомость посещаемости сохранена!');
+      loadGroupData(selectedGroupId);
+    } catch (err) { setError('Ошибка сохранения ведомости.'); }
+  };
+
+  // Камера QR
+  useEffect(() => {
+    if (isScannerOpen && selectedSession) {
+      const html5QrCode = new Html5Qrcode('qr-reader-container');
+      html5QrCodeRef.current = html5QrCode;
+
+      const qrCodeSuccessCallback = async (decodedText) => {
+        try {
+          const res = await api.post(`/groups/${selectedGroupId}/attendance/sessions/${selectedSession.id}/scan`, { qr_token: decodedText });
+          setScannerMessage({ type: 'success', text: `✓ ${res.data.student_name} отмечен(а)!` });
+          setSessionRecords(prev => prev.map(rec => rec.student_id === res.data.student_id ? { ...rec, is_present: true, method: 'qr' } : rec));
+          if (navigator.vibrate) navigator.vibrate(100);
+          setTimeout(() => setScannerMessage(null), 3000);
+        } catch (err) {
+          setScannerMessage({ type: 'error', text: err.response?.data?.detail || 'Ошибка считывания QR' });
+          setTimeout(() => setScannerMessage(null), 3500);
+        }
+      };
+
+      html5QrCode.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, qrCodeSuccessCallback, () => {})
+        .catch(() => setScannerMessage({ type: 'error', text: 'Камера заблокирована или недоступна.' }));
+
+      return () => { if (html5QrCodeRef.current?.isScanning) html5QrCodeRef.current.stop().catch(() => {}); };
+    }
+  }, [isScannerOpen, selectedSession]);
+
+  // --- ФОТООТЧЕТЫ И ПРОВЕРКА ---
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploadingFile(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setUploadedPhotoUrl(res.data.url);
+      setSuccessMsg('Фотоотчет загружен на сервер!');
+    } catch (err) { setError('Ошибка загрузки файла.'); } 
+    finally { setIsUploadingFile(false); }
+  };
+
+  const handleConfirmAndSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!uploadedPhotoUrl) { alert('Прикрепите фотографию-подтверждение.'); return; }
+    if (!confirmedRequirements) { alert('Подтвердите соответствие требованиям админа.'); return; }
+    try {
+      await api.post(`/tasks/my-tasks/${submittingTaskExe.id}/submit`, { photo_url: uploadedPhotoUrl });
+      setSuccessMsg('Фотоотчет отправлен на проверку администратору!');
+      setSubmittingTaskExe(null);
+      setUploadedPhotoUrl('');
+      loadData();
+    } catch (err) { setError('Не удалось отправить отчет.'); }
+  };
+
+  const handleReviewTask = async (executionId, approve) => {
+    try {
+      const comment = reviewComment[executionId] || '';
+      if (!approve && !comment) { alert('Укажите причину возврата на доработку.'); return; }
+      await api.post(`/tasks/executions/${executionId}/review`, { approve, comment });
+      setSuccessMsg(approve ? 'Отчет одобрен, баллы начислены куратору!' : 'Отчет возвращен на доработку.');
+      loadData();
+    } catch (err) { setError('Ошибка проверки отчета.'); }
+  };
+
+  // --- АДМИНИСТРАТИВНЫЕ МЕТОДЫ ---
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     try {
       await api.post('/groups/', newGroup);
       setNewGroup({ name: '', faculty: '', training_direction: '', course: 1 });
-      setSuccessMsg('Группа успешно создана!');
+      setSuccessMsg('Группа создана!');
       loadData();
-    } catch (err) {
-      setError('Не удалось создать группу.');
-    }
+    } catch (err) { setError('Ошибка создания группы.'); }
   };
 
   const handleAssignRole = async (e) => {
     e.preventDefault();
     try {
       const body = { ...newAssignment };
-      if (body.role_code !== 'PROFORG') {
-        delete body.protocol_number;
-        delete body.protocol_date;
-      } else {
-        body.protocol_date = body.protocol_date ? new Date(body.protocol_date).toISOString() : null;
-      }
+      if (body.role_code !== 'PROFORG') { delete body.protocol_number; delete body.protocol_date; delete body.protocol_file_url; }
       await api.post(`/groups/${selectedGroupId}/assign`, body);
-      setNewAssignment({ user_id: '', role_code: 'CURATOR', protocol_number: '', protocol_date: '' });
-      setSuccessMsg('Ответственное лицо успешно назначено!');
+      setNewAssignment({ user_id: '', role_code: 'CURATOR', protocol_number: '', protocol_date: '', protocol_file_url: '' });
+      setSuccessMsg('Куратор успешно назначен в группу!');
       loadGroupData(selectedGroupId);
-    } catch (err) {
-      setError('Не удалось назначить роль.');
-    }
+    } catch (err) { setError(err.response?.data?.detail || 'Ошибка назначения роли.'); }
   };
 
-  // Метод снятия ответственного лица с роли
   const handleUnassignRole = async (userId, roleCode) => {
-    if (!window.confirm(`Вы действительно хотите снять пользователя с роли ${roleCode}?`)) return;
+    if (!window.confirm(`Снять куратора с роли ${roleCode}?`)) return;
     try {
-      await api.post(`/groups/${selectedGroupId}/unassign`, null, {
-        params: { user_id: userId, role_code: roleCode }
-      });
-      setSuccessMsg(`Пользователь успешно снят с роли ${roleCode}!`);
+      await api.post(`/groups/${selectedGroupId}/unassign`, null, { params: { user_id: userId, role_code: roleCode } });
+      setSuccessMsg('Куратор снят с группы.');
       loadGroupData(selectedGroupId);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось снять пользователя с роли.');
-    }
+    } catch (err) { setError('Ошибка снятия с роли.'); }
   };
 
-  // --- МЕТОДЫ УПРАВЛЕНИЯ СПРАВОЧНИКАМИ ---
-
-  const handleToggleCategoryActive = async (id, name, newActive) => {
-    try {
-      await api.put(`/directories/social-categories/${id}`, { name }, {
-        params: { is_active: newActive }
-      });
-      setSuccessMsg(`Категория успешно ${newActive ? 'активирована' : 'деактивирована'}!`);
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось обновить статус категории.');
-    }
-  };
-
-  const handleDeleteCategory = async (id) => {
-    if (!window.confirm('Вы действительно хотите удалить эту категорию?')) return;
-    try {
-      await api.delete(`/directories/social-categories/${id}`);
-      setSuccessMsg('Категория успешно удалена!');
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось удалить категорию. Возможно, она привязана к студентам.');
-    }
-  };
-
-  const handleToggleOrgActive = async (id, name, newActive) => {
-    try {
-      await api.put(`/directories/organizations/${id}`, { name }, {
-        params: { is_active: newActive }
-      });
-      setSuccessMsg(`Организация успешно ${newActive ? 'активирована' : 'деактивирована'}!`);
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось обновить статус организации.');
-    }
-  };
-
-  const handleDeleteOrg = async (id) => {
-    if (!window.confirm('Вы действительно хотите удалить эту организацию?')) return;
-    try {
-      await api.delete(`/directories/organizations/${id}`);
-      setSuccessMsg('Организация успешно удалена!');
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось удалить организацию. Возможно, она привязана к студентам.');
-    }
-  };
-
-  // Метод создания задачи с поддержкой массового назначения
-  const handleCreateTask = async (e) => {
+  const handleCreateDynamicField = async (e) => {
     e.preventDefault();
     try {
-      const body = {
-        ...newTask,
-        due_date: new Date(newTask.due_date).toISOString(),
-        target_course: newTask.target_type === 'course' ? parseInt(newTask.target_course) : null,
-        target_faculty: newTask.target_type === 'faculty' ? newTask.target_faculty : null,
-        target_group_ids: newTask.target_type === 'group' ? newTask.target_group_ids : null
-      };
-      await api.post('/tasks/', body);
-      setNewTask({ 
-        title: '', description: '', category: 'mandatory', type: 'photo_proof', 
-        due_date: '', points: 10, requirements: '', confirmation_requirements: '',
-        target_type: 'all', target_course: 1, target_faculty: '', target_group_ids: []
-      });
-      setSuccessMsg('Задача успешно создана и отправлена выбранным кураторам!');
+      await api.post('/directories/dynamic-fields', newFieldForm);
+      setNewFieldForm({ name: '', label: '', type: 'text', is_required: false });
+      setSuccessMsg('Поле добавлено в социальный паспорт!');
       loadData();
-    } catch (err) {
-      setError('Не удалось опубликовать задачу.');
-    }
+    } catch (err) { setError('Ошибка создания поля.'); }
   };
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
+  const handleToggleDynamicField = async (field) => {
     try {
-      await api.post('/directories/social-categories', { name: newCategoryName });
-      setNewCategoryName('');
-      setSuccessMsg('Новая социальная категория добавлена!');
+      await api.put(`/directories/dynamic-fields/${field.id}`, {
+        name: field.name, label: field.label, type: field.type, is_required: field.is_required
+      }, { params: { is_active: !field.is_active } });
       loadData();
-    } catch (err) {
-      setError('Не удалось создать категорию.');
-    }
+    } catch (err) { setError('Ошибка смены статуса.'); }
   };
 
-  const handleCreateOrganization = async (e) => {
-    e.preventDefault();
+  const handleDeleteDynamicField = async (fieldId) => {
+    if (!window.confirm('Удалить поле?')) return;
     try {
-      await api.post('/directories/organizations', { name: newOrgName });
-      setNewOrgName('');
-      setSuccessMsg('Организация добавлена!');
+      await api.delete(`/directories/dynamic-fields/${fieldId}`);
       loadData();
-    } catch (err) {
-      setError('Не удалось создать организацию.');
-    }
+    } catch (err) { setError('Поле заполнено у студентов.'); }
   };
 
   const handleAdjustPoints = async (e) => {
@@ -335,11 +505,9 @@ function Dashboard({ onLogout }) {
     try {
       await api.post('/rating/sanctions/adjust-points', pointsAdjustment);
       setPointsAdjustment({ curator_id: '', points: 0, reason: '' });
-      setSuccessMsg('Баллы куратора успешно скорректированы!');
+      setSuccessMsg('Баллы куратора скорректированы!');
       loadData();
-    } catch (err) {
-      setError('Не удалось изменить баллы.');
-    }
+    } catch (err) { setError('Ошибка изменения баллов.'); }
   };
 
   const handleIssueViolation = async (e) => {
@@ -349,358 +517,36 @@ function Dashboard({ onLogout }) {
       setDisciplinaryMark({ curator_id: '', reason: '' });
       setSuccessMsg('Дисциплинарная отметка установлена!');
       loadData();
-    } catch (err) {
-      setError('Не удалось вынести взыскание.');
-    }
+    } catch (err) { setError('Ошибка вынесения отметки.'); }
   };
-
-  const handleRemoveViolation = async (curatorId) => {
-    try {
-      await api.delete(`/rating/sanctions/disciplinary-mark/${curatorId}`);
-      setSuccessMsg('Дисциплинарная отметка снята.');
-      loadData();
-    } catch (err) {
-      setError('Ошибка при снятии отметки.');
-    }
-  };
-
-  const handleSubmitTask = async (executionId, type) => {
-    try {
-      let photoUrl = null;
-      if (type === 'photo_proof') {
-        photoUrl = prompt('Введите URL фотографии-подтверждения:', 'http://storage.ru/photo.jpg');
-        if (!photoUrl) return;
-      }
-      await api.post(`/tasks/my-tasks/${executionId}/submit`, { photo_url: photoUrl });
-      setSuccessMsg('Отчет успешно отправлен на проверку!');
-      loadData();
-    } catch (err) {
-      setError('Не удалось отправить отчет.');
-    }
-  };
-
-  const handleReviewTask = async (executionId, approve) => {
-    try {
-      const comment = reviewComment[executionId] || '';
-      if (!approve && !comment) {
-        alert('Пожалуйста, напишите причину возврата на доработку.');
-        return;
-      }
-      await api.post(`/tasks/executions/${executionId}/review`, { approve, comment });
-      setSuccessMsg(approve ? 'Отчет успешно одобрен!' : 'Отчет возвращен на доработку.');
-      loadData();
-    } catch (err) {
-      setError('Ошибка при проверке отчета.');
-    }
-  };
-
-  // --- МЕТОДЫ ИНТЕРАКТИВНОЙ КАРТОЧКИ СТУДЕНТА ---
-
-  const handleOpenStudentCard = (student) => {
-    setSelectedStudent(student);
-    setEditStudentForm({
-      first_name: student.first_name,
-      last_name: student.last_name,
-      middle_name: student.middle_name || '',
-      is_union_member: student.is_union_member,
-      social_category_ids: student.social_categories.map(c => c.id),
-      organization_ids: student.organizations.map(o => o.id),
-      // Сведения социального паспорта (мокап-поля)
-      phone: student.phone || '+7 (914) 456-11-22',
-      address: student.address || 'г. Чита, ул. Бутина, д. 31',
-      parent_info: student.parent_info || 'Иванова О.П. (мать) — +7 (914) 000-11-22'
-    });
-  };
-
-  const handleCardCheckboxChange = (id, type) => {
-    const listName = type === 'category' ? 'social_category_ids' : 'organization_ids';
-    const currentList = editStudentForm[listName];
-    if (currentList.includes(id)) {
-      setEditStudentForm({ ...editStudentForm, [listName]: currentList.filter(item => item !== id) });
-    } else {
-      setEditStudentForm({ ...editStudentForm, [listName]: [...currentList, id] });
-    }
-  };
-
-  const handleSaveStudentCard = async (e) => {
-    e.preventDefault();
-    try {
-      const body = {
-        first_name: editStudentForm.first_name,
-        last_name: editStudentForm.last_name,
-        middle_name: editStudentForm.middle_name,
-        is_union_member: editStudentForm.is_union_member,
-        social_category_ids: editStudentForm.social_category_ids,
-        organization_ids: editStudentForm.organization_ids
-      };
-      
-      await api.put(`/groups/${selectedGroupId}/students/${selectedStudent.id}`, body);
-      setSuccessMsg('Данные студента успешно сохранены в социальный паспорт!');
-      setSelectedStudent(null);
-      loadGroupData(selectedGroupId);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось обновить сведения студента.');
-    }
-  };
-
-  // --- МЕТОДЫ ИНТЕРАКТИВНОЙ ЗАГРУЗКИ ПОДТВЕРЖДЕНИЙ ---
-
-  const handleOpenTaskSubmit = (exe) => {
-    if (exe.task?.type === 'no_proof') {
-      submitTaskWithoutProof(exe.id);
-    } else {
-      setSubmittingTaskExe(exe);
-      setUploadedPhotoUrl('');
-      setConfirmedRequirements(false);
-    }
-  };
-
-  const submitTaskWithoutProof = async (executionId) => {
-    try {
-      await api.post(`/tasks/my-tasks/${executionId}/submit`, { photo_url: null });
-      setSuccessMsg('Отчет успешно отправлен на проверку!');
-      loadData();
-    } catch (err) {
-      setError('Не удалось отправить отчет.');
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setIsUploadingFile(true);
-    setError('');
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      
-      setUploadedPhotoUrl(res.data.url);
-      setSuccessMsg('Файл успешно загружен на сервер и обработан!');
-    } catch (err) {
-      setError('Не удалось загрузить файл. Попробуйте еще раз.');
-    } finally {
-      setIsUploadingFile(false);
-    }
-  };
-
-  const handleConfirmAndSubmitReport = async (e) => {
-    e.preventDefault();
-    if (!uploadedPhotoUrl) {
-      alert('Пожалуйста, загрузите фотографию-подтверждение.');
-      return;
-    }
-    if (!confirmedRequirements) {
-      alert('Пожалуйста, подтвердите выполнение требований.');
-      return;
-    }
-    try {
-      await api.post(`/tasks/my-tasks/${submittingTaskExe.id}/submit`, { photo_url: uploadedPhotoUrl });
-      setSuccessMsg('Отчет по задаче успешно отправлен на проверку!');
-      setSubmittingTaskExe(null);
-      setUploadedPhotoUrl('');
-      loadData();
-    } catch (err) {
-      setError('Не удалось отправить отчет.');
-    }
-  };
-
-  // Метод получения результатов анкетирования кураторов (только для Админа)
-  const handleLoadSurveyResponses = async (surveyId) => {
-    try {
-      setError('');
-      const res = await api.get(`/surveys/${surveyId}/responses`);
-      setSurveyResponsesSummary(res.data);
-    } catch (err) {
-      setError('Не удалось загрузить сводку ответов кураторов.');
-    }
-  };
-
-  // --- ЭКСПОРТ СВОДНЫХ ОТЧЕТОВ В EXCEL (Раздел 3.1 ТЗ) ---
 
   const handleExportRatingCSV = () => {
     try {
-      let csvContent = "\uFEFF"; // UTF-8 BOM для совместимости с Excel (корректные русские символы)
-      csvContent += "Место;Куратор;Прогресс программы (%);Доп. баллы;Суммарный балл;Активное взыскание\n";
-      
+      let csvContent = "\uFEFFМесто;Куратор;Прогресс программы (%);Доп. баллы;Суммарный балл;Взыскание\n";
       ratingList.forEach(r => {
         csvContent += `${r.place};${r.username};${r.completion_percentage}%;${r.additional_points};${r.points};${r.has_violation ? 'Да' : 'Нет'}\n`;
       });
-      
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `Рейтинг_кураторов_ЗабГУ_${new Date().toLocaleDateString('ru-RU')}.csv`);
+      link.setAttribute("download", `Рейтинг_кураторов_ЗабГУ.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err) {
-      alert("Не удалось сформировать отчет.");
-    }
-  };
-
-  const handleExportSocialPassportCSV = () => {
-    if (!students || students.length === 0) {
-      alert("Нет данных студентов для формирования паспорта.");
-      return;
-    }
-    try {
-      let csvContent = "\uFEFF"; // UTF-8 BOM
-      csvContent += "Студент (ФИО);Профсоюз;Категории социального учета;Участие в объединениях;Контакты (Телефон);Адрес проживания;Информация о родителях\n";
-      
-      students.forEach(s => {
-        const fio = `${s.last_name} ${s.first_name} ${s.middle_name || ''}`.trim();
-        const union = s.is_union_member ? "Да" : "Нет";
-        const cats = s.social_categories.map(c => c.name).join(', ') || "—";
-        const orgs = s.organizations.map(o => o.name).join(', ') || "—";
-        const phone = s.phone || "—";
-        const addr = s.address || "—";
-        const parents = s.parent_info || "—";
-        
-        csvContent += `"${fio}";"${union}";"${cats}";"${orgs}";"${phone}";"${addr}";"${parents}"\n`;
-      });
-      
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `Социальный_паспорт_группы_${groupDetails?.name || 'ЗабГУ'}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      alert("Не удалось выгрузить сведения социального паспорта.");
-    }
-  };
-
-  // --- КОНСТРУКТОР АНКЕТ ---
-
-  const handleAddQuestionToDraft = (e) => {
-    e.preventDefault();
-    if (!tempQuestion.text) return;
-    setSurveyQuestions([...surveyQuestions, tempQuestion]);
-    setTempQuestion({ text: '', type: 'text', options: '' });
-  };
-
-  const handleRemoveQuestionFromDraft = (index) => {
-    setSurveyQuestions(surveyQuestions.filter((_, i) => i !== index));
-  };
-
-  const handlePublishSurvey = async (e) => {
-    e.preventDefault();
-    if (surveyQuestions.length === 0) {
-      alert('Пожалуйста, добавьте хотя бы один вопрос в анкету.');
-      return;
-    }
-    try {
-      const body = {
-        title: newSurveyForm.title,
-        description: newSurveyForm.description,
-        is_mandatory: newSurveyForm.is_mandatory,
-        expires_at: new Date(newSurveyForm.expires_at).toISOString(),
-        questions: surveyQuestions
-      };
-      await api.post('/surveys/', body);
-      setNewSurveyForm({ title: '', description: '', is_mandatory: false, expires_at: '' });
-      setSurveyQuestions([]);
-      setSuccessMsg('Новая анкету успешно опубликована!');
-      loadData();
-    } catch (err) {
-      setError('Не удалось опубликовать анкету.');
-    }
-  };
-
-  const handleAnswerChange = (qId, val) => {
-    setSurveyAnswers({ ...surveyAnswers, [qId]: val });
-  };
-
-  const handleSurveySubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const answersPayload = Object.keys(surveyAnswers).map(qId => ({
-        question_id: qId,
-        value: Array.isArray(surveyAnswers[qId]) ? surveyAnswers[qId].join('; ') : String(surveyAnswers[qId])
-      }));
-
-      if (answersPayload.length < selectedSurvey.questions.length) {
-        alert('Пожалуйста, ответьте на все вопросы анкеты.');
-        return;
-      }
-
-      await api.post('/surveys/submit', {
-        survey_id: selectedSurvey.id,
-        answers: answersPayload
-      });
-
-      setSuccessMsg('Анкета успешно пройдена! Результаты сохранены.');
-      setSelectedSurvey(null);
-      setSurveyAnswers({});
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Не удалось отправить ответы на анкету.');
-    }
-  };
-
-  // --- ОБРАБОТЧИКИ УВЕДОМЛЕНИЙ ---
-
-  const handleMarkAsRead = async (notifId) => {
-    try {
-      await api.post(`/notifications/${notifId}/read`);
-      loadData();
-    } catch (err) {
-      console.error('Не удалось прочитать уведомление');
-    }
-  };
-
-  const handleReadAllNotifications = async () => {
-    try {
-      await api.post('/notifications/read-all');
-      loadData();
-    } catch (err) {
-      console.error('Не удалось прочитать все уведомления');
-    }
-  };
-
-  const handleCheckboxChange = (id, type) => {
-    const listName = type === 'category' ? 'social_category_ids' : 'organization_ids';
-    const currentList = newStudent[listName];
-    if (currentList.includes(id)) {
-      setNewStudent({ ...newStudent, [listName]: currentList.filter(item => item !== id) });
-    } else {
-      setNewStudent({ ...newStudent, [listName]: [...currentList, id] });
-    }
-  };
-
-  // --- Вспомогательные методы генерации сетки календаря ---
-  const handlePrevMonth = () => {
-    setCurrentCalDate(new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() - 1, 1));
-  };
-  const handleNextMonth = () => {
-    setCurrentCalDate(new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() + 1, 1));
+    } catch (err) { alert("Ошибка выгрузки."); }
   };
 
   const getCalendarGridDays = () => {
     const year = currentCalDate.getFullYear();
     const month = currentCalDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    let startDayOfWeek = firstDay.getDay() - 1; // Mon = 0, ..., Sun = 6
+    let startDayOfWeek = firstDay.getDay() - 1;
     if (startDayOfWeek < 0) startDayOfWeek = 6;
-
     const totalDays = new Date(year, month + 1, 0).getDate();
     const days = [];
-
-    // Пустые ячейки для выравнивания
-    for (let i = 0; i < startDayOfWeek; i++) {
-      days.push(null);
-    }
-    // Дни месяца
-    for (let d = 1; d <= totalDays; d++) {
-      days.push(d);
-    }
+    for (let i = 0; i < startDayOfWeek; i++) days.push(null);
+    for (let d = 1; d <= totalDays; d++) days.push(d);
     return days;
   };
 
@@ -710,1936 +556,922 @@ function Dashboard({ onLogout }) {
     const month = currentCalDate.getMonth();
     return calendar.filter(item => {
       const itemDate = new Date(item.date_time);
-      return itemDate.getFullYear() === year && 
-             itemDate.getMonth() === month && 
-             itemDate.getDate() === day;
+      return itemDate.getFullYear() === year && itemDate.getMonth() === month && itemDate.getDate() === day;
     });
   };
 
-  if (loading && !user) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <RefreshCw className="animate-spin h-8 w-8 text-[#2daabd] mr-2" /> Загрузка...
-      </div>
-    );
-  }
+  const filteredGroups = groups.filter(g => 
+    g.name.toLowerCase().includes(groupSearchQuery.toLowerCase()) || 
+    g.faculty.toLowerCase().includes(groupSearchQuery.toLowerCase())
+  );
 
   const totalMyTasksCount = myTasks.length;
   const approvedMyTasksCount = myTasks.filter(t => t.status === 'APPROVED').length;
   const completionPercentage = totalMyTasksCount > 0 ? Math.round((approvedMyTasksCount / totalMyTasksCount) * 100) : 0;
-  
-  const myPoints = myTasks.reduce((sum, t) => sum + t.points_awarded, 0);
-
   const currentCuratorRating = ratingList.find(r => r.curator_id === user?.id);
-  const myPointsCalculated = currentCuratorRating ? currentCuratorRating.points : myPoints;
+  const myPointsCalculated = currentCuratorRating ? currentCuratorRating.points : 0;
   const isMyViolation = currentCuratorRating ? currentCuratorRating.has_violation : false;
-
-  // Количество непрочитанных уведомлений
   const unreadNotifsCount = notifications.filter(n => !n.is_read).length;
 
-  // Фильтруем только АКТИВНЫЕ категории и организации для вывода при создании студента
-  const activeSocialCategories = socialCategories.filter(c => c.is_active);
-  const activeOrganizations = organizations.filter(o => o.is_active);
+  const presentCount = sessionRecords.filter(r => r.is_present).length;
+  const totalStudentsCount = sessionRecords.length;
+  const attendanceRate = totalStudentsCount > 0 ? Math.round((presentCount / totalStudentsCount) * 100) : 0;
+  const activeDynamicFields = dynamicFields.filter(f => f.is_active);
 
-  // --- АГРЕГАЦИЯ ДАННЫХ ДЛЯ СТАТИСТИКИ ---
-  
-  // 1. Статистика куратора за ТЕКУЩИЙ МЕСЯЦ (Август 2026)
-  const currentMonthTasks = myTasks.filter(exe => {
-    if (!exe.task?.due_date) return false;
-    const d = new Date(exe.task.due_date);
-    return d.getMonth() === 7 && d.getFullYear() === 2026; // Август - индекс 7
-  });
-  const monthlyTotal = currentMonthTasks.length;
-  const monthlyApproved = currentMonthTasks.filter(exe => exe.status === 'APPROVED').length;
-  const monthlyPercentage = monthlyTotal > 0 ? Math.round((monthlyApproved / monthlyTotal) * 100) : 0;
-
-  // 2. Статистика куратора по статусам
-  const taskStatusCounts = { APPROVED: 0, PENDING: 0, REVISION: 0, NOT_STARTED: 0 };
-  myTasks.forEach(exe => {
-    if (taskStatusCounts[exe.status] !== undefined) {
-      taskStatusCounts[exe.status] += 1;
-    }
-  });
-
-  // 3. Статистика администратора по факультетам (количество зарегистрированных групп)
-  const facultyGroupCounts = {};
-  groups.forEach(g => {
-    facultyGroupCounts[g.faculty] = (facultyGroupCounts[g.faculty] || 0) + 1;
-  });
-  const facultyStatsList = Object.keys(facultyGroupCounts).map(name => ({
-    name,
-    count: facultyGroupCounts[name]
-  }));
-  const maxFacultyCount = Math.max(...facultyStatsList.map(f => f.count), 1);
-
-  // 4. Статистика администратора по задачам (глобальный % выполнения кураторами)
-  const globalTaskStats = {};
-  allExecutions.forEach(exe => {
-    const tId = exe.task_id;
-    const title = exe.task?.title || 'Без названия';
-    if (!globalTaskStats[tId]) {
-      globalTaskStats[tId] = { title, total: 0, approved: 0 };
-    }
-    globalTaskStats[tId].total += 1;
-    if (exe.status === 'APPROVED') {
-      globalTaskStats[tId].approved += 1;
-    }
-  });
-  const globalTaskStatsList = Object.values(globalTaskStats).map(item => ({
-    ...item,
-    percentage: Math.round((item.approved / item.total) * 100)
-  }));
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
+        <RefreshCw className="animate-spin h-8 w-8 text-zab-teal mr-2" /> Загрузка системы ЗабГУ...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans pb-16 sm:pb-0">
       
-      {/* Шапка (Включает векторный герб ЗабГУ и темно-синий фон #051d2f) */}
-      <nav className="bg-[#051d2f] sticky top-0 z-10 px-6 py-4 flex items-center justify-between shadow-md text-white">
-        <div className="flex items-center space-x-3.5">
-          {/* Полный логотип-плашка для ПК */}
-          <img 
-            src={logoHorizontal} 
-            alt="ЗабГУ" 
-            className="hidden md:block h-11 w-auto object-contain" 
-          />
-          {/* Маленький герб для мобильных устройств */}
-          <img 
-            src={logoCrest} 
-            alt="ЗабГУ" 
-            className="block md:hidden h-10 w-auto object-contain" 
-          />
+      {/* 1. ШАПКА (#051d2f) */}
+      <nav className="bg-zab-navy sticky top-0 z-30 px-4 md:px-6 py-3 flex items-center justify-between shadow-lg text-white">
+        <div className="flex items-center space-x-3">
+          <img src={logoHorizontal} alt="ЗабГУ" className="hidden md:block h-10 w-auto object-contain" />
+          <img src={logoCrest} alt="ЗабГУ" className="block md:hidden h-8 w-auto object-contain" />
+          <div className="border-l border-slate-700 pl-3 hidden sm:block">
+            <span className="text-xs uppercase tracking-widest text-slate-300 font-bold block">Электронная книжка куратора</span>
+            <span className="text-[10px] text-zab-teal font-semibold flex items-center">
+              <Clock className="h-3 w-3 mr-1" /> Чита (UTC+9): {formatChitaTime(new Date(), { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-6">
-          {/* Интерактивный колокольчик */}
+        <div className="flex items-center space-x-3 md:space-x-4">
           <div className="relative">
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-slate-300 hover:text-white focus:outline-none transition-colors cursor-pointer"
-            >
-              <Bell className="h-6 w-6" />
+            <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 text-slate-300 hover:text-white transition-colors cursor-pointer">
+              <Bell className="h-5 w-5" />
               {unreadNotifsCount > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white font-black text-[10px] h-4 w-4 rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute top-1 right-1 bg-red-500 text-white font-black text-[9px] h-4 w-4 rounded-full flex items-center justify-center animate-pulse">
                   {unreadNotifsCount}
                 </span>
               )}
             </button>
 
-            {/* Выпадающий поп-ап */}
             {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-20 py-2 animate-fadeIn max-h-96 overflow-y-auto">
+              <div className="absolute right-0 mt-3 w-72 sm:w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 py-2 max-h-96 overflow-y-auto">
                 <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                  <span className="font-bold text-slate-800 text-sm">Уведомления</span>
+                  <span className="font-bold text-slate-800 text-xs uppercase">Уведомления</span>
                   {unreadNotifsCount > 0 && (
-                    <button 
-                      onClick={handleReadAllNotifications}
-                      className="text-xs text-[#2daabd] hover:text-[#208a9a] font-semibold cursor-pointer"
-                    >
-                      Прочитать все
-                    </button>
+                    <button onClick={() => api.post('/notifications/read-all').then(loadData)} className="text-xs text-zab-teal hover:underline font-bold">Прочитать все</button>
                   )}
                 </div>
-                
                 <div className="divide-y divide-slate-100">
-                  {notifications.length > 0 ? (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => !notif.is_read && handleMarkAsRead(notif.id)}
-                        className={`p-4 text-xs transition-colors cursor-pointer hover:bg-slate-50 ${!notif.is_read ? 'bg-[#2daabd]/10 font-semibold border-l-2 border-[#2daabd]' : ''}`}
-                      >
-                        <p className="text-slate-700 leading-relaxed">{notif.text}</p>
-                        <span className="text-[10px] text-slate-400 mt-2 block">
-                          {new Date(notif.created_at).toLocaleString('ru-RU')}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-8 text-center text-slate-400 text-xs">У вас нет новых уведомлений.</div>
-                  )}
+                  {notifications.map(notif => (
+                    <div key={notif.id} onClick={() => !notif.is_read && api.post(`/notifications/${notif.id}/read`).then(loadData)} className={`p-3 text-xs cursor-pointer hover:bg-slate-50 ${!notif.is_read ? 'bg-zab-teal/10 font-bold border-l-4 border-zab-teal' : ''}`}>
+                      <p className="text-slate-700">{notif.text}</p>
+                      <span className="text-[10px] text-slate-400 mt-1 block">{formatChitaTime(notif.created_at)}</span>
+                    </div>
+                  ))}
+                  {notifications.length === 0 && <div className="p-4 text-center text-slate-400 text-xs">Нет уведомлений.</div>}
                 </div>
               </div>
             )}
           </div>
 
-          <span className="text-sm bg-[#072740] px-3 py-1.5 rounded-lg text-slate-100 font-medium flex items-center border border-slate-700">
-            <Shield className="h-4 w-4 mr-1.5 text-[#2daabd]" />
-            Логин: <strong className="text-white ml-1">{user?.username}</strong> 
-            <span className="ml-1 text-slate-300">({user?.system_role})</span>
+          <span className="text-xs bg-zab-blue px-2.5 py-1.5 rounded-lg text-slate-200 font-semibold hidden md:flex items-center border border-slate-700">
+            <Shield className="h-3.5 w-3.5 mr-1.5 text-zab-teal" />
+            <span className="text-white mr-1">{user?.username}</span> 
+            <span className="text-slate-400">({user?.system_role})</span>
           </span>
-          <button onClick={onLogout} className="flex items-center text-red-400 hover:text-red-300 font-semibold text-sm transition-colors cursor-pointer">
-            <LogOut className="h-4 w-4 mr-1.5" /> Выйти
+
+          <button onClick={onLogout} className="flex items-center text-red-400 hover:text-red-300 font-bold text-xs p-1.5 cursor-pointer">
+            <LogOut className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Выйти</span>
           </button>
         </div>
       </nav>
 
-      {/* Выбор группы (Синий фон #072740) */}
+      {/* 2. СЕЛЕКТОР ГРУППЫ */}
       {groups.length > 0 && (
-        <div className="bg-[#072740] text-white px-6 py-3 flex items-center justify-between shadow-inner border-t border-slate-800">
-          <div className="flex items-center space-x-3">
-            <span className="text-sm font-semibold text-slate-200">Выбранная группа:</span>
+        <div className="bg-zab-blue text-white px-4 md:px-6 py-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between shadow-inner border-t border-slate-800 text-xs gap-2">
+          <div className="flex items-center space-x-2 flex-grow max-w-md">
+            <span className="font-bold text-slate-300 shrink-0">Группа:</span>
             <select 
               value={selectedGroupId} 
-              onChange={(e) => setSelectedGroupId(e.target.value)}
-              className="bg-[#051d2f] text-white font-bold px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2daabd] cursor-pointer"
+              onChange={(e) => setSelectedGroupId(e.target.value)} 
+              className="bg-zab-navy text-white font-bold px-3 py-1.5 rounded-lg border border-slate-700 focus:ring-1 focus:ring-zab-teal cursor-pointer w-full text-xs"
             >
-              {groups.map(g => (
+              {filteredGroups.map(g => (
                 <option key={g.id} value={g.id}>{g.name} ({g.faculty})</option>
               ))}
             </select>
           </div>
-          <span className="text-xs text-slate-300 font-mono">ID Группы: {selectedGroupId}</span>
+          <div className="flex items-center justify-between sm:justify-end space-x-3">
+            <input 
+              type="text" 
+              placeholder="Фильтр групп..." 
+              value={groupSearchQuery} 
+              onChange={(e) => setGroupSearchQuery(e.target.value)} 
+              className="bg-zab-navy/60 border border-slate-700 px-2.5 py-1 rounded-lg text-white text-[11px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-zab-teal w-32 sm:w-40"
+            />
+            <span className="text-slate-400 font-mono shrink-0">Курс {groupDetails?.course || 1}</span>
+          </div>
         </div>
       )}
 
-      {/* Сообщения */}
-      <div className="max-w-7xl mx-auto w-full px-6 mt-4">
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm shadow-sm flex items-center justify-between">
-            <span>{error}</span>
-            <button onClick={() => setError('')} className="font-bold">×</button>
-          </div>
-        )}
-        {successMsg && (
-          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-sm shadow-sm flex items-center justify-between">
-            <span>{successMsg}</span>
-            <button onClick={() => setSuccessMsg('')} className="font-bold">×</button>
-          </div>
-        )}
+      {/* 3. ОПОВЕЩЕНИЯ */}
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-6 mt-3">
+        {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-between border border-red-100"><span>{error}</span><button onClick={() => setError('')} className="font-black text-sm">×</button></div>}
+        {successMsg && <div className="bg-emerald-50 text-emerald-700 p-3 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-between border border-emerald-100"><span>{successMsg}</span><button onClick={() => setSuccessMsg('')} className="font-black text-sm">×</button></div>}
       </div>
 
-      {/* Вкладки (Подчеркивание бирюзовым цветом #2daabd) */}
-      <div className="max-w-7xl mx-auto w-full px-6 mt-4 flex border-b border-slate-200 space-x-8">
-        <button onClick={() => setActiveTab('overview')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'overview' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          Дашборд
-        </button>
-        <button onClick={() => setActiveTab('students')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'students' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          Социальный паспорт группы
-        </button>
-        <button onClick={() => setActiveTab('tasks')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'tasks' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          Задачи и отчеты {user?.system_role === 'ADMIN' && <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full ml-1 font-bold">Контроль</span>}
-        </button>
-        <button onClick={() => setActiveTab('rating')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'rating' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          Рейтинг кураторов
-        </button>
-        <button onClick={() => setActiveTab('surveys')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'surveys' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          Анкеты / Опросы {activeSurveys.length > 0 && <span className="bg-[#2daabd]/10 text-[#2daabd] text-[10px] px-2 py-0.5 rounded-full ml-1">{activeSurveys.length}</span>}
-        </button>
-        <button onClick={() => setActiveTab('statistics')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'statistics' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          Статистика
-        </button>
+      {/* 4. НАВИГАЦИОННЫЕ ВКЛАДКИ */}
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-6 mt-3 hidden sm:flex border-b border-slate-200 space-x-6 overflow-x-auto text-xs font-bold scrollbar-none">
+        <button onClick={() => setActiveTab('overview')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'overview' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Дашборд</button>
+        <button onClick={() => setActiveTab('students')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'students' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Социальный паспорт</button>
+        <button onClick={() => setActiveTab('attendance')} className={`pb-3 transition-all border-b-2 cursor-pointer flex items-center ${activeTab === 'attendance' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><QrCode className="h-3.5 w-3.5 mr-1" /> Посещаемость</button>
+        <button onClick={() => setActiveTab('tasks')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'tasks' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Задачи и отчеты</button>
+        <button onClick={() => setActiveTab('rating')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'rating' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Рейтинг</button>
+        <button onClick={() => setActiveTab('surveys')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'surveys' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Анкеты</button>
+        <button onClick={() => setActiveTab('statistics')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'statistics' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Статистика</button>
         {user?.system_role === 'ADMIN' && (
-          <button onClick={() => setActiveTab('admin')} className={`pb-4 text-sm font-semibold transition-all border-b-2 cursor-pointer ${activeTab === 'admin' ? 'border-[#2daabd] text-[#2daabd]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-            Панель управления (Админ)
-          </button>
+          <button onClick={() => setActiveTab('admin')} className={`pb-3 transition-all border-b-2 cursor-pointer ${activeTab === 'admin' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Админ-панель</button>
         )}
       </div>
 
-      {/* Контент */}
-      <main className="max-w-7xl mx-auto w-full p-6 flex-grow">
+      {/* 5. ОСНОВНОЙ КОНТЕНТ */}
+      <main className="max-w-7xl mx-auto w-full p-4 md:p-6 flex-grow">
         
-        {/* ================= Вкладка 1: ДАШБОРД ================= */}
+        {/* ================= ВКЛАДКА 1: ДАШБОРД ================= */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-            
-            {/* Карточка 1 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd] flex flex-col justify-between">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-zab-teal flex flex-col justify-between">
               <div>
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="bg-[#2daabd]/10 p-2.5 rounded-xl text-[#2daabd]"><Users className="h-6 w-6" /></div>
-                  <h2 className="text-lg font-bold text-slate-800">Моя группа</h2>
+                <div className="flex items-center space-x-2.5 mb-3">
+                  <div className="bg-zab-teal/10 p-2 rounded-xl text-zab-teal"><Users className="h-5 w-5" /></div>
+                  <h2 className="text-sm font-bold text-slate-800">Моя группа</h2>
                 </div>
-                {groupDetails ? (
-                  <div className="space-y-4">
-                    <div>
-                      <div className="text-sm text-slate-500 font-semibold">Название</div>
-                      <div className="text-xl font-bold text-slate-900">{groupDetails.name}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-500 font-semibold">Факультет</div>
-                      <div className="font-semibold text-slate-800">{groupDetails.faculty}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-500 font-semibold">Количество студентов</div>
-                      <div className="text-lg font-bold text-[#2daabd]">{groupDetails.students_count} чел.</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-sm py-8 text-center">Группа не выбрана.</div>
-                )}
-              </div>
-              {groupDetails && (
-                <div className="mt-8 pt-6 border-t border-slate-100 space-y-3">
-                  
-                  {/* Список кураторов с кнопкой Снять */}
-                  <div className="space-y-1.5">
-                    <span className="text-slate-500 text-xs font-bold uppercase tracking-wider block">Активные кураторы:</span>
-                    {groupDetails.curators && groupDetails.curators.length > 0 ? (
-                      <div className="space-y-1">
-                        {groupDetails.curators.map(c => (
-                          <div key={c.id} className="flex items-center justify-between text-sm bg-slate-50 border border-slate-100 px-2.5 py-1 rounded">
-                            <span className="font-semibold text-slate-800">{c.username}</span>
-                            {user?.system_role === 'ADMIN' && (
-                              <button 
-                                onClick={() => handleUnassignRole(c.user_id, 'CURATOR')} 
-                                className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
-                                title="Снять куратора с группы"
-                              >
-                                Снять
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400">Кураторы не назначены</span>
-                    )}
-                  </div>
-
-                  {/* Староста */}
-                  <div className="flex items-center justify-between text-sm bg-slate-50 border border-slate-100 px-2.5 py-1 rounded">
-                    <span className="text-slate-500 font-semibold">Староста:</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-slate-800">{groupDetails.starosta?.username || 'Не назначен'}</span>
-                      {groupDetails.starosta && user?.system_role === 'ADMIN' && (
-                        <button 
-                          onClick={() => handleUnassignRole(groupDetails.starosta.user_id, 'STAROSTA')} 
-                          className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
-                        >
-                          Снять
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Профорг */}
-                  <div className="flex items-center justify-between text-sm bg-slate-50 border border-slate-100 px-2.5 py-1 rounded">
-                    <span className="text-slate-500 font-semibold">Профорг:</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-slate-800">{groupDetails.proforg?.username || 'Не назначен'}</span>
-                      {groupDetails.proforg && user?.system_role === 'ADMIN' && (
-                        <button 
-                          onClick={() => handleUnassignRole(groupDetails.proforg.user_id, 'PROFORG')} 
-                          className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
-                        >
-                          Снять
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-              )}
-            </div>
-
-            {/* Карточка 2 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#072740] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600"><Award className="h-6 w-6" /></div>
-                  <h2 className="text-lg font-bold text-slate-800">Мой прогресс</h2>
-                </div>
-                {user?.system_role === 'ADMIN' ? (
-                  <div className="text-center py-12 text-slate-500 text-sm bg-slate-50 rounded-xl p-4">
-                    Администраторы контролируют и проверяют отчеты во вкладке «Задачи и отчеты».
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="text-center py-4 bg-slate-50 rounded-2xl relative">
-                      {isMyViolation && (
-                        <div className="absolute top-2.5 right-2.5 text-red-500" title="Взыскание!">
-                          <AlertTriangle className="h-5 w-5 animate-bounce" />
-                        </div>
-                      )}
-                      <div className="text-4xl font-extrabold text-slate-800">{approvedMyTasksCount} / {totalMyTasksCount}</div>
-                      <div className="text-sm text-slate-500 mt-1">Выполнено задач</div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm font-semibold mb-2">
-                        <span className="text-slate-600">Процент выполнения</span>
-                        <span className="text-slate-900">{completionPercentage}%</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-3">
-                        <div className="bg-[#2daabd] h-3 rounded-full transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
-                      </div>
-                    </div>
+                {groupDetails && (
+                  <div className="space-y-2 text-xs">
+                    <div><span className="text-slate-400 font-bold block">Группа</span><span className="text-base font-black text-slate-900">{groupDetails.name}</span></div>
+                    <div><span className="text-slate-400 font-bold block">Факультет</span><span className="font-semibold text-slate-800">{groupDetails.faculty}</span></div>
+                    <div><span className="text-slate-400 font-bold block">Студентов</span><span className="text-sm font-black text-zab-teal">{groupDetails.students_count} чел.</span></div>
                   </div>
                 )}
               </div>
-              {user?.system_role !== 'ADMIN' && (
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                  <span className="text-slate-500 text-sm font-semibold">Текущие баллы:</span>
-                  <span className="text-2xl font-black text-emerald-600">{myPointsCalculated} б.</span>
-                </div>
-              )}
             </div>
 
-            {/* Карточка 3 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd] flex flex-col justify-between">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-zab-navy flex flex-col justify-between">
               <div>
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="bg-purple-50 p-2.5 rounded-xl text-purple-600"><Calendar className="h-6 w-6" /></div>
-                  <h2 className="text-lg font-bold text-slate-800">Ближайшие события</h2>
+                <div className="flex items-center space-x-2.5 mb-3">
+                  <div className="bg-emerald-50 p-2 rounded-xl text-emerald-600"><Award className="h-5 w-5" /></div>
+                  <h2 className="text-sm font-bold text-slate-800">Мой прогресс</h2>
                 </div>
-                <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                  {calendar.length > 0 ? (
-                    calendar.slice(0, 4).map((item) => (
-                      <div 
-                        key={item.id} 
-                        onClick={() => setSelectedCalItem(item)}
-                        className={`p-3 rounded-xl border flex items-start space-x-3 cursor-pointer hover:shadow-sm transition-all ${item.type === 'event' ? 'bg-purple-50/50 border-purple-100' : 'bg-amber-50/50 border-amber-100'}`}
-                      >
-                        <div className="mt-0.5">
-                          {item.type === 'event' ? <Calendar className="h-4 w-4 text-purple-600" /> : <CheckSquare className="h-4 w-4 text-amber-600" />}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-xs text-slate-800 leading-tight">{item.title}</h4>
-                          <p className="text-[10px] text-slate-500 mt-1 font-semibold">
-                            {new Date(item.date_time).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-slate-500 text-sm py-12">Событий не запланировано.</div>
-                  )}
+                <div className="text-center py-3 bg-slate-50 rounded-xl relative">
+                  {isMyViolation && <div className="absolute top-2 right-2 text-red-500"><AlertTriangle className="h-4 w-4 animate-bounce" /></div>}
+                  <div className="text-2xl font-black text-slate-800">{approvedMyTasksCount} / {totalMyTasksCount}</div>
+                  <div className="text-[11px] text-slate-400">Выполнено задач программы</div>
                 </div>
-              </div>
-            </div>
-
-            {/* ИНТЕРАКТИВНАЯ СЕТКА КАЛЕНДАРЯ НА МЕСЯЦ */}
-            <div className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd]">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-[#2daabd]/10 p-2.5 rounded-xl text-[#2daabd]"><Calendar className="h-6 w-6" /></div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Интерактивный календарь ЗабГУ</h2>
-                    <p className="text-xs text-slate-400">Объединяет мероприятия, собрания и ключевые дедлайны</p>
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs font-bold mb-1">
+                    <span className="text-slate-600">Выполнение</span>
+                    <span className="text-slate-900">{completionPercentage}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div className="bg-zab-teal h-2 rounded-full" style={{ width: `${completionPercentage}%` }}></div>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-4">
-                  <button onClick={handlePrevMonth} className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer"><ChevronLeft className="h-5 w-5 text-slate-600" /></button>
-                  <span className="font-bold text-slate-800 text-sm uppercase tracking-wider">
-                    {currentCalDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })}
-                  </span>
-                  <button onClick={handleNextMonth} className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer"><ChevronRight className="h-5 w-5 text-slate-600" /></button>
-                </div>
               </div>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                <span className="text-slate-500 font-bold">Баллы:</span>
+                <span className="text-lg font-black text-emerald-600">{myPointsCalculated} б.</span>
+              </div>
+            </div>
 
-              {/* Сетка календаря */}
-              <div className="grid grid-cols-7 gap-2">
-                {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
-                  <div key={day} className="text-center font-bold text-xs text-slate-400 py-1">{day}</div>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-zab-teal">
+              <div className="flex items-center space-x-2.5 mb-3">
+                <div className="bg-purple-50 p-2 rounded-xl text-purple-600"><Calendar className="h-5 w-5" /></div>
+                <h2 className="text-sm font-bold text-slate-800">Ближайшие события плана</h2>
+              </div>
+              <div className="space-y-2 max-h-[190px] overflow-y-auto">
+                {calendar.slice(0, 3).map((item) => (
+                  <div key={item.id} onClick={() => setSelectedCalItem(item)} className="p-2.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-start space-x-2 cursor-pointer hover:bg-slate-100">
+                    <div className="mt-0.5">{item.type === 'event' ? <Calendar className="h-3.5 w-3.5 text-purple-600" /> : <CheckSquare className="h-3.5 w-3.5 text-amber-600" />}</div>
+                    <div>
+                      <h4 className="font-bold text-xs text-slate-800 leading-tight">{item.title}</h4>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">{formatChitaTime(item.date_time)}</span>
+                    </div>
+                  </div>
                 ))}
+                {calendar.length === 0 && <div className="text-center text-slate-400 text-xs py-6">Событий нет.</div>}
+              </div>
+            </div>
 
+            {/* Календарная сетка */}
+            <div className="lg:col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-zab-teal">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5 text-zab-teal" />
+                  <h2 className="text-sm font-bold text-slate-800">Календарь плана ЗабГУ (время Читы)</h2>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button onClick={() => setCurrentCalDate(new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() - 1, 1))} className="p-1 rounded border hover:bg-slate-50"><ChevronLeft className="h-4 w-4" /></button>
+                  <span className="font-bold text-xs uppercase text-slate-700">{currentCalDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })}</span>
+                  <button onClick={() => setCurrentCalDate(new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() + 1, 1))} className="p-1 rounded border hover:bg-slate-50"><ChevronRight className="h-4 w-4" /></button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <div key={d} className="font-bold text-[10px] text-slate-400 py-1">{d}</div>)}
                 {getCalendarGridDays().map((day, idx) => {
                   const dayEvents = getEventsForDay(day);
                   return (
-                    <div 
-                      key={idx} 
-                      className={`min-h-[90px] border border-slate-100 p-2 rounded-xl flex flex-col justify-between transition-all ${
-                        day ? 'bg-slate-50/50 hover:bg-slate-50' : 'bg-transparent border-none'
-                      }`}
-                    >
-                      {day ? (
+                    <div key={idx} className={`min-h-[70px] border border-slate-100 p-1 rounded-xl flex flex-col justify-between text-left ${day ? 'bg-slate-50/50' : 'bg-transparent border-none'}`}>
+                      {day && (
                         <>
-                          <span className="text-xs font-bold text-slate-400">{day}</span>
-                          <div className="space-y-1 mt-1 flex-grow overflow-hidden">
+                          <span className="text-[10px] font-bold text-slate-400">{day}</span>
+                          <div className="space-y-1 mt-0.5">
                             {dayEvents.slice(0, 2).map(evt => (
-                              <div 
-                                key={evt.id} 
-                                onClick={() => setSelectedCalItem(evt)}
-                                className={`text-[10px] px-1.5 py-0.5 rounded truncate font-bold cursor-pointer ${
-                                  evt.type === 'event' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
-                                }`}
-                                title={evt.title}
-                              >
+                              <div key={evt.id} onClick={() => setSelectedCalItem(evt)} className={`text-[9px] px-1 py-0.5 rounded font-bold truncate cursor-pointer ${evt.type === 'event' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`} title={evt.title}>
                                 {evt.title}
                               </div>
                             ))}
-                            {dayEvents.length > 2 && (
-                              <span className="text-[9px] text-slate-400 block text-center font-semibold">+{dayEvents.length - 2} еще</span>
-                            )}
                           </div>
                         </>
-                      ) : null}
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* Блок архивной истории */}
-            {groupDetails && (
-              <div className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#072740] animate-fadeIn">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="bg-[#072740]/10 p-2.5 rounded-xl text-[#072740]"><Clock className="h-6 w-6" /></div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">История назначений ответственных лиц группы</h2>
-                    <p className="text-xs text-slate-400">Архив изменений кураторов, старост и профоргов</p>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600 border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
-                        <th className="pb-3 pl-2">Пользователь</th>
-                        <th className="pb-3">Роль в группе</th>
-                        <th className="pb-3 text-center">Период работы</th>
-                        <th className="pb-3 text-center">Протокол избрания (для профоргов)</th>
-                        <th className="pb-3 text-right">Статус полномочий</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {assignmentHistory.length > 0 ? (
-                        assignmentHistory.map(item => {
-                          const dateAssigned = new Date(item.assigned_at).toLocaleDateString('ru-RU');
-                          const dateUnassigned = item.unassigned_at 
-                            ? new Date(item.unassigned_at).toLocaleDateString('ru-RU') 
-                            : 'по наст. время';
-                          const isActive = !item.unassigned_at;
-
-                          return (
-                            <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                              <td className="py-3 font-bold text-slate-800 pl-2">{item.username}</td>
-                              <td className="py-3">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  item.role_code === 'CURATOR' ? 'bg-[#2daabd]/10 text-[#2daabd]' :
-                                  item.role_code === 'STAROSTA' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
-                                }`}>
-                                  {item.role_code === 'CURATOR' ? 'Куратор' :
-                                   item.role_code === 'STAROSTA' ? 'Староста' : 'Профорг'}
-                                </span>
-                              </td>
-                              <td className="py-3 text-center font-semibold text-slate-700">
-                                {dateAssigned} — {dateUnassigned}
-                              </td>
-                              <td className="py-3 text-center text-slate-500 font-semibold">
-                                {item.role_code === 'PROFORG' && item.protocol_number ? (
-                                  <span>Протокол № {item.protocol_number} от {item.protocol_date ? new Date(item.protocol_date).toLocaleDateString('ru-RU') : '—'}</span>
-                                ) : (
-                                  <span className="text-slate-300">—</span>
-                                )}
-                              </td>
-                              <td className="py-3 text-right pr-2">
-                                {isActive ? (
-                                  <span className="bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">Действует ✓</span>
-                                ) : (
-                                  <span className="bg-slate-100 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">Завершены</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan="5" className="py-8 text-center text-slate-400 font-medium">История назначений этой группы пуста.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
           </div>
         )}
 
-        {/* ================= Вкладка 2: СПИСОК СТУДЕНТОВ ================= */}
+        {/* ================= ВКЛАДКА 2: СОЦИАЛЬНЫЙ ПАСПОРТ ================= */}
         {activeTab === 'students' && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-fadeIn grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-800">Паспорт академической группы</h2>
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <h2 className="text-sm font-bold text-slate-800">Социальный паспорт ({groupDetails?.name})</h2>
                 <div className="relative max-w-xs w-full">
-                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                  <input type="text" placeholder="Быстрый поиск по ФИО..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2daabd] text-slate-800" />
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input type="text" placeholder="Поиск по ФИО..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-zab-teal" />
                 </div>
               </div>
 
-              {/* Автоматическая сводная статистика профсоюзного учета (Раздел 12 ТЗ) */}
               {students.length > 0 && (
-                <div className="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-100 flex items-center justify-between text-xs font-bold text-slate-700 animate-fadeIn">
-                  <span className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-zab-teal" /> Профсоюзный учет группы</span>
-                  <span className="text-zab-teal text-sm">
-                    Членов профсоюза: {students.filter(s => s.is_union_member).length} из {students.length} студентов ({Math.round((students.filter(s => s.is_union_member).length / students.length) * 100)}%)
-                  </span>
+                <div className="bg-cyan-50/50 p-3 rounded-xl border border-cyan-100 flex justify-between items-center text-xs font-bold text-slate-700">
+                  <span className="flex items-center"><Briefcase className="h-4 w-4 mr-1.5 text-zab-teal" /> Профсоюзный учет группы</span>
+                  <span className="text-zab-teal">Членов: {students.filter(s => s.is_union_member).length} из {students.length} ({Math.round((students.filter(s => s.is_union_member).length / students.length) * 100)}%)</span>
                 </div>
               )}
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-600 border-collapse">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-600 border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-semibold">
-                      <th className="pb-3">Студент (ФИО)</th>
-                      <th className="pb-3 text-center">Профсоюз</th>
-                      <th className="pb-3">Социальные категории</th>
-                      <th className="pb-3">Студ. организации</th>
+                    <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                      <th className="pb-2.5">ФИО студента</th>
+                      <th className="pb-2.5 text-center">Профсоюз</th>
+                      <th className="pb-2.5">Категории</th>
+                      <th className="pb-2.5">Студ. организации</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {students.length > 0 ? (
-                      students.map(s => (
-                        <tr 
-                          key={s.id} 
-                          onClick={() => handleOpenStudentCard(s)}
-                          className="border-b border-slate-100 hover:bg-slate-50/50 transition-all cursor-pointer"
-                        >
-                          <td className="py-4 font-bold text-slate-800">{s.last_name} {s.first_name} {s.middle_name || ''}</td>
-                          <td className="py-4 text-center">
-                            {s.is_union_member ? <span className="bg-emerald-50 text-emerald-600 text-xs px-2.5 py-1 rounded-full font-bold">Член ✓</span> : <span className="text-slate-400 text-xs">-</span>}
-                          </td>
-                          <td className="py-4">
-                            <div className="flex flex-wrap gap-1">
-                              {s.social_categories.length > 0 ? s.social_categories.map(c => (
-                                <span key={c.id} className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded flex items-center"><Tag className="h-2.5 w-2.5 mr-0.5" /> {c.name}</span>
-                              )) : <span className="text-slate-300 text-xs">—</span>}
-                            </div>
-                          </td>
-                          <td className="py-4">
-                            <div className="flex flex-wrap gap-1">
-                              {s.organizations.length > 0 ? s.organizations.map(o => (
-                                <span key={o.id} className="bg-cyan-50 text-[#2daabd] text-[10px] font-bold px-2 py-0.5 rounded flex items-center"><Briefcase className="h-2.5 w-2.5 mr-0.5" /> {o.name}</span>
-                              )) : <span className="text-slate-300 text-xs">—</span>}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan="4" className="py-8 text-center text-slate-400">Студенты не найдены.</td></tr>
-                    )}
+                    {students.map(s => (
+                      <tr key={s.id} onClick={() => handleOpenStudentCard(s)} className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
+                        <td className="py-2.5 font-bold text-slate-800">{s.last_name} {s.first_name} {s.middle_name || ''}</td>
+                        <td className="py-2.5 text-center">{s.is_union_member ? <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-bold">Да ✓</span> : <span className="text-slate-300">-</span>}</td>
+                        <td className="py-2.5"><div className="flex flex-wrap gap-1">{s.social_categories?.map(c => <span key={c.id} className="bg-amber-50 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded">{c.name}</span>)}</div></td>
+                        <td className="py-2.5"><div className="flex flex-wrap gap-1">{s.organizations?.map(o => <span key={o.id} className="bg-zab-teal/10 text-zab-teal text-[10px] font-bold px-1.5 py-0.5 rounded">{o.name}</span>)}</div></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
+
+              <div className="md:hidden space-y-2">
+                {students.map(s => (
+                  <div key={s.id} onClick={() => handleOpenStudentCard(s)} className="p-3 bg-slate-50 border rounded-xl space-y-1 cursor-pointer">
+                    <div className="flex justify-between font-bold text-xs">
+                      <span>{s.last_name} {s.first_name}</span>
+                      {s.is_union_member && <span className="text-emerald-600 text-[10px]">Профсоюз ✓</span>}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {s.social_categories?.map(c => <span key={c.id} className="bg-amber-50 text-amber-700 text-[9px] px-1 rounded">{c.name}</span>)}
+                      {s.organizations?.map(o => <span key={o.id} className="bg-zab-teal/10 text-zab-teal text-[9px] px-1 rounded">{o.name}</span>)}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Карточка добавления студента */}
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 h-fit">
-              <div className="flex items-center space-x-2.5 mb-6">
-                <UserPlus className="h-5 w-5 text-[#2daabd]" />
+            {/* Форма добавления студента */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 h-fit space-y-3 text-xs">
+              <div className="flex items-center space-x-2 border-b pb-2">
+                <UserPlus className="h-4 w-4 text-zab-teal" />
                 <h3 className="font-bold text-slate-800">Добавить студента</h3>
               </div>
-              <form onSubmit={handleAddStudent} className="space-y-4">
+
+              <form onSubmit={handleAddStudent} className="space-y-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Фамилия</label>
-                  <input required type="text" value={newStudent.last_name} onChange={(e) => setNewStudent({...newStudent, last_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white text-slate-800" />
+                  <label className="block font-bold text-slate-600 mb-0.5">Фамилия</label>
+                  <input required type="text" value={newStudent.last_name} onChange={(e) => setNewStudent({...newStudent, last_name: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Имя</label>
-                  <input required type="text" value={newStudent.first_name} onChange={(e) => setNewStudent({...newStudent, first_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white text-slate-800" />
+                  <label className="block font-bold text-slate-600 mb-0.5">Имя</label>
+                  <input required type="text" value={newStudent.first_name} onChange={(e) => setNewStudent({...newStudent, first_name: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Отчество</label>
-                  <input type="text" value={newStudent.middle_name} onChange={(e) => setNewStudent({...newStudent, middle_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white text-slate-800" />
+                  <label className="block font-bold text-slate-600 mb-0.5">Отчество</label>
+                  <input type="text" value={newStudent.middle_name} onChange={(e) => setNewStudent({...newStudent, middle_name: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white" />
                 </div>
-                <div className="flex items-center space-x-3 py-1">
-                  <input type="checkbox" id="is_union" checked={newStudent.is_union_member} onChange={(e) => setNewStudent({...newStudent, is_union_member: e.target.checked})} className="rounded text-[#2daabd] h-4 w-4" />
-                  <label htmlFor="is_union" className="text-sm font-semibold text-slate-700">Состоит в профсоюзе</label>
+
+                <div className="flex items-center space-x-2 py-1">
+                  <input type="checkbox" id="is_union" checked={newStudent.is_union_member} onChange={(e) => setNewStudent({...newStudent, is_union_member: e.target.checked})} className="rounded text-zab-teal" />
+                  <label htmlFor="is_union" className="font-semibold text-slate-700">Член профсоюза</label>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-2">Социальные категории</label>
-                  <div className="max-h-24 overflow-y-auto border border-slate-200 bg-white p-2.5 rounded-lg space-y-1.5">
-                    {activeSocialCategories.length > 0 ? activeSocialCategories.map(cat => (
-                      <div key={cat.id} className="flex items-center space-x-2 text-xs">
-                        <input type="checkbox" checked={newStudent.social_category_ids.includes(cat.id)} onChange={() => handleCheckboxChange(cat.id, 'category')} className="rounded h-3 w-3" />
-                        <span className="text-slate-700 font-semibold">{cat.name}</span>
-                      </div>
-                    )) : <span className="text-xs text-slate-400">Нет доступных категорий</span>}
+
+                {activeDynamicFields.map(field => (
+                  <div key={field.id}>
+                    <label className="block font-bold text-slate-600 mb-0.5">{field.label}</label>
+                    {field.type === 'boolean' ? (
+                      <input type="checkbox" checked={!!newStudent.dynamic_values[field.id]} onChange={(e) => setNewStudent({...newStudent, dynamic_values: { ...newStudent.dynamic_values, [field.id]: e.target.checked }})} className="rounded text-zab-teal h-4 w-4" />
+                    ) : (
+                      <input type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'} value={newStudent.dynamic_values[field.id] || ''} onChange={(e) => setNewStudent({...newStudent, dynamic_values: { ...newStudent.dynamic_values, [field.id]: e.target.value }})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white" />
+                    )}
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-2">Студенческие организации</label>
-                  <div className="max-h-24 overflow-y-auto border border-slate-200 bg-white p-2.5 rounded-lg space-y-1.5">
-                    {activeOrganizations.length > 0 ? activeOrganizations.map(org => (
-                      <div key={org.id} className="flex items-center space-x-2 text-xs">
-                        <input type="checkbox" checked={newStudent.organization_ids.includes(org.id)} onChange={() => handleCheckboxChange(org.id, 'org')} className="rounded h-3 w-3 text-[#2daabd] focus:ring-[#2daabd]" />
-                        <span className="text-slate-700 font-semibold">{org.name}</span>
-                      </div>
-                    )) : <span className="text-xs text-slate-400">Нет доступных организаций</span>}
-                  </div>
-                </div>
-                <button type="submit" className="w-full py-2.5 bg-[#2daabd] hover:bg-[#208a9a] text-white font-semibold rounded-lg text-sm transition-all shadow-md mt-4 cursor-pointer">
-                  Сохранить в паспорт группы
+                ))}
+
+                <button type="submit" className="w-full py-2 bg-zab-teal hover:bg-zab-teal-hover text-white font-bold rounded-lg shadow mt-2 cursor-pointer">
+                  Сохранить в паспорт
                 </button>
               </form>
             </div>
+
           </div>
         )}
 
-        {/* ================= Вкладка 3: ЗАДАЧИ И ОТЧЕТЫ ================= */}
-        {activeTab === 'tasks' && (
-          <div className="grid grid-cols-1 gap-6 animate-fadeIn">
-            {user?.system_role === 'ADMIN' ? (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <div className="flex items-center space-x-3 mb-6 border-b border-slate-100 pb-4">
-                  <Shield className="h-5 w-5 text-red-500" />
-                  <h2 className="text-lg font-bold text-slate-800">Все отчеты кураторов в системе</h2>
-                </div>
-                <div className="space-y-6">
-                  {allExecutions.length > 0 ? (
-                    allExecutions.map(exe => (
-                      <div key={exe.id} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold text-slate-800 text-base">{exe.task?.title}</span>
-                            <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
-                              exe.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600' :
-                              exe.status === 'PENDING' ? 'bg-amber-50 text-amber-600 animate-pulse' :
-                              exe.status === 'REVISION' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                              {exe.status === 'APPROVED' ? 'Одобрена' :
-                               exe.status === 'PENDING' ? 'На проверке' :
-                               exe.status === 'REVISION' ? 'Доработка' : 'Не начата'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-500 mt-1">{exe.task?.description}</p>
-                          {exe.photo_url && (
-                            <div className="mt-3 text-xs bg-cyan-50 border border-cyan-100 p-2 rounded-lg text-[#2daabd] inline-block">
-                              Фотоподтверждение: <a href={exe.photo_url} target="_blank" rel="noreferrer" className="underline font-bold">{exe.photo_url}</a>
-                            </div>
-                          )}
-                          {exe.admin_comment && (
-                            <p className="text-xs text-red-500 font-semibold mt-2">Комментарий: {exe.admin_comment}</p>
-                          )}
-                        </div>
-                        {exe.status === 'PENDING' && (
-                          <div className="border-t md:border-t-0 pt-4 md:pt-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                            <input type="text" placeholder="Замечание..." value={reviewComment[exe.id] || ''} onChange={(e) => setReviewComment({...reviewComment, [exe.id]: e.target.value})} className="px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#2daabd] bg-white text-slate-800" />
-                            <div className="flex gap-2">
-                              <button onClick={() => handleReviewTask(exe.id, true)} className="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg flex items-center justify-center cursor-pointer"><Check className="h-3.5 w-3.5 mr-1" /> Одобрить</button>
-                              <button onClick={() => handleReviewTask(exe.id, false)} className="px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-lg flex items-center justify-center cursor-pointer"><X className="h-3.5 w-3.5 mr-1" /> Вернуть</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-slate-400 py-12">Отчетов на проверке нет.</div>
-                  )}
-                </div>
+        {/* ================= ВКЛАДКА 3: ПОСЕЩАЕМОСТЬ И QR ================= */}
+        {activeTab === 'attendance' && (
+          <div className="space-y-4">
+            <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <div>
+                <h3 className="font-bold text-sm text-slate-800 flex items-center">
+                  <UserCheck className="h-4 w-4 text-zab-teal mr-2" /> Учет посещаемости кураторского часа
+                </h3>
+                <p className="text-xs text-slate-400">Явка: {presentCount} из {totalStudentsCount} ({attendanceRate}%)</p>
               </div>
-            ) : (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h2 className="text-lg font-bold text-slate-800 mb-6">Мои задачи куратора</h2>
-                <div className="space-y-6">
-                  {myTasks.length > 0 ? (
-                    myTasks.map(exe => (
-                      <div key={exe.id} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold text-slate-800 text-base">{exe.task?.title}</span>
-                            <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
-                              exe.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600' :
-                              exe.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
-                              exe.status === 'REVISION' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                              {exe.status === 'APPROVED' ? 'Одобрена' : exe.status === 'PENDING' ? 'На проверке' : exe.status === 'REVISION' ? 'Доработка' : 'Не начата'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-500 mt-1">{exe.task?.description}</p>
-                          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                            {exe.task?.requirements && <span className="bg-cyan-50 text-[#2daabd] px-2 py-1 rounded font-semibold">Требования: {exe.task.requirements}</span>}
-                            {exe.task?.confirmation_requirements && <span className="bg-purple-50 text-purple-600 px-2 py-1 rounded font-semibold">Проверка: {exe.task.confirmation_requirements}</span>}
-                          </div>
-                          {exe.admin_comment && <p className="text-sm text-red-500 font-bold mt-2">Замечание: {exe.admin_comment}</p>}
-                        </div>
-                        {(exe.status === 'NOT_STARTED' || exe.status === 'REVISION') && (
-                          <button onClick={() => handleOpenTaskSubmit(exe)} className="px-5 py-2.5 bg-[#2daabd] hover:bg-[#208a9a] text-white text-sm font-semibold rounded-lg shadow cursor-pointer">
-                            {exe.task?.type === 'photo_proof' ? 'Загрузить фотоотчет' : 'Отметить выполнение'}
-                          </button>
-                        )}
+
+              <div className="flex gap-2">
+                <button onClick={() => setIsCreatingSession(true)} className="flex-1 sm:flex-none px-3.5 py-2 bg-zab-teal text-white font-bold text-xs rounded-xl shadow cursor-pointer">
+                  + Начать занятие
+                </button>
+                {selectedSession && (
+                  <button onClick={() => setIsScannerOpen(true)} className="flex-1 sm:flex-none px-3.5 py-2 bg-zab-navy text-white font-bold text-xs rounded-xl shadow cursor-pointer flex items-center justify-center">
+                    <Camera className="h-4 w-4 mr-1 text-zab-teal" /> Сканер QR
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {selectedSession && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b">
+                  <span className="font-bold text-xs text-slate-800">{selectedSession.title}</span>
+                  <button onClick={handleSaveAttendance} className="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg shadow">Сохранить ведомость</button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[450px] overflow-y-auto">
+                  {sessionRecords.map(rec => (
+                    <div 
+                      key={rec.student_id} 
+                      onClick={() => handleToggleStudentRecord(rec.student_id)}
+                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer select-none transition-all ${
+                        rec.is_present ? 'bg-emerald-50/90 border-emerald-200 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        {rec.is_present ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <XCircle className="h-5 w-5 text-slate-400" />}
+                        <span className="font-bold text-xs">{rec.student_name}</span>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-slate-400 py-12">Активных задач нет.</div>
-                  )}
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${rec.is_present ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                        {rec.is_present ? 'Был ✓' : 'Нет'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ================= Вкладка 4: ТУРНИРНАЯ ТАБЛИЦА (РЕЙТИНГ) ================= */}
+        {/* ================= ВКЛАДКА 4: ЗАДАЧИ И ПРОВЕРКА ОТЧЕТОВ ================= */}
+        {activeTab === 'tasks' && (
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h2 className="text-sm font-bold text-slate-800">
+              {user?.system_role === 'ADMIN' ? 'Контроль отчетов кураторов (Все группы ЗабГУ)' : 'Мои поручения и план мероприятий'}
+            </h2>
+
+            {user?.system_role === 'ADMIN' ? (
+              <div className="space-y-3 text-xs">
+                {allExecutions.map(exe => (
+                  <div key={exe.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50/70 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b pb-2">
+                      <div>
+                        <span className="font-black text-sm text-slate-900 block">{exe.task?.title}</span>
+                        <span className="text-[11px] text-zab-teal font-bold">Куратор: {exe.curator_username} • Группа: {exe.group_name} • Награда: {exe.task?.points} б.</span>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] self-start sm:self-auto ${exe.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : exe.status === 'PENDING' ? 'bg-amber-100 text-amber-800 animate-pulse' : 'bg-red-100 text-red-800'}`}>
+                        {exe.status === 'APPROVED' ? 'Одобрен' : exe.status === 'PENDING' ? 'На проверке' : 'Доработка'}
+                      </span>
+                    </div>
+
+                    <p className="text-slate-600 text-xs">{exe.task?.description}</p>
+                    
+                    {exe.photo_url && (
+                      <div className="pt-1">
+                        <a href={exe.photo_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-zab-teal font-bold underline hover:text-zab-teal-hover">
+                          <ExternalLink className="h-3.5 w-3.5 mr-1" /> Посмотреть прикрепленный фотоотчет
+                        </a>
+                      </div>
+                    )}
+
+                    {exe.status === 'PENDING' && (
+                      <div className="pt-2 border-t flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <input type="text" placeholder="Замечание при возврате..." value={reviewComment[exe.id] || ''} onChange={(e) => setReviewComment({...reviewComment, [exe.id]: e.target.value})} className="flex-grow px-3 py-1.5 rounded-lg border border-slate-200 bg-white" />
+                        <div className="flex gap-2">
+                          <button onClick={() => handleReviewTask(exe.id, true)} className="flex-1 px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-lg cursor-pointer">Одобрить (+{exe.task?.points} б.)</button>
+                          <button onClick={() => handleReviewTask(exe.id, false)} className="flex-1 px-4 py-1.5 bg-red-600 text-white font-bold rounded-lg cursor-pointer">Вернуть</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 text-xs">
+                {myTasks.map(exe => (
+                  <div key={exe.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-sm text-slate-800">{exe.task?.title}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${exe.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
+                          {exe.status === 'APPROVED' ? 'Выполнено ✓' : 'К выполнению'}
+                        </span>
+                      </div>
+                      <p className="text-slate-500 text-xs mt-0.5">{exe.task?.description}</p>
+                      <div className="mt-1 flex flex-wrap gap-2 text-[10px]">
+                        <span className="bg-zab-teal/10 text-zab-teal font-bold px-1.5 py-0.5 rounded">Награда: {exe.task?.points} б.</span>
+                        <span className="text-slate-400">Срок сдачи: {formatChitaTime(exe.task?.due_date)}</span>
+                      </div>
+                      {exe.admin_comment && <p className="text-red-500 font-bold mt-1">Замечание админа: {exe.admin_comment}</p>}
+                    </div>
+
+                    {exe.status !== 'APPROVED' && (
+                      <div>
+                        {exe.task?.type === 'photo_proof' ? (
+                          <button onClick={() => { setSubmittingTaskExe(exe); setUploadedPhotoUrl(''); }} className="px-4 py-2 bg-zab-teal text-white font-bold rounded-xl shadow cursor-pointer shrink-0">
+                            Загрузить фотоотчет
+                          </button>
+                        ) : (
+                          <button onClick={() => handleSubmitTaskWithoutPhoto(exe.id)} className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl shadow cursor-pointer shrink-0">
+                            Подтвердить участие
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= ВКЛАДКА 5: ТУРНИРНАЯ ТАБЛИЦА ================= */}
         {activeTab === 'rating' && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-fadeIn space-y-6">
-            <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">Рейтинговая таблица кураторов</h2>
-              <span className="text-xs text-slate-400">Формируется автоматически на основе баллов и выполнения</span>
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-800">Турнирная таблица кураторов</h2>
+                <span className="text-[11px] text-slate-400">Ранжирование по баллам и проценту выполнения</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <select value={ratingPeriod} onChange={(e) => setRatingPeriod(e.target.value)} className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white cursor-pointer">
+                  <option value="all">За все время (Год)</option>
+                  <option value="semester1">1 семестр</option>
+                  <option value="semester2">2 семестр</option>
+                  <option value="month">Текущий месяц</option>
+                </select>
+                <button onClick={handleExportRatingCSV} className="px-3 py-1.5 bg-zab-teal text-white font-bold text-xs rounded-lg shadow">CSV</button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600 border-collapse">
+              <table className="w-full text-left text-xs text-slate-600 border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-100 text-slate-400 font-semibold">
-                    <th className="pb-3 text-center">Место</th>
-                    <th className="pb-3">Куратор (ID)</th>
-                    <th className="pb-3 text-center">Прогресс программы</th>
-                    <th className="pb-3 text-center">Доп. баллы (штрафы/премии)</th>
-                    <th className="pb-3 text-right">Суммарный балл</th>
+                  <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                    <th className="pb-2 text-center">Место</th>
+                    <th className="pb-2">Куратор</th>
+                    <th className="pb-2 text-center">Прогресс</th>
+                    <th className="pb-2 text-center">Доп. баллы</th>
+                    <th className="pb-2 text-right">Баллы</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ratingList.length > 0 ? (
-                    ratingList.map(r => (
-                      <tr key={r.curator_id} className={`border-b border-slate-100 hover:bg-slate-50/50 transition-all ${user?.id === r.curator_id ? 'bg-cyan-50/30 font-semibold' : ''}`}>
-                        <td className="py-4 text-center">
-                          <span className={`inline-flex items-center justify-center h-7 w-7 rounded-full font-bold text-xs ${
-                            r.place === 1 ? 'bg-amber-100 text-amber-800' :
-                            r.place === 2 ? 'bg-slate-200 text-slate-800' :
-                            r.place === 3 ? 'bg-orange-100 text-orange-800' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {r.place}
-                          </span>
-                        </td>
-                        <td className="py-4 flex items-center space-x-2">
-                          <span className="text-slate-800 font-bold">{r.username}</span>
-                          <span className="text-xs font-mono text-slate-400">({r.curator_id.substring(0,8)})</span>
-                          {r.has_violation && (
-                            <span className="text-red-500 flex items-center" title={r.violation_reason || 'Имеется активное взыскание / нарушение (причина скрыта)'}>
-                              <AlertTriangle className="h-4 w-4" />
-                              {r.violation_reason && (
-                                <span className="text-[10px] ml-1 bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-mono">
-                                  {r.violation_reason}
-                                </span>
-                              )}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 text-center">
-                          <div className="flex items-center justify-center space-x-2">
-                            <span className="text-xs font-semibold">{r.completion_percentage}%</span>
-                            <div className="w-16 bg-slate-100 h-1.5 rounded-full">
-                              <div className="bg-[#2daabd] h-1.5 rounded-full" style={{ width: `${r.completion_percentage}%` }}></div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 text-center font-semibold">
-                          {r.additional_points > 0 ? (
-                            <span className="text-emerald-600 flex items-center justify-center"><ArrowUpCircle className="h-4 w-4 mr-1" /> +{r.additional_points} б.</span>
-                          ) : r.additional_points < 0 ? (
-                            <span className="text-red-600 flex items-center justify-center"><ArrowDownCircle className="h-4 w-4 mr-1" /> {r.additional_points} б.</span>
-                          ) : (
-                            <span className="text-slate-400">0 б.</span>
-                          )}
-                        </td>
-                        <td className="py-4 text-right font-black text-slate-800 text-base">{r.points} б.</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan="5" className="py-8 text-center text-slate-400">В рейтинге пока нет кураторов.</td></tr>
-                  )}
+                  {ratingList.map(r => (
+                    <tr key={r.curator_id} className={`border-b border-slate-100 ${user?.id === r.curator_id ? 'bg-zab-teal/10 font-bold' : ''}`}>
+                      <td className="py-2.5 text-center font-bold">{r.place}</td>
+                      <td className="py-2.5 font-bold text-slate-800 flex items-center space-x-1.5">
+                        <span>{r.username}</span>
+                        {r.has_violation && <AlertTriangle className="h-3.5 w-3.5 text-red-500" title="Взыскание" />}
+                      </td>
+                      <td className="py-2.5 text-center">{r.completion_percentage}%</td>
+                      <td className="py-2.5 text-center">{r.additional_points > 0 ? `+${r.additional_points}` : r.additional_points} б.</td>
+                      <td className="py-2.5 text-right font-black text-slate-900">{r.points} б.</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* ================= Вкладка 5: АНКЕТЫ И ОПРОСЫ ================= */}
+        {/* ================= ВКЛАДКА 6: АНКЕТЫ ================= */}
         {activeTab === 'surveys' && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-fadeIn space-y-6">
-            
-            {selectedSurvey ? (
-              <div>
-                <button onClick={() => setSelectedSurvey(null)} className="mb-4 text-sm font-bold text-[#2daabd] hover:underline flex items-center cursor-pointer">
-                  ← Назад к списку анкет
-                </button>
-                <div className="border-b border-slate-100 pb-4 mb-6">
-                  <h2 className="text-xl font-bold text-slate-800">{selectedSurvey.title}</h2>
-                  {selectedSurvey.description && <p className="text-slate-500 mt-2 text-sm">{selectedSurvey.description}</p>}
-                  {selectedSurvey.is_mandatory && <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded mt-2 inline-block">Обязательный опрос</span>}
-                </div>
-
-                <form onSubmit={handleSurveySubmit} className="space-y-6 max-w-2xl">
-                  {selectedSurvey.questions.map((q, idx) => (
-                    <div key={q.id} className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 space-y-3">
-                      <label className="block font-bold text-slate-800 text-base">
-                        {idx + 1}. {q.text}
-                      </label>
-                      {q.type === 'text' && (
-                        <input required type="text" onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#2daabd] text-slate-800" />
-                      )}
-                      {q.type === 'long_text' && (
-                        <textarea required rows="3" onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#2daabd] text-slate-800" />
-                      )}
-                      {q.type === 'single_choice' && (
-                        <div className="space-y-2.5">
-                          {q.options?.split(';').map((opt, oIdx) => (
-                            <div key={oIdx} className="flex items-center space-x-3 text-sm font-semibold">
-                              <input required name={`q_${q.id}`} type="radio" value={opt.trim()} onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="h-4 w-4 text-[#2daabd] focus:ring-[#2daabd]" />
-                              <span className="text-slate-700">{opt.trim()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {q.type === 'multiple_choice' && (
-                        <div className="space-y-2.5">
-                          {q.options?.split(';').map((opt, oIdx) => {
-                            const trimmedOpt = opt.trim();
-                            const currentAnswers = surveyAnswers[q.id] || [];
-                            return (
-                              <div key={oIdx} className="flex items-center space-x-3 text-sm font-semibold">
-                                <input type="checkbox" checked={currentAnswers.includes(trimmedOpt)} onChange={() => {
-                                  if (currentAnswers.includes(trimmedOpt)) {
-                                    handleAnswerChange(q.id, currentAnswers.filter(a => a !== trimmedOpt));
-                                  } else {
-                                    handleAnswerChange(q.id, [...currentAnswers, trimmedOpt]);
-                                  }
-                                }} className="rounded h-4 w-4 text-[#2daabd] focus:ring-[#2daabd]" />
-                                <span className="text-slate-700">{trimmedOpt}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {q.type === 'dropdown' && (
-                        <select required onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:ring-[#2daabd]">
-                          <option value="">Выберите ответ...</option>
-                          {q.options?.split(';').map((opt, oIdx) => (
-                            <option key={oIdx} value={opt.trim()}>{opt.trim()}</option>
-                          ))}
-                        </select>
-                      )}
-                      {q.type === 'number' && (
-                        <input required type="number" onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800" />
-                      )}
-                      {q.type === 'date' && (
-                        <input required type="date" onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800" />
-                      )}
-                      {q.type === 'scale' && (
-                        <div className="flex justify-between max-w-sm">
-                          {[1, 2, 3, 4, 5].map(num => (
-                            <div key={num} className="flex flex-col items-center">
-                              <span className="text-xs text-slate-400 mb-1">{num}</span>
-                              <input required type="radio" name={`scale_${q.id}`} value={num} onChange={(e) => handleAnswerChange(q.id, e.target.value)} className="h-4 w-4 text-[#2daabd] focus:ring-[#2daabd]" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <button type="submit" className="px-6 py-3 bg-[#2daabd] hover:bg-[#208a9a] text-white font-bold rounded-xl shadow cursor-pointer">
-                    Отправить ответы на проверку
-                  </button>
-                </form>
-              </div>
-            ) : surveyResponsesSummary ? (
-              // Сводка результатов анкетирования кураторов для Администратора (Раздел 28 ТЗ)
-              <div className="space-y-6">
-                <button 
-                  onClick={() => setSurveyResponsesSummary(null)} 
-                  className="text-sm font-bold text-[#2daabd] hover:underline flex items-center cursor-pointer"
-                >
-                  ← Назад к списку опросов
-                </button>
-                <div className="border-b border-slate-100 pb-4">
-                  <h2 className="text-xl font-bold text-slate-800">Результаты анкетирования кураторов</h2>
-                  <p className="text-sm text-[#2daabd] font-bold mt-1">Опрос: {surveyResponsesSummary.survey_title}</p>
-                  <p className="text-xs text-slate-400 mt-1">Всего вопросов: {surveyResponsesSummary.total_questions} • Сдано анкет: {surveyResponsesSummary.submissions_count}</p>
-                </div>
-
-                <div className="space-y-4">
-                  {surveyResponsesSummary.submissions.length > 0 ? (
-                    surveyResponsesSummary.submissions.map((sub, sIdx) => (
-                      <div key={sIdx} className="bg-slate-50 p-5 rounded-2xl border border-slate-150 space-y-3">
-                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                          <span className="font-extrabold text-sm text-[#051d2f]">Куратор: {sub.curator_username}</span>
-                          <span className="text-[10px] text-slate-400 font-semibold">Дата заполнения: {new Date(sub.submitted_at).toLocaleString('ru-RU')}</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {sub.answers.map((ans, aIdx) => (
-                            <div key={aIdx} className="bg-white p-3 rounded-xl border border-slate-100 space-y-1">
-                              <span className="text-[10px] font-bold text-slate-400 block">{ans.question_text}</span>
-                              <p className="text-xs font-bold text-slate-800 leading-relaxed">{ans.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-400 text-center py-12">Ни один куратор еще не прошел эту анкету.</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center space-x-3 mb-6">
-                  <FileText className="h-6 w-6 text-[#2daabd]" />
-                  <h2 className="text-lg font-bold text-slate-800">Активные анкеты и опросы кураторов</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {activeSurveys.length > 0 ? (
-                    activeSurveys.map(survey => (
-                      <div key={survey.id} className="p-6 border border-slate-150 rounded-2xl bg-white shadow-sm flex flex-col justify-between border-t-4 border-t-[#2daabd]">
-                        <div>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="font-bold text-lg text-slate-800">{survey.title}</span>
-                            {survey.is_mandatory && (
-                              <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded">Обязательно</span>
-                            )}
-                          </div>
-                          {survey.description && <p className="text-sm text-slate-500 line-clamp-2">{survey.description}</p>}
-                        </div>
-                        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-xs text-slate-400">Вопросов: <strong className="text-slate-700">{survey.questions?.length}</strong></span>
-                          
-                          <div className="flex space-x-2">
-                            {user?.system_role === 'ADMIN' && (
-                              <button 
-                                onClick={() => handleLoadSurveyResponses(survey.id)}
-                                className="px-3 py-2 bg-[#072740] hover:bg-[#051d2f] text-slate-100 font-bold text-xs rounded-lg cursor-pointer"
-                              >
-                                Результаты ответов
-                              </button>
-                            )}
-                            <button onClick={() => setSelectedSurvey(survey)} className="px-4 py-2 bg-[#2daabd] hover:bg-[#208a9a] text-white font-semibold text-xs rounded-lg cursor-pointer">
-                              Пройти опрос
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-slate-400 py-12 md:col-span-2">На данный момент нет активных опросов кураторов.</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= Вкладка 5.1: СТАТИСТИКА ================= */}
-        {activeTab === 'statistics' && (
-          <div className="space-y-6 animate-fadeIn">
-            
-            {user?.system_role === 'ADMIN' && (
-              // Панель формирования сводных отчетов в CSV / Excel
-              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center">
-                    <FileText className="h-4.5 w-4.5 text-zab-teal mr-2" /> Сводные отчеты и выгрузки (Раздел 3.1)
-                  </h3>
-                  <p className="text-xs text-slate-400">Формирование официальных отчетных документов для деканата и учебной части в формате CSV / Excel</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <button 
-                    onClick={handleExportRatingCSV}
-                    className="px-4 py-2.5 bg-[#2daabd] hover:bg-[#208a9a] text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-colors"
-                  >
-                    Выгрузить рейтинг кураторов
-                  </button>
-                  {students.length > 0 && (
-                    <button 
-                      onClick={handleExportSocialPassportCSV}
-                      className="px-4 py-2.5 bg-[#072740] hover:bg-[#051d2f] text-slate-100 font-bold text-xs rounded-xl shadow cursor-pointer transition-colors"
-                    >
-                      Выгрузить социальный паспорт ({groupDetails?.name})
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {user?.system_role === 'ADMIN' ? (
-              // Сводная статистика для Администратора
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* 1. Факультеты */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#072740] space-y-4">
-                  <h3 className="font-bold text-slate-800 text-lg flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-zab-teal" /> Группы по факультетам
-                  </h3>
-                  <div className="space-y-4">
-                    {facultyStatsList.length > 0 ? (
-                      facultyStatsList.map(item => (
-                        <div key={item.name} className="space-y-1.5">
-                          <div className="flex justify-between text-xs font-bold text-slate-600">
-                            <span>{item.name}</span>
-                            <span>{item.count} групп</span>
-                          </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2.5">
-                            <div 
-                              className="bg-[#2daabd] h-2.5 rounded-full transition-all duration-500" 
-                              style={{ width: `${(item.count / maxFacultyCount) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-400 py-6 text-center">Группы не созданы.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Общая успеваемость задач кураторов */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd] lg:col-span-2 space-y-4">
-                  <h3 className="font-bold text-slate-800 text-lg flex items-center">
-                    <CheckSquare className="h-5 w-5 mr-2 text-emerald-600" /> Выполнение плановых задач в системе
-                  </h3>
-                  <div className="space-y-4 overflow-y-auto max-h-[350px] pr-2">
-                    {globalTaskStatsList.length > 0 ? (
-                      globalTaskStatsList.map(task => (
-                        <div key={task.title} className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                            <span className="truncate max-w-md">{task.title}</span>
-                            <span className="text-[#2daabd]">{task.percentage}% ({task.approved} из {task.total} вып.)</span>
-                          </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2">
-                            <div 
-                              className="bg-[#2daabd] h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${task.percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-400 py-12 text-center">Нет назначенных кураторам задач.</p>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            ) : (
-              // Персональная статистика для Куратора
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                {/* Месячный план */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd] flex flex-col justify-between">
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h2 className="text-sm font-bold text-slate-800">Анкеты и мониторинги ЗабГУ</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {activeSurveys.map(survey => (
+                <div key={survey.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50/60 flex flex-col justify-between space-y-3">
                   <div>
-                    <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">План на месяц (Август)</span>
-                    <h4 className="text-3xl font-black text-slate-800">{monthlyApproved} / {monthlyTotal}</h4>
-                    <p className="text-xs text-slate-500 mt-2 font-semibold">задач успешно выполнено в текущем месяце</p>
-                  </div>
-                  <div className="mt-6">
-                    <div className="flex justify-between text-xs font-bold mb-1 text-slate-700">
-                      <span>Успеваемость</span>
-                      <span>{monthlyPercentage}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div className="bg-[#2daabd] h-2 rounded-full" style={{ width: `${monthlyPercentage}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Семестровый план */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#072740] flex flex-col justify-between">
-                  <div>
-                    <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Семестровый план</span>
-                    <h4 className="text-3xl font-black text-slate-800">{approvedMyTasksCount} / {totalMyTasksCount}</h4>
-                    <p className="text-xs text-slate-500 mt-2 font-semibold">всех плановых задач за текущий семестр</p>
-                  </div>
-                  <div className="mt-6">
-                    <div className="flex justify-between text-xs font-bold mb-1 text-slate-700">
-                      <span>Выполнение планов</span>
-                      <span>{completionPercentage}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div className="bg-[#072740] h-2 rounded-full" style={{ width: `${completionPercentage}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Распределение статусов задач */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd] space-y-3">
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-1">Статусы планов</span>
-                  <div className="space-y-1.5 text-xs font-bold text-slate-700">
-                    <div className="flex justify-between bg-emerald-50 text-emerald-800 p-2 rounded-lg">
-                      <span>Утверждено:</span>
-                      <span>{taskStatusCounts.APPROVED}</span>
-                    </div>
-                    <div className="flex justify-between bg-amber-50 text-amber-800 p-2 rounded-lg">
-                      <span>На проверке:</span>
-                      <span>{taskStatusCounts.PENDING}</span>
-                    </div>
-                    <div className="flex justify-between bg-red-50 text-red-800 p-2 rounded-lg">
-                      <span>На доработке:</span>
-                      <span>{taskStatusCounts.REVISION}</span>
-                    </div>
-                    <div className="flex justify-between bg-slate-100 text-slate-600 p-2 rounded-lg">
-                      <span>Не начато:</span>
-                      <span>{taskStatusCounts.NOT_STARTED}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Лидерство в рейтинге */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#072740] flex flex-col justify-between">
-                  <div>
-                    <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Позиция в рейтинге</span>
-                    <h4 className="text-3xl font-black text-slate-800">
-                      {currentCalItem ? `# ${currentCalItem.place}` : '—'}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-2 font-semibold">место среди всех кураторов университета</p>
-                  </div>
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-                    <span className="text-slate-500">Доп. баллы / Премии:</span>
-                    <span className={currentCuratorRating?.additional_points >= 0 ? 'text-emerald-600' : 'text-red-500'}>
-                      {currentCuratorRating?.additional_points || 0} б.
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-          </div>
-        )}
-
-        {/* ================= Вкладка 6: ПАНЕЛЬ УПРАВЛЕНИЯ (ТОЛЬКО АДМИН) ================= */}
-        {activeTab === 'admin' && user?.system_role === 'ADMIN' && (
-          <div className="space-y-8 animate-fadeIn">
-            
-            {/* ИНТЕРАКТИВНЫЙ КОНСТРУКТОР АНКЕТ */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd]">
-              <div className="flex items-center space-x-2.5 mb-6 border-b border-slate-100 pb-4">
-                <FileText className="h-5 w-5 text-purple-600" />
-                <h3 className="font-bold text-slate-800">Конструктор опросов (Собрать анкету)</h3>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">Название анкеты</label>
-                      <input required type="text" placeholder="например, Качество работы с первокурсниками" value={newSurveyForm.title} onChange={(e) => setNewSurveyForm({...newSurveyForm, title: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white focus:ring-[#2daabd]" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">Описание опроса</label>
-                      <input type="text" placeholder="краткое описание для кураторов" value={newSurveyForm.description} onChange={(e) => setNewSurveyForm({...newSurveyForm, description: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white focus:ring-[#2daabd]" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">Период прохождения (Дедлайн)</label>
-                      <input required type="datetime-local" value={newSurveyForm.expires_at} onChange={(e) => setNewSurveyForm({...newSurveyForm, expires_at: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white focus:ring-[#2daabd]" />
-                    </div>
-                    <div className="flex items-center space-x-3 pt-4">
-                      <input type="checkbox" id="survey_mandatory" checked={newSurveyForm.is_mandatory} onChange={(e) => setNewSurveyForm({...newSurveyForm, is_mandatory: e.target.checked})} className="rounded h-4 w-4 text-[#2daabd] focus:ring-[#2daabd]" />
-                      <label htmlFor="survey_mandatory" className="text-sm font-semibold text-slate-700">Обязательное прохождение</label>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-100 pt-6">
-                    <h4 className="font-bold text-slate-700 mb-4 flex items-center">
-                      <HelpCircle className="h-4.5 w-4.5 text-[#2daabd] mr-2" /> Вопросы в анкету ({surveyQuestions.length})
-                    </h4>
-                    <div className="space-y-3">
-                      {surveyQuestions.length > 0 ? (
-                        surveyQuestions.map((q, idx) => (
-                          <div key={idx} className="p-4 border border-slate-100 rounded-xl bg-slate-50 flex items-center justify-between">
-                            <div>
-                              <span className="text-xs text-slate-400 font-bold">Вопрос {idx + 1} ({q.type})</span>
-                              <p className="font-semibold text-slate-800 mt-0.5">{q.text}</p>
-                              {q.options && <p className="text-xs text-slate-400 mt-1">Варианты: {q.options}</p>}
-                            </div>
-                            <button onClick={() => handleRemoveQuestionFromDraft(idx)} className="text-red-500 hover:text-red-700 font-bold text-lg cursor-pointer">×</button>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-center text-slate-400 text-xs py-8">Вы еще не добавили ни одного вопроса.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {surveyQuestions.length > 0 && (
-                    <button onClick={handlePublishSurvey} className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm shadow transition-all flex items-center justify-center cursor-pointer">
-                      <Save className="h-4.5 w-4.5 mr-2" /> Опубликовать и разослать анкету кураторам
-                    </button>
-                  )}
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 h-fit">
-                  <h4 className="font-bold text-slate-800 text-sm mb-4">Добавить новый вопрос</h4>
-                  <form onSubmit={handleAddQuestionToDraft} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">Текст вопроса</label>
-                      <input required type="text" placeholder="например, Сколько студентов пришло?" value={tempQuestion.text} onChange={(e) => setTempQuestion({...tempQuestion, text: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">Тип ответа</label>
-                      <select value={tempQuestion.type} onChange={(e) => setTempQuestion({...tempQuestion, type: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white">
-                        <option value="text">Строка текста</option>
-                        <option value="long_text">Развернутый текстовый ответ</option>
-                        <option value="single_choice">Выбор одного варианта (radio)</option>
-                        <option value="multiple_choice">Выбор нескольких вариантов (checkbox)</option>
-                        <option value="dropdown">Выпадающий список (select)</option>
-                        <option value="number">Числовой ввод</option>
-                        <option value="date">Дата</option>
-                        <option value="scale">Шкала оценок (от 1 до 5)</option>
-                      </select>
-                    </div>
-
-                    {(tempQuestion.type === 'single_choice' || tempQuestion.type === 'multiple_choice' || tempQuestion.type === 'dropdown') && (
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Варианты ответов (через точку с запятой)</label>
-                        <input required type="text" placeholder="например: Да; Нет; Затрудняюсь" value={tempQuestion.options} onChange={(e) => setTempQuestion({...tempQuestion, options: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                      </div>
-                    )}
-
-                    <button type="submit" className="w-full py-2 bg-[#2daabd] text-white font-bold rounded-lg text-xs cursor-pointer">
-                      + Записать вопрос в черновик
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            {/* БЛОК САНКЦИЙ И ДИСЦИПЛИНАРНЫХ МЕР */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-red-500">
-                <div className="flex items-center space-x-2.5 mb-6">
-                  <ShieldAlert className="h-5 w-5 text-red-500" />
-                  <h3 className="font-bold text-slate-800">Санкции: Изменение баллов куратора</h3>
-                </div>
-                <form onSubmit={handleAdjustPoints} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">ID Куратора (UUID пользователя)</label>
-                    <input required type="text" placeholder="UUID куратора из СУБД" value={pointsAdjustment.curator_id} onChange={(e) => setPointsAdjustment({...pointsAdjustment, curator_id: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Баллы</label>
-                    <input required type="number" placeholder="например, -50 или 100" value={pointsAdjustment.points} onChange={(e) => setPointsAdjustment({...pointsAdjustment, points: parseInt(e.target.value)})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Причина</label>
-                    <input required type="text" value={pointsAdjustment.reason} onChange={(e) => setPointsAdjustment({...pointsAdjustment, reason: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <button type="submit" className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-all cursor-pointer">Применить изменение баллов</button>
-                </form>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-red-600">
-                <div className="flex items-center space-x-2.5 mb-6">
-                  <AlertTriangle className="h-5 w-5 text-red-600 animate-pulse" />
-                  <h3 className="font-bold text-slate-800">Санкции: Вынести дисциплинарную отметку (⚠)</h3>
-                </div>
-                <form onSubmit={handleIssueViolation} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">ID Куратора-нарушителя (UUID)</label>
-                    <input required type="text" placeholder="UUID пользователя" value={disciplinaryMark.curator_id} onChange={(e) => setDisciplinaryMark({...disciplinaryMark, curator_id: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Суть нарушения</label>
-                    <textarea required rows="2" placeholder="например, Неявка на собрание кураторов" value={disciplinaryMark.reason} onChange={(e) => setDisciplinaryMark({...disciplinaryMark, reason: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
+                    <h3 className="font-bold text-sm text-slate-800">{survey.title}</h3>
+                    <p className="text-slate-500 text-xs mt-1">{survey.description}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-grow py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-all cursor-pointer">Установить отметку (⚠)</button>
-                    {disciplinaryMark.curator_id && (
-                      <button type="button" onClick={() => handleRemoveViolation(disciplinaryMark.curator_id)} className="px-4 py-2.5 bg-[#051d2f] text-white text-sm font-semibold rounded-lg cursor-pointer">Снять</button>
+                    <button onClick={() => setSelectedSurvey(survey)} className="px-3 py-1.5 bg-zab-teal text-white font-bold rounded-lg shadow">Пройти опрос</button>
+                    {user?.system_role === 'ADMIN' && (
+                      <button onClick={() => handleLoadSurveyResponses(survey.id)} className="px-3 py-1.5 bg-zab-navy text-white font-bold rounded-lg shadow">Сводка ответов</button>
                     )}
                   </div>
-                </form>
-              </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-              {/* УПРАВЛЕНИЕ СПРАВОЧНИКАМИ С КНОПКАМИ И ИЗМЕНЕНИЕМ СТАТУСА */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-6 border-t-4 border-t-[#2daabd]">
-                
-                {/* Социальные категории */}
+        {/* ================= ВКЛАДКА 7: СТАТИСТИКА ================= */}
+        {activeTab === 'statistics' && (
+          <div className="space-y-4 text-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+              <span className="font-bold text-sm text-slate-800">Экспорт данных в Excel (Деканат)</span>
+              <button onClick={handleExportRatingCSV} className="px-3 py-1.5 bg-zab-teal text-white font-bold rounded-lg">Рейтинг CSV</button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-white p-4 rounded-2xl border border-slate-100"><span className="text-slate-400 font-bold block">Студентов в группе</span><span className="text-2xl font-black text-slate-900 mt-1 block">{students.length} чел.</span></div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-100"><span className="text-slate-400 font-bold block">Охват профсоюза</span><span className="text-2xl font-black text-zab-teal mt-1 block">{students.filter(s => s.is_union_member).length} из {students.length}</span></div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-100"><span className="text-slate-400 font-bold block">Сессий посещаемости</span><span className="text-2xl font-black text-emerald-600 mt-1 block">{attendanceSessions.length}</span></div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= ВКЛАДКА 8: АДМИН-ПАНЕЛЬ (УПРАВЛЕНИЕ ПЛАНОМ И СИСТЕМОЙ) ================= */}
+        {activeTab === 'admin' && user?.system_role === 'ADMIN' && (
+          <div className="space-y-5">
+            
+            <div className="flex border-b border-slate-200 space-x-4 text-xs font-bold overflow-x-auto scrollbar-none">
+              <button onClick={() => setAdminSubTab('events')} className={`pb-2.5 border-b-2 cursor-pointer flex items-center ${adminSubTab === 'events' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-400'}`}><Calendar className="h-4 w-4 mr-1" /> План мероприятий</button>
+              <button onClick={() => setAdminSubTab('fields')} className={`pb-2.5 border-b-2 cursor-pointer ${adminSubTab === 'fields' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-400'}`}>Поля паспорта</button>
+              <button onClick={() => setAdminSubTab('assignments')} className={`pb-2.5 border-b-2 cursor-pointer ${adminSubTab === 'assignments' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-400'}`}>Группы и Кураторы</button>
+              <button onClick={() => setAdminSubTab('surveys')} className={`pb-2.5 border-b-2 cursor-pointer ${adminSubTab === 'surveys' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-400'}`}>Анкеты</button>
+              <button onClick={() => setAdminSubTab('directories')} className={`pb-2.5 border-b-2 cursor-pointer ${adminSubTab === 'directories' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-400'}`}>Справочники</button>
+              <button onClick={() => setAdminSubTab('sanctions')} className={`pb-2.5 border-b-2 cursor-pointer ${adminSubTab === 'sanctions' ? 'border-zab-teal text-zab-teal' : 'border-transparent text-slate-400'}`}>Санкции и Баллы</button>
+            </div>
+
+            {/* 1. СОЗДАНИЕ ПЛАНОВОГО МЕРОПРИЯТИЯ С ПРАВИЛАМИ ОТЧЕТНОСТИ */}
+            {adminSubTab === 'events' && (
+              <form onSubmit={handleCreateEventPlan} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-zab-teal space-y-4 text-xs">
+                <div className="flex items-center space-x-2 border-b pb-2">
+                  <Calendar className="h-5 w-5 text-zab-teal" />
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-800">Формирование университетского плана мероприятий</h3>
+                    <p className="text-slate-400 text-[11px]">Администратор задает график событий и определяет форму отчетности для кураторов</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Название мероприятия</label>
+                    <input required type="text" placeholder="напр. Акция «Свеча Памяти»" value={newEventPlan.title} onChange={(e) => setNewEventPlan({...newEventPlan, title: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Дата и время (время Читы)</label>
+                    <input required type="datetime-local" value={newEventPlan.date_time} onChange={(e) => setNewEventPlan({...newEventPlan, date_time: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Место проведения</label>
+                    <input required type="text" placeholder="напр. Актовый зал / Мемориал" value={newEventPlan.location} onChange={(e) => setNewEventPlan({...newEventPlan, location: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Категория события</label>
+                    <select value={newEventPlan.category} onChange={(e) => setNewEventPlan({...newEventPlan, category: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white">
+                      <option value="Воспитательное">Воспитательное</option>
+                      <option value="Патриотическое">Патриотическое</option>
+                      <option value="Профилактическое">Профилактическое</option>
+                      <option value="Торжественное">Торжественное</option>
+                      <option value="Спортивное">Спортивное</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Целевая аудитория (Таргетинг)</label>
+                    <select value={newEventPlan.target_type} onChange={(e) => setNewEventPlan({...newEventPlan, target_type: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white">
+                      <option value="all">Все группы и кураторы университета</option>
+                      <option value="course">Кураторы конкретного курса</option>
+                      <option value="group">Выбранные группы</option>
+                    </select>
+                  </div>
+
+                  {newEventPlan.target_type === 'course' && (
+                    <div>
+                      <label className="block font-bold text-slate-600 mb-1">Курс</label>
+                      <select value={newEventPlan.target_course} onChange={(e) => setNewEventPlan({...newEventPlan, target_course: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white">
+                        {[1, 2, 3, 4, 5, 6].map(c => <option key={c} value={c}>{c} курс</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* БЛОК НАСТРОЙКИ ОТЧЕТНОСТИ (АДМИНИСТРАТОР РЕШАЕТ ФОРМАТ) */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                  <span className="font-bold text-zab-navy text-xs flex items-center"><CheckSquare className="h-4 w-4 mr-1 text-zab-teal" /> Форма отчетности куратора (Правила админа):</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-600 mb-1">Тип отчета</label>
+                      <select value={newEventPlan.report_type} onChange={(e) => setNewEventPlan({...newEventPlan, report_type: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold">
+                        <option value="photo_proof">📷 Обязательный фотоотчет</option>
+                        <option value="no_proof">✓ Простая отметка куратора</option>
+                        <option value="info_only">ℹ Без отчета (только календарь)</option>
+                      </select>
+                    </div>
+
+                    {newEventPlan.report_type !== 'info_only' && (
+                      <>
+                        <div>
+                          <label className="block font-bold text-slate-600 mb-1">Начисляемые баллы</label>
+                          <input required type="number" value={newEventPlan.points} onChange={(e) => setNewEventPlan({...newEventPlan, points: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white" />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-slate-600 mb-1">Требования к отчету/фото</label>
+                          <input type="text" placeholder="напр. Присутствие куратора и студентов" value={newEventPlan.confirmation_requirements} onChange={(e) => setNewEventPlan({...newEventPlan, confirmation_requirements: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 <div>
-                  <div className="flex items-center space-x-2.5 mb-4">
-                    <Tag className="h-5 w-5 text-amber-500" />
-                    <h3 className="font-bold text-slate-800 text-sm">Соц. категории</h3>
-                  </div>
-                  <form onSubmit={handleCreateCategory} className="flex gap-2 mb-4">
-                    <input required type="text" placeholder="Новая категория..." value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="flex-grow px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white focus:ring-[#2daabd]" />
-                    <button type="submit" className="px-3 py-1.5 bg-[#2daabd] hover:bg-[#208a9a] text-white text-xs font-bold rounded-lg cursor-pointer">Создать</button>
-                  </form>
-
-                  {/* Список категорий с управлением */}
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto border border-slate-100 p-2 rounded-lg bg-slate-50/50">
-                    {socialCategories.map(cat => (
-                      <div key={cat.id} className="flex items-center justify-between text-xs bg-white border border-slate-100 p-1.5 rounded">
-                        <span className={`font-semibold ${cat.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}>{cat.name}</span>
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            type="button"
-                            onClick={() => handleToggleCategoryActive(cat.id, cat.name, !cat.is_active)}
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${cat.is_active ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
-                          >
-                            {cat.is_active ? 'Выкл' : 'Вкл'}
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="text-red-500 hover:text-red-700 font-bold"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Студенческие организации */}
-                <div className="border-t border-slate-100 pt-6">
-                  <div className="flex items-center space-x-2.5 mb-4">
-                    <Briefcase className="h-5 w-5 text-[#2daabd]" />
-                    <h3 className="font-bold text-slate-800 text-sm">Студ. организации</h3>
-                  </div>
-                  <form onSubmit={handleCreateOrganization} className="flex gap-2 mb-4">
-                    <input required type="text" placeholder="Новая организация..." value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} className="flex-grow px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white focus:ring-[#2daabd]" />
-                    <button type="submit" className="px-3 py-1.5 bg-[#2daabd] hover:bg-[#208a9a] text-white text-xs font-bold rounded-lg cursor-pointer">Создать</button>
-                  </form>
-
-                  {/* Список организаций с управлением */}
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto border border-slate-100 p-2 rounded-lg bg-slate-50/50">
-                    {organizations.map(org => (
-                      <div key={org.id} className="flex items-center justify-between text-xs bg-white border border-slate-100 p-1.5 rounded">
-                        <span className={`font-semibold ${org.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}>{org.name}</span>
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            type="button"
-                            onClick={() => handleToggleOrgActive(org.id, org.name, !org.is_active)}
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${org.is_active ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
-                          >
-                            {org.is_active ? 'Выкл' : 'Вкл'}
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleDeleteOrg(org.id)}
-                            className="text-red-500 hover:text-red-700 font-bold"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <label className="block font-bold text-slate-600 mb-1">Описание и программа мероприятия</label>
+                  <textarea rows="2" placeholder="Краткая информация для кураторов..." value={newEventPlan.description} onChange={(e) => setNewEventPlan({...newEventPlan, description: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
                 </div>
 
-              </div>
-
-            </div>
-
-            {/* Форма 4: Новая задача */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-purple-600">
-              <div className="flex items-center space-x-2.5 mb-6">
-                <CheckSquare className="h-5 w-5 text-purple-600" />
-                <h3 className="font-bold text-slate-800">Создать новую задачу для кураторов</h3>
-              </div>
-              <form onSubmit={handleCreateTask} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Колонка 1: Основное */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-2">1. Параметры задачи</h4>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Заголовок</label>
-                    <input required type="text" value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 focus:ring-[#2daabd]" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Описание</label>
-                    <textarea rows="3" value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 focus:ring-[#2daabd]" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Категория</label>
-                    <select value={newTask.category} onChange={(e) => setNewTask({...newTask, category: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white">
-                      <option value="mandatory">Обязательная</option>
-                      <option value="optional">По выбору</option>
-                      <option value="extramural">Заочная</option>
-                      <option value="intramural">Очная</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Тип отчета</label>
-                    <select value={newTask.type} onChange={(e) => setNewTask({...newTask, type: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white">
-                      <option value="photo_proof">Требуется фотография-подтверждение</option>
-                      <option value="no_proof">Просто отметка о выполнении</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Колонка 2: Требования и сроки */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-2">2. Условия выполнения</h4>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Дедлайн</label>
-                    <input required type="datetime-local" value={newTask.due_date} onChange={(e) => setNewTask({...newTask, due_date: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Количество баллов</label>
-                    <input required type="number" min="0" value={newTask.points} onChange={(e) => setNewTask({...newTask, points: parseInt(e.target.value)})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Требования к выполнению</label>
-                    <input type="text" value={newTask.requirements} onChange={(e) => setNewTask({...newTask, requirements: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Требования к проверке</label>
-                    <input type="text" value={newTask.confirmation_requirements} onChange={(e) => setNewTask({...newTask, confirmation_requirements: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800" />
-                  </div>
-                </div>
-
-                {/* Колонка 3: Настройки таргетинга */}
-                <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <h4 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-2">3. Таргетинг и запуск</h4>
-                  
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Кому назначить?</label>
-                    <select 
-                      value={newTask.target_type} 
-                      onChange={(e) => setNewTask({...newTask, target_type: e.target.value})} 
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white focus:ring-[#2daabd]"
-                    >
-                      <option value="all">Всем кураторам (общее)</option>
-                      <option value="course">Кураторам конкретного курса</option>
-                      <option value="faculty">Определенному факультету</option>
-                      <option value="group">Выбранным группам (вручную)</option>
-                    </select>
-                  </div>
-
-                  {newTask.target_type === 'course' && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Выберите курс</label>
-                      <select 
-                        value={newTask.target_course} 
-                        onChange={(e) => setNewTask({...newTask, target_course: parseInt(e.target.value)})} 
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white"
-                      >
-                        {[1, 2, 3, 4, 5, 6].map(num => (
-                          <option key={num} value={num}>{num} курс</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {newTask.target_type === 'faculty' && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Выберите или введите факультет</label>
-                      <select 
-                        value={newTask.target_faculty} 
-                        onChange={(e) => setNewTask({...newTask, target_faculty: e.target.value})} 
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white mb-2"
-                      >
-                        <option value="">-- Выберите факультет --</option>
-                        {[...new Set(groups.map(g => g.faculty))].map(fac => (
-                          <option key={fac} value={fac}>{fac}</option>
-                        ))}
-                      </select>
-                      <input 
-                        type="text" 
-                        placeholder="Или напишите факультет вручную" 
-                        value={newTask.target_faculty} 
-                        onChange={(e) => setNewTask({...newTask, target_faculty: e.target.value})} 
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 focus:ring-[#2daabd]"
-                      />
-                    </div>
-                  )}
-
-                  {newTask.target_type === 'group' && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Выберите целевые группы</label>
-                      <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-white space-y-1.5">
-                        {groups.map(g => {
-                          const isSelected = newTask.target_group_ids.includes(g.id);
-                          return (
-                            <label key={g.id} className="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                              <input 
-                                type="checkbox" 
-                                checked={isSelected} 
-                                onChange={() => {
-                                  if (isSelected) {
-                                    setNewTask({...newTask, target_group_ids: newTask.target_group_ids.filter(id => id !== g.id)});
-                                  } else {
-                                    setNewTask({...newTask, target_group_ids: [...newTask.target_group_ids, g.id]});
-                                  }
-                                }} 
-                                className="rounded h-3 w-3 text-[#2daabd] focus:ring-[#2daabd]"
-                              />
-                              <span>{g.name} ({g.faculty})</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <button type="submit" className="w-full py-3 bg-[#2daabd] hover:bg-[#208a9a] text-white font-bold rounded-lg text-sm transition-all shadow-lg mt-4 cursor-pointer">
-                    Опубликовать задачу
-                  </button>
-                </div>
-
+                <button type="submit" className="px-6 py-2.5 bg-zab-teal text-white font-bold rounded-xl shadow cursor-pointer">
+                  Внести в университетский план
+                </button>
               </form>
-            </div>
+            )}
 
-            {/* Панель создания групп и ролей */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-[#2daabd]">
-                <div className="flex items-center space-x-2.5 mb-6">
-                  <PlusCircle className="h-5 w-5 text-[#2daabd]" />
-                  <h3 className="font-bold text-slate-800">Создать группу</h3>
+            {/* 2. ПОЛЯ ПАСПОРТА */}
+            {adminSubTab === 'fields' && (
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-zab-teal space-y-4">
+                <div className="flex items-center space-x-2 border-b pb-3">
+                  <Sliders className="h-5 w-5 text-zab-teal" />
+                  <h3 className="font-bold text-sm text-slate-800">Конструктор динамических полей паспорта</h3>
                 </div>
-                <form onSubmit={handleCreateGroup} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Номер/Название группы</label>
-                    <input required type="text" value={newGroup.name} onChange={(e) => setNewGroup({...newGroup, name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs">
+                  <div className="lg:col-span-2 space-y-2">
+                    {dynamicFields.map(f => (
+                      <div key={f.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                        <div>
+                          <span className={`font-bold ${f.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}>{f.label}</span>
+                          <span className="text-slate-400 ml-2 font-mono text-[10px]">({f.name} • {f.type})</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button onClick={() => handleToggleDynamicField(f)} className="cursor-pointer">
+                            {f.is_active ? <ToggleRight className="h-5 w-5 text-zab-teal" /> : <ToggleLeft className="h-5 w-5 text-slate-400" />}
+                          </button>
+                          <button onClick={() => handleDeleteDynamicField(f.id)} className="text-red-500 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Факультет/Институт</label>
-                    <input required type="text" value={newGroup.faculty} onChange={(e) => setNewGroup({...newGroup, faculty: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Направление подготовки</label>
-                    <input type="text" value={newGroup.training_direction} onChange={(e) => setNewGroup({...newGroup, training_direction: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Курс (от 1 до 6)</label>
-                    <input required type="number" min="1" max="6" value={newGroup.course} onChange={(e) => setNewGroup({...newGroup, course: parseInt(e.target.value)})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
-                  </div>
-                  <button type="submit" className="w-full py-2.5 bg-[#2daabd] text-white font-semibold rounded-lg text-sm transition-all cursor-pointer">Создать группу</button>
-                </form>
+
+                  <form onSubmit={handleCreateDynamicField} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5 h-fit">
+                    <h4 className="font-bold text-slate-800">Создать поле</h4>
+                    <input required type="text" placeholder="Название (label)" value={newFieldForm.label} onChange={(e) => setNewFieldForm({...newFieldForm, label: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white" />
+                    <input required type="text" placeholder="Ключ (name)" value={newFieldForm.name} onChange={(e) => setNewFieldForm({...newFieldForm, name: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white" />
+                    <select value={newFieldForm.type} onChange={(e) => setNewFieldForm({...newFieldForm, type: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white">
+                      <option value="text">Текст</option>
+                      <option value="number">Число</option>
+                      <option value="date">Дата</option>
+                      <option value="boolean">Да/Нет (чекбокс)</option>
+                    </select>
+                    <button type="submit" className="w-full py-2 bg-zab-teal text-white font-bold rounded-lg shadow cursor-pointer">Создать поле</button>
+                  </form>
+                </div>
               </div>
+            )}
 
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-t-4 border-t-emerald-600">
-                <div className="flex items-center space-x-2.5 mb-6">
-                  <UserPlus className="h-5 w-5 text-emerald-600" />
-                  <h3 className="font-bold text-slate-800">Назначить ответственного</h3>
+            {/* 3. ГРУППЫ И КУРАТОРЫ */}
+            {adminSubTab === 'assignments' && (
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form onSubmit={handleCreateGroup} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2.5">
+                    <h4 className="font-bold text-sm text-slate-800">Создать академическую группу</h4>
+                    <input required type="text" placeholder="Название (напр. ПИ-23-1)" value={newGroup.name} onChange={(e) => setNewGroup({...newGroup, name: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <input required type="text" placeholder="Факультет" value={newGroup.faculty} onChange={(e) => setNewGroup({...newGroup, faculty: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <input type="text" placeholder="Направление подготовки" value={newGroup.training_direction} onChange={(e) => setNewGroup({...newGroup, training_direction: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <input required type="number" min="1" max="6" placeholder="Курс" value={newGroup.course} onChange={(e) => setNewGroup({...newGroup, course: parseInt(e.target.value)})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <button type="submit" className="w-full py-2 bg-zab-teal text-white font-bold rounded-lg shadow">Создать группу</button>
+                  </form>
+
+                  <form onSubmit={handleAssignRole} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2.5">
+                    <h4 className="font-bold text-sm text-slate-800">Назначить куратора в группу {groupDetails?.name}</h4>
+                    <div>
+                      <label className="block font-bold text-slate-600 mb-1">Пользователь</label>
+                      <select required value={newAssignment.user_id} onChange={(e) => setNewAssignment({...newAssignment, user_id: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white">
+                        <option value="">-- Выберите пользователя --</option>
+                        {allUsersList.map(u => <option key={u.id} value={u.id}>{u.username} ({u.system_role})</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-600 mb-1">Роль в группе</label>
+                      <select value={newAssignment.role_code} onChange={(e) => setNewAssignment({...newAssignment, role_code: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white">
+                        <option value="CURATOR">Куратор</option>
+                        <option value="STAROSTA">Староста</option>
+                        <option value="PROFORG">Профорг</option>
+                      </select>
+                    </div>
+                    <button type="submit" className="w-full py-2 bg-emerald-600 text-white font-bold rounded-lg shadow">Назначить роль</button>
+                  </form>
                 </div>
-                <form onSubmit={handleAssignRole} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">ID Пользователя системы (UUID)</label>
-                    <input required type="text" placeholder="UUID пользователя" value={newAssignment.user_id} onChange={(e) => setNewAssignment({...newAssignment, user_id: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white" />
+
+                {groupDetails && (
+                  <div className="bg-white p-4 rounded-2xl border border-slate-100 space-y-2">
+                    <h4 className="font-bold text-slate-800">Активные кураторы группы {groupDetails.name}</h4>
+                    <div className="space-y-1.5">
+                      {groupDetails.curators?.map(c => (
+                        <div key={c.id} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
+                          <span className="font-semibold text-slate-800">{c.username} (Куратор)</span>
+                          <button onClick={() => handleUnassignRole(c.user_id, 'CURATOR')} className="text-red-500 font-bold hover:underline">Снять с роли</button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. СПРАВОЧНИКИ */}
+            {adminSubTab === 'directories' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                  <h4 className="font-bold text-slate-800">Социальные категории</h4>
+                  <form onSubmit={handleCreateCategory} className="flex gap-2">
+                    <input required type="text" placeholder="Новая категория..." value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="flex-grow px-2.5 py-1.5 rounded-lg border" />
+                    <button type="submit" className="px-3 py-1.5 bg-zab-teal text-white font-bold rounded-lg">Создать</button>
+                  </form>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {socialCategories.map(c => (
+                      <div key={c.id} className="p-2 bg-slate-50 rounded-lg flex justify-between items-center">
+                        <span className="font-semibold text-slate-800">{c.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                  <h4 className="font-bold text-slate-800">Студенческие организации</h4>
+                  <form onSubmit={handleCreateOrganization} className="flex gap-2">
+                    <input required type="text" placeholder="Новая организация..." value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} className="flex-grow px-2.5 py-1.5 rounded-lg border" />
+                    <button type="submit" className="px-3 py-1.5 bg-zab-teal text-white font-bold rounded-lg">Создать</button>
+                  </form>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {organizations.map(o => (
+                      <div key={o.id} className="p-2 bg-slate-50 rounded-lg flex justify-between items-center">
+                        <span className="font-semibold text-slate-800">{o.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. САНКЦИИ И БАЛЛЫ */}
+            {adminSubTab === 'sanctions' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <form onSubmit={handleAdjustPoints} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-2.5">
+                  <h4 className="font-bold text-slate-800">Корректировка баллов куратора</h4>
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Роль в группе</label>
-                    <select value={newAssignment.role_code} onChange={(e) => setNewAssignment({...newAssignment, role_code: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white">
-                      <option value="CURATOR">Куратор</option>
-                      <option value="STAROSTA">Староста</option>
-                      <option value="PROFORG">Профорг</option>
+                    <label className="block font-bold text-slate-600 mb-1">Куратор</label>
+                    <select required value={pointsAdjustment.curator_id} onChange={(e) => setPointsAdjustment({...pointsAdjustment, curator_id: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white">
+                      <option value="">-- Выберите куратора --</option>
+                      {allUsersList.filter(u => u.system_role === 'USER' || u.system_role === 'CURATOR').map(c => <option key={c.id} value={c.id}>{c.username}</option>)}
                     </select>
                   </div>
-                  {newAssignment.role_code === 'PROFORG' && (
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Номер протокола</label>
-                        <input required type="text" value={newAssignment.protocol_number} onChange={(e) => setNewAssignment({...newAssignment, protocol_number: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Дата протокола</label>
-                        <input required type="date" value={newAssignment.protocol_date} onChange={(e) => setNewAssignment({...newAssignment, protocol_date: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                      </div>
-                    </div>
-                  )}
-                  <button type="submit" className="w-full py-2.5 bg-emerald-600 text-white font-semibold rounded-lg text-sm transition-all cursor-pointer">Назначить роль</button>
+                  <input required type="number" placeholder="Баллы (+/-)" value={pointsAdjustment.points} onChange={(e) => setPointsAdjustment({...pointsAdjustment, points: parseInt(e.target.value)})} className="w-full px-2.5 py-1.5 rounded-lg border" />
+                  <input required type="text" placeholder="Причина" value={pointsAdjustment.reason} onChange={(e) => setPointsAdjustment({...pointsAdjustment, reason: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border" />
+                  <button type="submit" className="w-full py-2 bg-red-600 text-white font-bold rounded-lg">Применить баллы</button>
+                </form>
+
+                <form onSubmit={handleIssueViolation} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-2.5">
+                  <h4 className="font-bold text-slate-800">Вынесение дисциплинарной отметки (⚠)</h4>
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Куратор-нарушитель</label>
+                    <select required value={disciplinaryMark.curator_id} onChange={(e) => setDisciplinaryMark({...disciplinaryMark, curator_id: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border bg-white">
+                      <option value="">-- Выберите куратора --</option>
+                      {allUsersList.filter(u => u.system_role === 'USER' || u.system_role === 'CURATOR').map(c => <option key={c.id} value={c.id}>{c.username}</option>)}
+                    </select>
+                  </div>
+                  <textarea required rows="2" placeholder="Суть нарушения..." value={disciplinaryMark.reason} onChange={(e) => setDisciplinaryMark({...disciplinaryMark, reason: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border" />
+                  <button type="submit" className="w-full py-2 bg-red-700 text-white font-bold rounded-lg">Установить отметку (⚠)</button>
                 </form>
               </div>
-
-            </div>
+            )}
 
           </div>
         )}
 
       </main>
 
-      {/* МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ СОБЫТИЯ */}
-      {selectedCalItem && (
-        <div className="fixed inset-0 z-50 bg-[#051d2f]/70 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-100 shadow-xl border-t-8 border-t-[#2daabd] animate-fadeIn">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <span className={`px-2.5 py-1 rounded text-xs font-bold ${
-                selectedCalItem.type === 'event' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
-              }`}>
-                {selectedCalItem.type === 'event' ? 'Событие / Мероприятие' : 'Дедлайн задачи'}
-              </span>
-              <button onClick={() => setSelectedCalItem(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">×</button>
-            </div>
-            
-            <div className="py-4 space-y-4">
-              <h3 className="text-xl font-bold text-slate-800 leading-tight">{selectedCalItem.title}</h3>
-              {selectedCalItem.location && (
-                <p className="text-xs text-slate-500 font-semibold flex items-center">
-                  <BookOpen className="h-4 w-4 mr-1 text-[#2daabd]" /> Место: <strong className="text-slate-700 ml-1">{selectedCalItem.location}</strong>
-                </p>
-              )}
-              <p className="text-xs text-slate-500 font-semibold flex items-center">
-                <Clock className="h-4 w-4 mr-1 text-[#2daabd]" /> Время: <strong className="text-slate-700 ml-1">
-                  {new Date(selectedCalItem.date_time).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
-                </strong>
-              </p>
-              {selectedCalItem.is_mandatory && (
-                <div className="bg-red-50 text-red-600 text-xs font-bold p-2.5 rounded-lg flex items-center">
-                  <AlertTriangle className="h-4 w-4 mr-2" /> Обязательно к посещению куратором
-                </div>
-              )}
-            </div>
+      {/* 6. МОБИЛЬНАЯ НИЖНЯЯ ПАНЕЛЬ */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zab-navy border-t border-slate-700 px-2 py-1.5 flex justify-around items-center text-white text-[10px]">
+        <button onClick={() => setActiveTab('overview')} className={`flex flex-col items-center p-1 ${activeTab === 'overview' ? 'text-zab-teal font-bold' : 'text-slate-400'}`}><BookOpen className="h-4 w-4 mb-0.5" /> Дашборд</button>
+        <button onClick={() => setActiveTab('students')} className={`flex flex-col items-center p-1 ${activeTab === 'students' ? 'text-zab-teal font-bold' : 'text-slate-400'}`}><Users className="h-4 w-4 mb-0.5" /> Паспорт</button>
+        <button onClick={() => setActiveTab('attendance')} className={`flex flex-col items-center p-1 ${activeTab === 'attendance' ? 'text-zab-teal font-bold' : 'text-slate-400'}`}><QrCode className="h-4 w-4 mb-0.5" /> Явка</button>
+        <button onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center p-1 ${activeTab === 'tasks' ? 'text-zab-teal font-bold' : 'text-slate-400'}`}><CheckSquare className="h-4 w-4 mb-0.5" /> Задачи</button>
+        <button onClick={() => setActiveTab('rating')} className={`flex flex-col items-center p-1 ${activeTab === 'rating' ? 'text-zab-teal font-bold' : 'text-slate-400'}`}><Award className="h-4 w-4 mb-0.5" /> Рейтинг</button>
+      </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
-              {/* Связь события и задачи */}
+      {/* МОДАЛЬНЫЕ ОКНА */}
+      {selectedCalItem && (
+        <div className="fixed inset-0 z-50 bg-zab-navy/80 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border-t-8 border-t-zab-teal text-xs space-y-3">
+            <h3 className="font-bold text-sm text-slate-800">{selectedCalItem.title}</h3>
+            <p className="text-slate-500">Время проведения (Чита): {formatChitaTime(selectedCalItem.date_time)}</p>
+            <div className="flex justify-end gap-2 pt-2 border-t">
               {selectedCalItem.type === 'task_deadline' && (
-                <button 
-                  onClick={() => {
-                    setSelectedCalItem(null);
-                    setActiveTab('tasks');
-                  }}
-                  className="px-4 py-2 bg-[#2daabd] hover:bg-[#208a9a] text-white font-bold text-xs rounded-lg flex items-center shadow cursor-pointer"
-                >
-                  <CheckSquare className="h-3.5 w-3.5 mr-1" /> Перейти к выполнению задачи
-                </button>
+                <button onClick={() => { setSelectedCalItem(null); setActiveTab('tasks'); }} className="px-3 py-1.5 bg-zab-teal text-white font-bold rounded-lg shadow">К задаче</button>
               )}
-              <button 
-                onClick={() => setSelectedCalItem(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg cursor-pointer"
-              >
-                Закрыть
-              </button>
+              <button onClick={() => setSelectedCalItem(null)} className="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg">Закрыть</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* МОДАЛЬНОЕ ОКНО: ИНТЕРАКТИВНАЯ КАРТОЧКА СТУДЕНТА (Социальный паспорт) */}
-      {selectedStudent && (
-        <div className="fixed inset-0 z-50 bg-[#051d2f]/70 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
-          <form 
-            onSubmit={handleSaveStudentCard}
-            className="bg-white rounded-3xl p-6 max-w-4xl w-full border border-slate-100 shadow-2xl border-t-8 border-t-[#2daabd] animate-fadeIn grid grid-cols-1 md:grid-cols-3 gap-6 my-8"
-          >
-            
-            {/* Левая колонка: Профиль и Цифровой QR-паспорт */}
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col items-center justify-between text-center space-y-4">
-              <div className="space-y-2">
-                <div className="h-16 w-16 bg-[#2daabd]/10 text-[#2daabd] rounded-full flex items-center justify-center mx-auto text-xl font-black">
-                  {editStudentForm.last_name[0] || ''}{editStudentForm.first_name[0] || ''}
-                </div>
-                <h3 className="text-lg font-black text-slate-800 leading-tight">
-                  {editStudentForm.last_name} <br /> {editStudentForm.first_name} {editStudentForm.middle_name}
-                </h3>
-                <span className="inline-block bg-[#072740] text-slate-100 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                  Группа {groupDetails?.name} • {groupDetails?.course} курс
-                </span>
-              </div>
-
-              {/* QR-код верификации */}
-              <div className="space-y-2 w-full">
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 inline-block shadow-inner">
-                  <svg viewBox="0 0 100 100" className="h-28 w-28 text-[#051d2f]" fill="none" stroke="currentColor" strokeWidth="3">
-                    <rect x="5" y="5" width="25" height="25" rx="3" strokeWidth="5" />
-                    <rect x="11" y="11" width="13" height="13" rx="1" fill="currentColor" />
-                    <rect x="70" y="5" width="25" height="25" rx="3" strokeWidth="5" />
-                    <rect x="76" y="11" width="13" height="13" rx="1" fill="currentColor" />
-                    <rect x="5" y="70" width="25" height="25" rx="3" strokeWidth="5" />
-                    <rect x="11" y="76" width="13" height="13" rx="1" fill="currentColor" />
-                    <path d="M42,45 C42,39 48,35 52,37 C54,39 53,44 48,47 C45,49 46,54 50,56 C53,58 54,63 52,65" strokeWidth="3" strokeLinecap="round" />
-                    <line x1="45" y1="10" x2="55" y2="10" strokeWidth="4" />
-                    <line x1="45" y1="20" x2="45" y2="30" strokeWidth="4" />
-                    <line x1="15" y1="45" x2="25" y2="45" strokeWidth="4" />
-                    <line x1="30" y1="55" x2="30" y2="65" strokeWidth="4" />
-                    <line x1="75" y1="45" x2="85" y2="45" strokeWidth="4" />
-                    <line x1="75" y1="55" x2="75" y2="65" strokeWidth="4" />
-                    <line x1="45" y1="80" x2="55" y2="80" strokeWidth="4" />
-                    <line x1="60" y1="75" x2="60" y2="85" strokeWidth="4" />
-                  </svg>
-                </div>
-                <span className="text-[9px] font-mono text-slate-400 block tracking-wider uppercase">
-                  Токен: {selectedStudent.qr_token.substring(0, 13)}...
-                </span>
-              </div>
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 bg-zab-navy/90 flex flex-col items-center justify-center p-4 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border-t-8 border-t-zab-teal text-center space-y-3 text-xs">
+            <div className="flex justify-between items-center border-b pb-2">
+              <span className="font-bold text-slate-800">Сканирование QR-кода</span>
+              <button onClick={() => setIsScannerOpen(false)} className="text-slate-400 font-bold text-lg">×</button>
             </div>
-
-            {/* Средняя колонка: Редактирование ФИО и сведения социального паспорта */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Основные сведения</h4>
-              
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-600 mb-1">Фамилия</label>
-                  <input required type="text" value={editStudentForm.last_name} onChange={(e) => setEditStudentForm({...editStudentForm, last_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 focus:ring-1 focus:ring-[#2daabd]" />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-600 mb-1">Имя</label>
-                  <input required type="text" value={editStudentForm.first_name} onChange={(e) => setEditStudentForm({...editStudentForm, first_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 focus:ring-1 focus:ring-[#2daabd]" />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-600 mb-1">Отчество</label>
-                  <input type="text" value={editStudentForm.middle_name} onChange={(e) => setEditStudentForm({...editStudentForm, middle_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 focus:ring-1 focus:ring-[#2daabd]" />
-                </div>
-
-                <div className="flex items-center space-x-2.5 py-1.5 border-t border-b border-slate-100">
-                  <input type="checkbox" id="edit_is_union" checked={editStudentForm.is_union_member} onChange={(e) => setEditStudentForm({...editStudentForm, is_union_member: e.target.checked})} className="rounded h-4 w-4 text-[#2daabd] focus:ring-[#2daabd]" />
-                  <label htmlFor="edit_is_union" className="font-bold text-slate-700 cursor-pointer">Состоит в профсоюзе</label>
-                </div>
-
-                {/* Дополнительные поля социального паспорта */}
-                <div className="space-y-2 pt-2">
-                  <h5 className="font-bold text-slate-500 text-[10px] uppercase">Дополнительно</h5>
-                  <div>
-                    <label className="block font-semibold text-slate-600 mb-0.5">Телефон</label>
-                    <input type="text" value={editStudentForm.phone} onChange={(e) => setEditStudentForm({...editStudentForm, phone: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-600 mb-0.5">Адрес проживания</label>
-                    <input type="text" value={editStudentForm.address} onChange={(e) => setEditStudentForm({...editStudentForm, address: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-600 mb-0.5">Сведения о родителях</label>
-                    <input type="text" value={editStudentForm.parent_info} onChange={(e) => setEditStudentForm({...editStudentForm, parent_info: e.target.value})} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Правая колонка: Выбор категорий, организаций и действия */}
-            <div className="flex flex-col justify-between space-y-4">
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Категории и Участие</h4>
-                
-                {/* Social Categories */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-600">Социальные категории</label>
-                  <div className="max-h-24 overflow-y-auto border border-slate-200 bg-slate-50 p-2 rounded-lg space-y-1">
-                    {socialCategories.map(cat => (
-                      <label key={cat.id} className="flex items-center space-x-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={editStudentForm.social_category_ids.includes(cat.id)} 
-                          onChange={() => handleCardCheckboxChange(cat.id, 'category')} 
-                          className="rounded h-3 w-3 text-[#2daabd] focus:ring-[#2daabd]" 
-                        />
-                        <span className={cat.is_active ? '' : 'text-slate-400 line-through'}>{cat.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Студенческие организации */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-600">Студенческие организации</label>
-                  <div className="max-h-24 overflow-y-auto border border-slate-200 bg-slate-50 p-2 rounded-lg space-y-1">
-                    {organizations.map(org => (
-                      <label key={org.id} className="flex items-center space-x-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={editStudentForm.organization_ids.includes(org.id)} 
-                          onChange={() => handleCardCheckboxChange(org.id, 'org')} 
-                          className="rounded h-3 w-3 text-[#2daabd] focus:ring-[#2daabd]" 
-                        />
-                        <span className={org.is_active ? '' : 'text-slate-400 line-through'}>{org.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Кнопки сохранения изменений */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col space-y-2">
-                <button 
-                  type="submit"
-                  className="w-full py-2.5 bg-[#2daabd] hover:bg-[#208a9a] text-white font-bold text-xs rounded-xl shadow cursor-pointer text-center"
-                >
-                  Сохранить изменения
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setSelectedStudent(null)}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer text-center"
-                >
-                  Закрыть без сохранения
-                </button>
-              </div>
-            </div>
-
-          </form>
+            <div id="qr-reader-container" className="w-full h-64 bg-slate-900 rounded-2xl overflow-hidden"></div>
+            {scannerMessage && <div className={`p-2 rounded-lg font-bold ${scannerMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{scannerMessage.text}</div>}
+            <button onClick={() => setIsScannerOpen(false)} className="w-full py-2 bg-slate-100 text-slate-700 font-bold rounded-lg">Закрыть</button>
+          </div>
         </div>
       )}
 
-      {/* МОДАЛЬНОЕ ОКНО: ЗАГРУЗКА И ОТПРАВКА ОТЧЕТА С ФОТОПОДТВЕРЖДЕНИЕМ */}
+      {/* Модальное окно сдачи фотоотчета куратором */}
       {submittingTaskExe && (
-        <div className="fixed inset-0 z-50 bg-[#051d2f]/70 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
-          <form 
-            onSubmit={handleConfirmAndSubmitReport}
-            className="bg-white rounded-3xl p-6 max-w-lg w-full border border-slate-100 shadow-2xl border-t-8 border-t-[#2daabd] animate-fadeIn space-y-5 my-8"
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-lg">Отправить фотоотчет по задаче</h3>
-              <button 
-                type="button" 
-                onClick={() => setSubmittingTaskExe(null)} 
-                className="text-slate-400 hover:text-slate-600 font-bold text-lg"
-              >
-                ×
-              </button>
+        <div className="fixed inset-0 z-50 bg-zab-navy/80 flex items-center justify-center p-4 backdrop-blur-sm">
+          <form onSubmit={handleConfirmAndSubmitReport} className="bg-white rounded-3xl p-5 max-w-md w-full shadow-2xl border-t-8 border-t-zab-teal space-y-3 text-xs">
+            <h3 className="font-bold text-sm text-slate-800">Отправить фотоотчет по задаче</h3>
+            <p className="font-bold text-zab-teal">{submittingTaskExe.task?.title}</p>
+            
+            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center relative cursor-pointer hover:bg-slate-50">
+              <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              {isUploadingFile ? (
+                <div className="flex flex-col items-center"><RefreshCw className="animate-spin h-5 w-5 text-zab-teal mb-1" /> Загрузка...</div>
+              ) : uploadedPhotoUrl ? (
+                <span className="text-emerald-600 font-bold">✓ Фотография прикреплена</span>
+              ) : (
+                <span className="text-slate-500 font-bold">Нажмите для выбора фотоотчета</span>
+              )}
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Выбранная задача</span>
-                <h4 className="font-bold text-slate-800 text-base">{submittingTaskExe.task?.title}</h4>
-                <p className="text-xs text-slate-500 mt-1">{submittingTaskExe.task?.description}</p>
-              </div>
-
-              {/* Спецификация требований к фотоподтверждению */}
-              <div className="p-3 bg-cyan-50/50 rounded-xl border border-cyan-100/50 space-y-2 text-xs">
-                <span className="font-bold text-[#2daabd] block">Требования к подтверждению:</span>
-                <p className="text-slate-600 font-medium">{submittingTaskExe.task?.confirmation_requirements || 'Необходимо предоставить четкую отчетную фотографию.'}</p>
-              </div>
-
-              {/* Интерактивное поле загрузки файла */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-600">Загрузить фото</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 transition-colors relative cursor-pointer">
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                  />
-                  {isUploadingFile ? (
-                    <div className="flex flex-col items-center justify-center space-y-2 py-4">
-                      <RefreshCw className="animate-spin h-8 w-8 text-[#2daabd]" />
-                      <span className="text-xs font-semibold text-slate-500">Загрузка файла на сервер...</span>
-                    </div>
-                  ) : uploadedPhotoUrl ? (
-                    <div className="space-y-3">
-                      <img 
-                        src={uploadedPhotoUrl} 
-                        alt="Превью отчета" 
-                        className="max-h-40 rounded-xl mx-auto border shadow-sm"
-                      />
-                      <span className="text-xs text-emerald-600 font-bold block flex items-center justify-center">
-                        <Check className="h-4 w-4 mr-1" /> Файл успешно прикреплен!
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center space-y-2 py-4">
-                      <Upload className="h-8 w-8 text-slate-400" />
-                      <span className="text-xs font-bold text-slate-600">Перетащите сюда фото или кликните для выбора</span>
-                      <span className="text-[10px] text-slate-400">Форматы: JPG, PNG, GIF. Размер до 10 МБ.</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Чекбокс верификации требований отчета куратором */}
-              <div className="flex items-start space-x-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200/60">
-                <input 
-                  type="checkbox" 
-                  id="confirm_reqs" 
-                  checked={confirmedRequirements} 
-                  onChange={(e) => setConfirmedRequirements(e.target.checked)} 
-                  className="rounded mt-0.5 h-4 w-4 text-[#2daabd] focus:ring-[#2daabd]"
-                />
-                <label htmlFor="confirm_reqs" className="text-xs text-slate-600 font-semibold cursor-pointer">
-                  Я подтверждаю, что загруженное фото полностью соответствует всем указанным выше требованиям, включая присутствие куратора и студентов.
-                </label>
-              </div>
+            <div className="flex items-start space-x-2 bg-slate-50 p-2.5 rounded-xl border">
+              <input type="checkbox" id="confirm_box" checked={confirmedRequirements} onChange={(e) => setConfirmedRequirements(e.target.checked)} className="rounded text-zab-teal mt-0.5" />
+              <label htmlFor="confirm_box" className="font-semibold text-slate-600 cursor-pointer">
+                Подтверждаю выполнение требований задачи и присутствие на фото.
+              </label>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
-              <button 
-                type="submit"
-                className="px-5 py-2.5 bg-[#2daabd] hover:bg-[#208a9a] text-white font-bold text-xs rounded-xl shadow cursor-pointer"
-              >
-                Отправить отчет
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setSubmittingTaskExe(null)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
-              >
-                Отменить
-              </button>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="submit" className="px-4 py-1.5 bg-zab-teal text-white font-bold rounded-lg shadow">Отправить</button>
+              <button type="button" onClick={() => setSubmittingTaskExe(null)} className="px-4 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg">Отмена</button>
             </div>
           </form>
         </div>

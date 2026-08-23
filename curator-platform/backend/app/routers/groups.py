@@ -12,7 +12,41 @@ router = APIRouter(
     tags=["Академические группы"]
 )
 
-# 1. Создание академической группы (доступно только Администраторам)
+# Вспомогательный метод для маппинга студента с учетом динамических полей
+def map_student_to_response(student: models.Student, db: Session) -> schemas.StudentResponse:
+    values = db.query(models.StudentDynamicValue).filter(
+        models.StudentDynamicValue.student_id == student.id
+    ).all()
+    
+    dyn_values_responses = []
+    for val in values:
+        field = db.query(models.DynamicField).filter(models.DynamicField.id == val.field_id).first()
+        dyn_values_responses.append(
+            schemas.StudentDynamicValueResponse(
+                field_id=val.field_id,
+                field_label=field.label if field else "Поле удалено",
+                field_name=field.name if field else "deleted_field",
+                field_type=field.type if field else "text",
+                value=val.value
+            )
+        )
+    
+    return schemas.StudentResponse(
+        id=student.id,
+        academic_group_id=student.academic_group_id,
+        first_name=student.first_name,
+        last_name=student.last_name,
+        middle_name=student.middle_name,
+        is_union_member=student.is_union_member,
+        qr_token=student.qr_token,
+        user_id=student.user_id,
+        social_categories=[schemas.DirectoryItemResponse.model_validate(c) for c in student.social_categories],
+        organizations=[schemas.DirectoryItemResponse.model_validate(o) for o in student.organizations],
+        dynamic_values=dyn_values_responses
+    )
+
+
+# 1. Создание академической группы
 @router.post("/", response_model=schemas.GroupResponse, status_code=status.HTTP_201_CREATED)
 def create_group(
     group_in: schemas.GroupCreate, 
@@ -110,7 +144,7 @@ def get_group_details(
     )
 
 
-# 4. Назначение ответственного лица (Администратором)
+# 4. Назначение ответственного лица
 @router.post("/{group_id}/assign", response_model=schemas.AssignmentResponse)
 def assign_role_to_group(
     group_id: uuid.UUID,
@@ -150,7 +184,8 @@ def assign_role_to_group(
         academic_group_id=group_id,
         role_code=assign_in.role_code,
         protocol_number=assign_in.protocol_number,
-        protocol_date=assign_in.protocol_date
+        protocol_date=assign_in.protocol_date,
+        protocol_file_url=assign_in.protocol_file_url  # Ссылка на файл протокола
     )
     
     db.add(new_assignment)
@@ -162,7 +197,7 @@ def assign_role_to_group(
     return response
 
 
-# 4.1 Снять ответственное лицо с роли в группе (Раздел 7 и 17 ТЗ)
+# 5. Снять ответственное лицо с роли в группе
 @router.post("/{group_id}/unassign", response_model=schemas.AssignmentResponse)
 def unassign_role_from_group(
     group_id: uuid.UUID,
@@ -195,14 +230,13 @@ def unassign_role_from_group(
     return response
 
 
-# 4.2 Получение истории всех назначений группы (Раздел 7 и 17 ТЗ)
+# 6. Получение истории всех назначений группы
 @router.get("/{group_id}/history", response_model=List[schemas.AssignmentResponse])
 def get_group_assignment_history(
     group_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    # Если пользователь не админ, проверяем его причастность к группе
     if current_user.system_role != "ADMIN":
         is_assigned = db.query(models.GroupAssignment).filter(
             models.GroupAssignment.user_id == current_user.id,
@@ -229,7 +263,7 @@ def get_group_assignment_history(
     return result
 
 
-# 5. Добавление студентов в группу (с автоматической привязкой справочников!)
+# 7. Добавление студентов в группу (с сохранением кастомных полей социального паспорта)
 @router.post("/{group_id}/students", response_model=schemas.StudentResponse, status_code=status.HTTP_201_CREATED)
 def add_student_to_group(
     group_id: uuid.UUID,
@@ -275,10 +309,25 @@ def add_student_to_group(
     db.add(new_student)
     db.commit()
     db.refresh(new_student)
-    return new_student
+
+    # Сохраняем значения динамических полей, если они заполнены
+    if student_in.dynamic_values:
+        for val in student_in.dynamic_values:
+            # Проверяем существование кастомного поля в каталоге
+            field_exists = db.query(models.DynamicField).filter(models.DynamicField.id == val.field_id).first()
+            if field_exists:
+                db_val = models.StudentDynamicValue(
+                    student_id=new_student.id,
+                    field_id=val.field_id,
+                    value=val.value
+                )
+                db.add(db_val)
+        db.commit()
+
+    return map_student_to_response(new_student, db)
 
 
-# 6. Получение списка студентов группы
+# 8. Получение списка студентов группы
 @router.get("/{group_id}/students", response_model=List[schemas.StudentResponse])
 def get_group_students(
     group_id: uuid.UUID,
@@ -308,10 +357,11 @@ def get_group_students(
             (models.Student.middle_name.ilike(search_filter))
         )
 
-    return query.all()
+    students = query.all()
+    return [map_student_to_response(s, db) for s in students]
 
 
-# 7. Обновление карточки студента (Раздел 10 и 39 ТЗ)
+# 9. Обновление карточки студента
 @router.put("/{group_id}/students/{student_id}", response_model=schemas.StudentResponse)
 def update_student_in_group(
     group_id: uuid.UUID,
@@ -356,6 +406,19 @@ def update_student_in_group(
     student.social_categories = categories
     student.organizations = organizations
 
+    # Удаляем и перезаписываем заново динамические значения
+    db.query(models.StudentDynamicValue).filter(models.StudentDynamicValue.student_id == student_id).delete()
+    if student_in.dynamic_values:
+        for val in student_in.dynamic_values:
+            field_exists = db.query(models.DynamicField).filter(models.DynamicField.id == val.field_id).first()
+            if field_exists:
+                db_val = models.StudentDynamicValue(
+                    student_id=student_id,
+                    field_id=val.field_id,
+                    value=val.value
+                )
+                db.add(db_val)
+
     db.commit()
     db.refresh(student)
-    return student
+    return map_student_to_response(student, db)

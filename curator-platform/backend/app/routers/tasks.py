@@ -293,4 +293,18 @@ def get_all_executions(
     executions = db.query(models.TaskExecution).all()
     for exe in executions:
         exe.task = db.query(models.Task).filter(models.Task.id == exe.task_id).first()
+        curator = db.query(models.User).filter(models.User.id == exe.curator_id).first()
+        exe.curator_username = curator.username if curator else "Неизвестный куратор"
+        
+        # Находим группу куратора
+        assignment = db.query(models.GroupAssignment).filter(
+            models.GroupAssignment.user_id == exe.curator_id,
+            models.GroupAssignment.unassigned_at.is_(None)
+        ).first()
+        if assignment:
+            grp = db.query(models.AcademicGroup).filter(models.AcademicGroup.id == assignment.academic_group_id).first()
+            exe.group_name = grp.name if grp else "—"
+        else:
+            exe.group_name = "—"
+            
     return executions

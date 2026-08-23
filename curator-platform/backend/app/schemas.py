@@ -56,6 +56,7 @@ class AssignmentCreate(BaseModel):
     role_code: str
     protocol_number: Optional[str] = None
     protocol_date: Optional[datetime] = None
+    protocol_file_url: Optional[str] = None
 
 class AssignmentResponse(BaseModel):
     id: uuid.UUID
@@ -66,6 +67,41 @@ class AssignmentResponse(BaseModel):
     unassigned_at: Optional[datetime] = None
     protocol_number: Optional[str] = None
     protocol_date: Optional[datetime] = None
+    protocol_file_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# --- СХЕМЫ ДИНАМИЧЕСКИХ ПОЛЕЙ СОЦИАЛЬНОГО ПАСПОРТА ---
+
+class DynamicFieldCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=50)   # техническое имя, напр. "family_status"
+    label: str = Field(..., min_length=2, max_length=100) # выводимое имя, напр. "Состав семьи"
+    type: str = Field(default="text")                     # text, number, boolean, date
+    is_required: bool = False
+
+class DynamicFieldResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    label: str
+    type: str
+    is_required: bool
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+class StudentDynamicValueSubmit(BaseModel):
+    field_id: uuid.UUID
+    value: str
+
+class StudentDynamicValueResponse(BaseModel):
+    field_id: uuid.UUID
+    field_label: Optional[str] = None
+    field_name: Optional[str] = None
+    field_type: Optional[str] = None
+    value: str
 
     class Config:
         from_attributes = True
@@ -80,6 +116,8 @@ class StudentCreate(BaseModel):
     is_union_member: bool = Field(default=False)
     social_category_ids: Optional[List[uuid.UUID]] = Field(default=[])
     organization_ids: Optional[List[uuid.UUID]] = Field(default=[])
+    # Передача динамических значений полей
+    dynamic_values: Optional[List[StudentDynamicValueSubmit]] = Field(default=[])
 
 class StudentResponse(BaseModel):
     id: uuid.UUID
@@ -92,6 +130,8 @@ class StudentResponse(BaseModel):
     user_id: Optional[uuid.UUID] = None
     social_categories: List[DirectoryItemResponse] = []
     organizations: List[DirectoryItemResponse] = []
+    # Выгрузка заполненных полей
+    dynamic_values: List[StudentDynamicValueResponse] = []
 
     class Config:
         from_attributes = True
@@ -138,7 +178,6 @@ class TaskCreate(BaseModel):
     requirements: Optional[str] = None
     confirmation_requirements: Optional[str] = None
     
-    # Параметры таргетинга массового назначения (Раздел 37 ТЗ)
     target_type: str = Field(default="all")  # "all", "course", "faculty", "group"
     target_course: Optional[int] = Field(default=None, ge=1, le=6)
     target_faculty: Optional[str] = None
@@ -166,6 +205,8 @@ class TaskExecutionResponse(BaseModel):
     id: uuid.UUID
     task_id: uuid.UUID
     curator_id: uuid.UUID
+    curator_username: Optional[str] = None
+    group_name: Optional[str] = None
     status: str
     photo_url: Optional[str] = None
     admin_comment: Optional[str] = None
@@ -312,6 +353,40 @@ class NotificationResponse(BaseModel):
     type: str
     is_read: bool
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# --- СХЕМЫ ПОСЕЩАЕМОСТИ СТУДЕНТОВ ---
+
+class AttendanceRecordSubmit(BaseModel):
+    student_id: uuid.UUID
+    is_present: bool
+    method: str = "manual"  # manual или qr
+
+class AttendanceSessionCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=150)
+    date: datetime = Field(default_factory=datetime.utcnow)
+    records: List[AttendanceRecordSubmit] = []
+
+class AttendanceRecordResponse(BaseModel):
+    student_id: uuid.UUID
+    student_name: str
+    is_present: bool
+    marked_at: datetime
+    method: str
+
+    class Config:
+        from_attributes = True
+
+class AttendanceSessionResponse(BaseModel):
+    id: uuid.UUID
+    academic_group_id: uuid.UUID
+    title: str
+    date: datetime
+    created_at: datetime
+    records: List[AttendanceRecordResponse] = []
 
     class Config:
         from_attributes = True

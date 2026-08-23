@@ -111,6 +111,7 @@ class Student(Base):
     user = relationship("User", back_populates="student_profile")
     social_categories = relationship("SocialCategory", secondary=student_social_categories)
     organizations = relationship("StudentOrganization", secondary=student_organizations_assoc)
+    dynamic_values = relationship("StudentDynamicValue", back_populates="student", cascade="all, delete-orphan")
 
 
 # 6. Таблица назначений ответственных лиц на роли в группах
@@ -127,6 +128,7 @@ class GroupAssignment(Base):
     
     protocol_number = Column(String, nullable=True)
     protocol_date = Column(DateTime, nullable=True)
+    protocol_file_url = Column(String, nullable=True)  # Ссылка на загруженный скан/файл протокола
 
     # Отношения
     user = relationship("User", back_populates="group_assignments")
@@ -278,9 +280,62 @@ class Notification(Base):
     curator_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     text = Column(String, nullable=False)
-    # Типы: task (задача), event (мероприятие), survey (анкета), review (проверка отчета), points (баллы)
     type = Column(String, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     curator = relationship("User")
+
+
+# 16. Конфигурация динамических полей социального паспорта студента
+class DynamicField(Base):
+    __tablename__ = "dynamic_fields"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, unique=True, nullable=False, index=True)  # Техническое имя (например, "parent_phone")
+    label = Column(String, nullable=False)                         # Показываемое имя (например, "Телефон родителей")
+    type = Column(String, default="text", nullable=False)          # Типы: text, number, boolean, date
+    is_required = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+# 17. Значения динамических полей для конкретных студентов
+class StudentDynamicValue(Base):
+    __tablename__ = "student_dynamic_values"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    field_id = Column(UUID(as_uuid=True), ForeignKey("dynamic_fields.id", ondelete="CASCADE"), nullable=False)
+    value = Column(String, nullable=False)  # Все значения приводятся к строковому типу на уровне БД
+
+    student = relationship("Student", back_populates="dynamic_values")
+    field = relationship("DynamicField")
+
+
+# 18. Сессии посещаемости (кураторские часы, собрания группы)
+class AttendanceSession(Base):
+    __tablename__ = "attendance_sessions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    academic_group_id = Column(UUID(as_uuid=True), ForeignKey("academic_groups.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)                          # Тема занятия
+    date = Column(DateTime, default=datetime.utcnow, nullable=False) # Дата проведения
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    group = relationship("AcademicGroup")
+    records = relationship("AttendanceRecord", back_populates="session", cascade="all, delete-orphan")
+
+
+# 19. Записи явки студентов на конкретные занятия
+class AttendanceRecord(Base):
+    __tablename__ = "attendance_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id = Column(UUID(as_uuid=True), ForeignKey("attendance_sessions.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    is_present = Column(Boolean, default=False, nullable=False)
+    marked_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    method = Column(String, default="manual")  # Метод фиксации: manual (вручную куратором) или qr (скан-камерой)
+
+    session = relationship("AttendanceSession", back_populates="records")
+    student = relationship("Student")

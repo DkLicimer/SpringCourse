@@ -5,6 +5,7 @@ from fastapi import FastAPI, UploadFile, File, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from .routers import auth, groups, tasks, directories, rating, surveys, notifications, attendance
 from .database import engine, Base
 from . import models
 from .routers import auth, groups, tasks, directories, rating, surveys, notifications
@@ -49,6 +50,7 @@ app.include_router(directories.router, prefix="/api")
 app.include_router(rating.router, prefix="/api")
 app.include_router(surveys.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
+app.include_router(attendance.router, prefix="/api")
 
 # Глобальный эндпоинт загрузки файлов (Раздел 16 и 23 ТЗ)
 @app.post("/api/upload", status_code=status.HTTP_201_CREATED)
