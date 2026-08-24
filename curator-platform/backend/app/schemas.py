@@ -52,7 +52,8 @@ class DirectoryItemResponse(BaseModel):
 # --- СХЕМЫ НАЗНАЧЕНИЙ ОТВЕТСТВЕННЫХ ЛИЦ ---
 
 class AssignmentCreate(BaseModel):
-    user_id: uuid.UUID
+    user_id: Optional[uuid.UUID] = None
+    student_id: Optional[uuid.UUID] = None  # Выбор напрямую из студентов группы
     role_code: str
     protocol_number: Optional[str] = None
     protocol_date: Optional[datetime] = None
@@ -76,9 +77,9 @@ class AssignmentResponse(BaseModel):
 # --- СХЕМЫ ДИНАМИЧЕСКИХ ПОЛЕЙ СОЦИАЛЬНОГО ПАСПОРТА ---
 
 class DynamicFieldCreate(BaseModel):
-    name: str = Field(..., min_length=2, max_length=50)   # техническое имя, напр. "family_status"
-    label: str = Field(..., min_length=2, max_length=100) # выводимое имя, напр. "Состав семьи"
-    type: str = Field(default="text")                     # text, number, boolean, date
+    name: str = Field(..., min_length=2, max_length=50)
+    label: str = Field(..., min_length=2, max_length=100)
+    type: str = Field(default="text")
     is_required: bool = False
 
 class DynamicFieldResponse(BaseModel):
@@ -116,7 +117,6 @@ class StudentCreate(BaseModel):
     is_union_member: bool = Field(default=False)
     social_category_ids: Optional[List[uuid.UUID]] = Field(default=[])
     organization_ids: Optional[List[uuid.UUID]] = Field(default=[])
-    # Передача динамических значений полей
     dynamic_values: Optional[List[StudentDynamicValueSubmit]] = Field(default=[])
 
 class StudentResponse(BaseModel):
@@ -130,7 +130,6 @@ class StudentResponse(BaseModel):
     user_id: Optional[uuid.UUID] = None
     social_categories: List[DirectoryItemResponse] = []
     organizations: List[DirectoryItemResponse] = []
-    # Выгрузка заполненных полей
     dynamic_values: List[StudentDynamicValueResponse] = []
 
     class Config:
@@ -166,7 +165,7 @@ class GroupDetailResponse(GroupResponse):
         from_attributes = True
 
 
-# --- СХЕМЫ ЗАДАЧ (TASKS) ---
+# --- СХЕМЫ ЗАДАЧ ---
 
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=150)
@@ -178,7 +177,7 @@ class TaskCreate(BaseModel):
     requirements: Optional[str] = None
     confirmation_requirements: Optional[str] = None
     
-    target_type: str = Field(default="all")  # "all", "course", "faculty", "group"
+    target_type: str = Field(default="all")
     target_course: Optional[int] = Field(default=None, ge=1, le=6)
     target_faculty: Optional[str] = None
     target_group_ids: Optional[List[uuid.UUID]] = None
@@ -226,7 +225,7 @@ class TaskReview(BaseModel):
     comment: Optional[str] = None
 
 
-# --- СХЕМЫ МЕРОПРИЯТИЙ (EVENTS) ---
+# --- СХЕМЫ МЕРОПРИЯТИЙ ---
 
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=150)
@@ -268,7 +267,7 @@ class CalendarItem(BaseModel):
     associated_id: Optional[uuid.UUID] = None
 
 
-# --- СХЕМЫ САНКЦИЙ И СИСТЕМЫ РЕЙТИНГА ---
+# --- СХЕМЫ САНКЦИЙ И РЕЙТИНГА ---
 
 class PointAdjustmentCreate(BaseModel):
     curator_id: uuid.UUID
@@ -300,7 +299,7 @@ class RatingItemResponse(BaseModel):
     violation_reason: Optional[str] = None
 
 
-# --- СХЕМЫ АНКЕТ И ОПРОСОВ ---
+# --- СХЕМЫ АНКЕТ ---
 
 class QuestionCreate(BaseModel):
     text: str
@@ -344,7 +343,7 @@ class SurveySubmit(BaseModel):
     answers: List[AnswerSubmit]
 
 
-# --- СХЕМЫ УВЕДОМЛЕНИЙ (NOTIFICATIONS) ---
+# --- СХЕМЫ УВЕДОМЛЕНИЙ ---
 
 class NotificationResponse(BaseModel):
     id: uuid.UUID
@@ -358,12 +357,12 @@ class NotificationResponse(BaseModel):
         from_attributes = True
 
 
-# --- СХЕМЫ ПОСЕЩАЕМОСТИ СТУДЕНТОВ ---
+# --- СХЕМЫ ПОСЕЩАЕМОСТИ ---
 
 class AttendanceRecordSubmit(BaseModel):
     student_id: uuid.UUID
     is_present: bool
-    method: str = "manual"  # manual или qr
+    method: str = "manual"
 
 class AttendanceSessionCreate(BaseModel):
     title: str = Field(..., min_length=2, max_length=150)

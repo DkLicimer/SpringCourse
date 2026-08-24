@@ -8,7 +8,6 @@ from fastapi.staticfiles import StaticFiles
 from .routers import auth, groups, tasks, directories, rating, surveys, notifications, attendance
 from .database import engine, Base
 from . import models
-from .routers import auth, groups, tasks, directories, rating, surveys, notifications
 
 # Автоматически создаем/обновляем таблицы в PostgreSQL при запуске
 Base.metadata.create_all(bind=engine)
