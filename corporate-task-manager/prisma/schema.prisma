@@ -1,0 +1,280 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Роли пользователей
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+// Типы назначения задач
+enum AssignmentType {
+  INDIVIDUAL   // Один исполнитель
+  SIMULTANEOUS // Несколько параллельно
+  SEQUENTIAL   // Последовательно (цепочка)
+}
+
+// Модель пользователя
+model User {
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  passwordHash        String
+  name                String             // ФИО
+  initials            String             // Инициалы (например, "ЛК")
+  role                Role               @default(EMPLOYEE)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  department          String?            // Подразделение сотрудника
+
+  // Индивидуальный отчетный период сотрудника
+  reportingPeriodType String             @default("MONTH") // MONTH, QUARTER, CUSTOM
+  periodStartDate     DateTime?          // Дата начала (для CUSTOM)
+  periodEndDate       DateTime?          // Дата окончания (для CUSTOM)
+
+  // Связи
+  assignments         TaskAssignment[]   // Задачи, в которых пользователь участвует
+  createdTasks        Task[]             @relation("CreatedBy")
+  comments            Comment[]
+  generalMessages     GeneralMessage[]   // ⚡ Связь с общим корпоративным чатом
+  bookedEvents        CalendarEvent[]    @relation("BookedBy")
+  tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
+  extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
+
+  // Участие во встречах (многие-ко-многим)
+  participatingEvents CalendarEvent[]    @relation("EventParticipants")
+
+  // Авторство в контент-плане
+  contentPlans        ContentPlan[]
+  postRequests        PostRequest[]
+}
+
+// Глобальные темы
+model Goal {
+  id          String   @id @default(uuid())
+  title       String
+  color       String   
+  isTemplate  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       Task[]
+}
+
+// Кастомные и системные статусы задач
+model TaskStatus {
+  id          String           @id @default(uuid())
+  name        String           
+  color       String?          
+  isDefault   Boolean          @default(false) 
+  position    Int              @default(0)     
+  
+  assignments TaskAssignment[]
+}
+
+// Основная модель задачи
+model Task {
+  id                  String             @id @default(uuid())
+  title               String
+  description         String?
+  deadline            DateTime?
+  intermediateControl Boolean            @default(false)
+  controlReport       String?
+  adminNotes          String?
+  assignmentType      AssignmentType     @default(INDIVIDUAL)
+  isPriority          Boolean            @default(false) 
+  isRecurring         Boolean            @default(false) 
+  
+  isPerspective       Boolean            @default(false) 
+  reminderDate        DateTime?          
+
+  goalId              String
+  goal                Goal               @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  
+  createdById         String
+  createdBy           User               @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  assignments         TaskAssignment[]
+  comments            Comment[]
+  extensionRequests   ExtensionRequest[] 
+}
+
+// Промежуточная таблица назначений
+model TaskAssignment {
+  id              String      @id @default(uuid())
+  taskId          String
+  task            Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  statusId        String
+  status          TaskStatus  @relation(fields: [statusId], references: [id])
+  
+  sequenceOrder   Int         @default(0)     
+  isBlocked       Boolean     @default(false) 
+  stepInstruction String?     
+  
+  completedAt     DateTime?   
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([taskId, userId]) 
+}
+
+// Запросы на продление дедлайна
+model ExtensionRequest {
+  id            String      @id @default(uuid())
+  taskId        String
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason        String?     
+  status        String      @default("PENDING") 
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Комментарии по конкретной задаче
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// ⚡ НОВОЕ: ОБЩИЙ КОРПОРАТИВНЫЙ ЧАТ КОМАНДЫ
+model GeneralMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// МОДУЛЬ «ИНТЕРАКТИВНЫЕ ТАБЛИЦЫ»
+// ==========================================
+
+model Contact {
+  id           String   @id @default(uuid())
+  fullName     String
+  department   String
+  position     String
+  phone        String?
+  email        String?
+  notes        String?
+  createdAt    DateTime @default(now())
+}
+
+model ContentPlan {
+  id            String   @id @default(uuid())
+  topic         String   
+  platform      String   
+  publishDate   DateTime
+  status        String   
+  authorId      String?
+  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  notes         String?
+  mediaMaterial String?  
+  createdAt     DateTime @default(now())
+}
+
+model PostRequest {
+  id            String   @id @default(uuid())
+  topic         String
+  description   String
+  platform      String
+  requestedDate DateTime
+  status        String   @default("PENDING") 
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+}
+
+model SocialPassport {
+  id         String   @id @default(uuid())
+  department String
+  accountUrl String
+  followers  Int      @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+model Teambuilding {
+  id               String   @id @default(uuid())
+  eventName        String
+  date             DateTime
+  budget           Float    @default(0.0)
+  participantsCount Int     @default(0)
+  notes            String?
+  createdAt        DateTime @default(now())
+}
+
+model TableAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tableName String   
+  canRead   Boolean  @default(false)
+  canWrite  Boolean  @default(false)
+
+  @@unique([userId, tableName])
+}
+
+model InfoSpace {
+  id        String   @id @default(uuid())
+  fullName  String   
+  email     String   
+  notes     String?  
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// МОДУЛЬ «КАЛЕНДАРЬ»
+// ==========================================
+
+enum CalendarEventType {
+  FREE    
+  GC      
+  BUSY    
+}
+
+model CalendarEvent {
+  id          String            @id @default(uuid())
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  type        CalendarEventType @default(FREE)
+  description String?
+  
+  bookedById  String
+  bookedBy    User              @relation("BookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
+
+  participants User[]           @relation("EventParticipants") 
+
+  createdAt   DateTime          @default(now())
+}
+
+// ==========================================
+// МОДУЛЬ УВЕДОМЛЕНИЙ
+// ==========================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  text      String
+  isRead    Boolean  @default(false)
+  link      String?  
+  createdAt DateTime @default(now())
+}
