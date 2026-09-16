@@ -40,10 +40,11 @@ model User {
   assignments         TaskAssignment[]   // Задачи, в которых пользователь участвует
   createdTasks        Task[]             @relation("CreatedBy")
   comments            Comment[]
-  generalMessages     GeneralMessage[]   // ⚡ Связь с общим корпоративным чатом
+  generalMessages     GeneralMessage[]   // Связь с общим корпоративным чатом
   bookedEvents        CalendarEvent[]    @relation("BookedBy")
   tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
   extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
+  updatedFocuses      GlobalFocus[]      // ⚡ Связь с обновлениями фокуса недели
 
   // Участие во встречах (многие-ко-многим)
   participatingEvents CalendarEvent[]    @relation("EventParticipants")
@@ -51,6 +52,16 @@ model User {
   // Авторство в контент-плане
   contentPlans        ContentPlan[]
   postRequests        PostRequest[]
+}
+
+// ⚡ НОВОЕ: ГЛОБАЛЬНЫЙ ФОКУС / ВАЖНОЕ СЕЙЧАС (ОБЪЯВЛЕНИЕ РУКОВОДИТЕЛЯ)
+model GlobalFocus {
+  id          String   @id @default("current_focus")
+  title       String   @default("Важное сейчас")
+  content     String   @default("")
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id])
 }
 
 // Глобальные темы
@@ -153,7 +164,7 @@ model Comment {
   createdAt DateTime @default(now())
 }
 
-// ⚡ НОВОЕ: ОБЩИЙ КОРПОРАТИВНЫЙ ЧАТ КОМАНДЫ
+// Общий корпоративный чат команды
 model GeneralMessage {
   id        String   @id @default(uuid())
   userId    String

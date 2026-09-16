@@ -119,6 +119,14 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
+  // ⚡ ЗАГРУЗКА БЛОКА «ВАЖНОЕ СЕЙЧАС / ФОКУС НЕДЕЛИ»
+  const globalFocus = await prisma.globalFocus.findUnique({
+    where: { id: "current_focus" },
+    include: {
+      updatedBy: { select: { name: true } },
+    },
+  });
+
   // Расчет личной успеваемости сотрудника
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -193,7 +201,7 @@ export default async function TasksPage(props: PageProps) {
     });
   }
 
-  // ⚡ ФОРМИРОВАНИЕ СЕРВЕРНОГО УСЛОВИЯ WHERE ДЛЯ ТОЧНОЙ ПАГИНАЦИИ И ФИЛЬТРАЦИИ
+  // Серверное условие фильтрации
   const whereCondition: any = {
     isPerspective: currentTab === "perspective",
   };
@@ -213,7 +221,6 @@ export default async function TasksPage(props: PageProps) {
     ];
   }
 
-  // Фильтрация по правам и исполнителям
   const assignmentFilters: any = {};
   if (!isAdmin) {
     assignmentFilters.userId = session.user.id;
@@ -301,6 +308,7 @@ export default async function TasksPage(props: PageProps) {
           department: filterDepartment,
           priorityOnly: filterPriorityOnly,
         }}
+        globalFocus={globalFocus ? JSON.parse(JSON.stringify(globalFocus)) : null}
       />
     </div>
   );

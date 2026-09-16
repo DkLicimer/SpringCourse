@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { TaskModal } from "./components/TaskModal";
 import { ManageGoalsModal } from "./components/ManageGoalsModal";
+import { GlobalFocusBanner } from "./components/GlobalFocusBanner"; // ⚡ ИМПОРТ БАННЕРА
 
 interface TasksClientProps {
   initialTasks: any[];
@@ -58,6 +59,7 @@ interface TasksClientProps {
     department: string;
     priorityOnly: boolean;
   };
+  globalFocus: any | null; // ⚡ ПРОП ФОКУСА
 }
 
 export function TasksClient({
@@ -73,6 +75,7 @@ export function TasksClient({
   currentUserPeriod,
   extensionRequests = [],
   currentFilters,
+  globalFocus,
 }: TasksClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -195,7 +198,7 @@ export function TasksClient({
         </div>
       )}
 
-      {/* Шапка */}
+      {/* Шапка модуля */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-slate-800">Задачи и темы</h2>
@@ -265,6 +268,12 @@ export function TasksClient({
           </div>
         )}
       </div>
+
+      {/* ⚡ НОВЫЙ БАННЕР «ВАЖНОЕ СЕЙЧАС / ФОКУС НЕДЕЛИ» */}
+      <GlobalFocusBanner
+        initialFocus={globalFocus}
+        isAdmin={isAdmin}
+      />
 
       {/* Вкладки: В работе / На перспективу */}
       {isAdmin && (
