@@ -25,7 +25,7 @@ model User {
   email               String             @unique
   passwordHash        String
   name                String             // ФИО
-  initials            String             // Инициалы (например, "ЛК")
+  initials            String             // Инициалы / сокращение (до 5 символов)
   role                Role               @default(EMPLOYEE)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -44,7 +44,7 @@ model User {
   bookedEvents        CalendarEvent[]    @relation("BookedBy")
   tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
   extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
-  updatedFocuses      GlobalFocus[]      // ⚡ Связь с обновлениями фокуса недели
+  updatedFocuses      GlobalFocus[]      // Связь с обновлениями фокуса недели
 
   // Участие во встречах (многие-ко-многим)
   participatingEvents CalendarEvent[]    @relation("EventParticipants")
@@ -52,16 +52,24 @@ model User {
   // Авторство в контент-плане
   contentPlans        ContentPlan[]
   postRequests        PostRequest[]
+
+  // ⚡ Связь с Составом коллектива (1-к-1)
+  socialPassport      SocialPassport?
 }
 
-// ⚡ НОВОЕ: ГЛОБАЛЬНЫЙ ФОКУС / ВАЖНОЕ СЕЙЧАС (ОБЪЯВЛЕНИЕ РУКОВОДИТЕЛЯ)
+// Глобальный фокус / Важное сейчас (3 блока)
 model GlobalFocus {
-  id          String   @id @default("current_focus")
-  title       String   @default("Важное сейчас")
-  content     String   @default("")
-  updatedAt   DateTime @updatedAt
-  updatedById String?
-  updatedBy   User?    @relation(fields: [updatedById], references: [id])
+  id              String   @id @default("current_focus")
+  focusWeek       String?  @default("")
+  staffAttention  String?  @default("")
+  importantNow    String?  @default("")
+  
+  title           String?  @default("Важное сейчас")
+  content         String?  @default("")
+
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
+  updatedBy       User?    @relation(fields: [updatedById], references: [id])
 }
 
 // Глобальные темы
@@ -132,6 +140,7 @@ model TaskAssignment {
   sequenceOrder   Int         @default(0)     
   isBlocked       Boolean     @default(false) 
   stepInstruction String?     
+  reportText      String?     
   
   completedAt     DateTime?   
   createdAt       DateTime    @default(now())
@@ -173,10 +182,7 @@ model GeneralMessage {
   createdAt DateTime @default(now())
 }
 
-// ==========================================
-// МОДУЛЬ «ИНТЕРАКТИВНЫЕ ТАБЛИЦЫ»
-// ==========================================
-
+// Справочник контактов
 model Contact {
   id           String   @id @default(uuid())
   fullName     String
@@ -188,6 +194,7 @@ model Contact {
   createdAt    DateTime @default(now())
 }
 
+// Контент-план
 model ContentPlan {
   id            String   @id @default(uuid())
   topic         String   
@@ -201,6 +208,7 @@ model ContentPlan {
   createdAt     DateTime @default(now())
 }
 
+// Заявка на публикацию
 model PostRequest {
   id            String   @id @default(uuid())
   topic         String
@@ -213,15 +221,36 @@ model PostRequest {
   createdAt     DateTime @default(now())
 }
 
+// ⚡ ОБНОВЛЕНО: СОСТАВ КОЛЛЕКТИВА (КАДРОВАЯ СТРУКТУРА + 12 ПОЛЕЙ АНКЕТЫ)
 model SocialPassport {
-  id         String   @id @default(uuid())
-  department String
-  accountUrl String
-  followers  Int      @default(0)
-  notes      String?
-  createdAt  DateTime @default(now())
+  id             String    @id @default(uuid())
+  userId         String?   @unique
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName       String    @default("") // Защита от ошибок при добавлении колонки
+  department     String    @default("") // Защита от ошибок при добавлении колонки
+  position       String?   
+  mobilePhone    String?   
+  workPhone      String?   
+  birthDate      DateTime? 
+  maritalStatus  String?   
+  livingAddress  String?   
+  hasOwnHousing  String?   
+  childrenInfo   String?   
+  hobbies        String?   
+  achievements   String?   
+  preferredGifts String?   
+
+  // Поля для совместимости
+  accountUrl     String?   @default("")
+  followers      Int?      @default(0)
+  notes          String?   
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
 }
 
+// Командообразование
 model Teambuilding {
   id               String   @id @default(uuid())
   eventName        String
@@ -232,6 +261,7 @@ model Teambuilding {
   createdAt        DateTime @default(now())
 }
 
+// Права доступа к таблицам
 model TableAccess {
   id        String   @id @default(uuid())
   userId    String
@@ -243,6 +273,7 @@ model TableAccess {
   @@unique([userId, tableName])
 }
 
+// ИНФОпространство
 model InfoSpace {
   id        String   @id @default(uuid())
   fullName  String   
@@ -251,10 +282,7 @@ model InfoSpace {
   createdAt DateTime @default(now())
 }
 
-// ==========================================
-// МОДУЛЬ «КАЛЕНДАРЬ»
-// ==========================================
-
+// Календарь
 enum CalendarEventType {
   FREE    
   GC      
@@ -277,10 +305,7 @@ model CalendarEvent {
   createdAt   DateTime          @default(now())
 }
 
-// ==========================================
-// МОДУЛЬ УВЕДОМЛЕНИЙ
-// ==========================================
-
+// Уведомления
 model Notification {
   id        String   @id @default(uuid())
   userId    String

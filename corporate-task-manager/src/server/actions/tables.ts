@@ -11,7 +11,6 @@ async function verifyAccess(tableName: string, action: "read" | "write"): Promis
   const session = await getServerSession(authOptions);
   if (!session) return false;
 
-  // Администратор всегда имеет полный доступ ко всему
   if (session.user.role === "ADMIN") return true;
 
   const access = await prisma.tableAccess.findUnique({
@@ -67,10 +66,9 @@ export async function deleteContact(id: string) {
 }
 
 // =========================================================================
-// 2. ЗАЯВКИ НА ПОСТЫ И КОНТЕНТ-ПЛАН (С ПРОВЕРКОЙ ПРАВ canWrite)
+// 2. ЗАЯВКИ НА ПОСТЫ И КОНТЕНТ-ПЛАН
 // =========================================================================
 
-// Отправка сотрудником формы заявки на пост
 export async function createPostRequest(formData: FormData) {
   const hasAccess = await verifyAccess("post_request", "write");
   if (!hasAccess) throw new Error("У вас нет прав для подачи заявок на публикации");
@@ -100,7 +98,6 @@ export async function createPostRequest(formData: FormData) {
   revalidatePath("/app/tables/post-request");
 }
 
-// Одобрение заявки (требует прав на запись в контент-план)
 export async function approvePostRequest(requestId: string) {
   const hasAccess = await verifyAccess("content_plan", "write");
   if (!hasAccess) throw new Error("У вас нет прав на одобрение и перенос заявок в Контент-План");
@@ -134,7 +131,6 @@ export async function approvePostRequest(requestId: string) {
   revalidatePath("/app/tables/content-plan");
 }
 
-// Отклонение заявки на пост (требует прав на запись в контент-план)
 export async function rejectPostRequest(requestId: string) {
   const hasAccess = await verifyAccess("content_plan", "write");
   if (!hasAccess) throw new Error("У вас нет прав на отклонение заявок");
@@ -147,7 +143,6 @@ export async function rejectPostRequest(requestId: string) {
   revalidatePath("/app/tables/post-request");
 }
 
-// Удаление строки контент-плана (требует прав на запись в контент-план)
 export async function deleteContentPlanRow(id: string) {
   const hasAccess = await verifyAccess("content_plan", "write");
   if (!hasAccess) throw new Error("У вас нет прав на удаление записей из Контент-Плана");
@@ -156,7 +151,6 @@ export async function deleteContentPlanRow(id: string) {
   revalidatePath("/app/tables/content-plan");
 }
 
-// Прямое добавление публикации в Контент-план (требует прав на запись в контент-план)
 export async function createContentPlanRow(formData: FormData) {
   const hasAccess = await verifyAccess("content_plan", "write");
   if (!hasAccess) throw new Error("У вас нет прав для прямого добавления записей в Контент-План");
@@ -169,9 +163,7 @@ export async function createContentPlanRow(formData: FormData) {
   const publishDate = formData.get("publishDate") as string;
   const status = (formData.get("status") as string) || "Черновик";
   const notes = formData.get("notes") as string;
-  
-  // Новое: считываем и сохраняем медиаматериалы
-  const mediaMaterial = formData.get("mediaMaterial") as string || null;
+  const mediaMaterial = (formData.get("mediaMaterial") as string) || null;
 
   if (!topic || !platform || !publishDate) {
     throw new Error("Тема, площадка и дата обязательны для заполнения");
@@ -185,7 +177,7 @@ export async function createContentPlanRow(formData: FormData) {
       status,
       authorId: session.user.id,
       notes,
-      mediaMaterial, // <-- Сохраняем медиаматериал в БД
+      mediaMaterial,
     },
   });
 
@@ -193,24 +185,101 @@ export async function createContentPlanRow(formData: FormData) {
 }
 
 // =========================================================================
-// 3. ТАБЛИЦА «СОСТАВ КОЛЛЕКТИВА» (С ПРОВЕРКОЙ ПРАВ canWrite)
+// 3. ТАБЛИЦА «СОСТАВ КОЛЛЕКТИВА» (12 ПОЛЕЙ + РУЧНОЙ / АВТО РЕЖИМЫ)
 // =========================================================================
 
 export async function createSocialPassportRow(formData: FormData) {
   const hasAccess = await verifyAccess("social_passport", "write");
   if (!hasAccess) throw new Error("У вас нет прав для добавления данных в эту таблицу");
 
+  const fullName = formData.get("fullName") as string;
   const department = formData.get("department") as string;
-  const accountUrl = formData.get("accountUrl") as string;
-  const followers = parseInt(formData.get("followers") as string) || 0;
+  const position = formData.get("position") as string;
+  const mobilePhone = formData.get("mobilePhone") as string;
+  const workPhone = formData.get("workPhone") as string;
+  const birthDateRaw = formData.get("birthDate") as string;
+  const maritalStatus = formData.get("maritalStatus") as string;
+  const livingAddress = formData.get("livingAddress") as string;
+  const hasOwnHousing = formData.get("hasOwnHousing") as string;
+  const childrenInfo = formData.get("childrenInfo") as string;
+  const hobbies = formData.get("hobbies") as string;
+  const achievements = formData.get("achievements") as string;
+  const preferredGifts = formData.get("preferredGifts") as string;
   const notes = formData.get("notes") as string;
 
-  if (!department || !accountUrl) {
-    throw new Error("Подразделение и ФИО обязательны");
+  if (!fullName || !department) {
+    throw new Error("ФИО и Подразделение обязательны для заполнения");
   }
 
+  const birthDate = birthDateRaw ? new Date(birthDateRaw) : null;
+
   await prisma.socialPassport.create({
-    data: { department, accountUrl, followers, notes },
+    data: {
+      fullName,
+      department,
+      position,
+      mobilePhone,
+      workPhone,
+      birthDate,
+      maritalStatus,
+      livingAddress,
+      hasOwnHousing,
+      childrenInfo,
+      hobbies,
+      achievements,
+      preferredGifts,
+      accountUrl: fullName,
+      notes,
+    },
+  });
+
+  revalidatePath("/app/tables/social-passport");
+}
+
+export async function updateSocialPassportRow(id: string, formData: FormData) {
+  const hasAccess = await verifyAccess("social_passport", "write");
+  if (!hasAccess) throw new Error("У вас нет прав для изменения данных в этой таблице");
+
+  const fullName = formData.get("fullName") as string;
+  const department = formData.get("department") as string;
+  const position = formData.get("position") as string;
+  const mobilePhone = formData.get("mobilePhone") as string;
+  const workPhone = formData.get("workPhone") as string;
+  const birthDateRaw = formData.get("birthDate") as string;
+  const maritalStatus = formData.get("maritalStatus") as string;
+  const livingAddress = formData.get("livingAddress") as string;
+  const hasOwnHousing = formData.get("hasOwnHousing") as string;
+  const childrenInfo = formData.get("childrenInfo") as string;
+  const hobbies = formData.get("hobbies") as string;
+  const achievements = formData.get("achievements") as string;
+  const preferredGifts = formData.get("preferredGifts") as string;
+  const notes = formData.get("notes") as string;
+
+  if (!fullName || !department) {
+    throw new Error("ФИО и Подразделение обязательны для заполнения");
+  }
+
+  const birthDate = birthDateRaw ? new Date(birthDateRaw) : null;
+
+  await prisma.socialPassport.update({
+    where: { id },
+    data: {
+      fullName,
+      department,
+      position,
+      mobilePhone,
+      workPhone,
+      birthDate,
+      maritalStatus,
+      livingAddress,
+      hasOwnHousing,
+      childrenInfo,
+      hobbies,
+      achievements,
+      preferredGifts,
+      accountUrl: fullName,
+      notes,
+    },
   });
 
   revalidatePath("/app/tables/social-passport");
@@ -225,7 +294,7 @@ export async function deleteSocialPassportRow(id: string) {
 }
 
 // =========================================================================
-// 4. ТАБЛИЦА «КОМАНДООБРАЗОВАНИЕ» (С ПРОВЕРКОЙ ПРАВ canWrite)
+// 4. ТАБЛИЦА «КОМАНДООБРАЗОВАНИЕ»
 // =========================================================================
 
 export async function createTeambuildingRow(formData: FormData) {
@@ -264,7 +333,7 @@ export async function deleteTeambuildingRow(id: string) {
 }
 
 // =========================================================================
-// 5. ТАБЛИЦА «ИНФОПРОСТРАНСТВО» (Доступна всем на чтение, запись только админу)
+// 5. ТАБЛИЦА «ИНФОПРОСТРАНСТВО»
 // =========================================================================
 
 export async function createInfoSpaceRow(formData: FormData) {

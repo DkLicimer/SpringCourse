@@ -56,7 +56,7 @@ export default async function TasksPage(props: PageProps) {
 
   const searchParams = await props.searchParams;
   const page = parseInt(searchParams.page || "1") || 1;
-  const pageSize = 15;
+  const pageSize = 20;
   const skip = (page - 1) * pageSize;
 
   const taskId = searchParams.taskId;
@@ -81,7 +81,7 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // Проверка напоминаний отложенных задач для администратора
+  // Проверка напоминаний отложенных задач для руководителя
   if (isAdmin) {
     try {
       const now = new Date();
@@ -119,7 +119,7 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // ⚡ ЗАГРУЗКА БЛОКА «ВАЖНОЕ СЕЙЧАС / ФОКУС НЕДЕЛИ»
+  // Загрузка блока «Важное сейчас / Фокус недели»
   const globalFocus = await prisma.globalFocus.findUnique({
     where: { id: "current_focus" },
     include: {
@@ -127,7 +127,7 @@ export default async function TasksPage(props: PageProps) {
     },
   });
 
-  // Расчет личной успеваемости сотрудника
+  // Расчет успеваемости сотрудника
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -201,7 +201,7 @@ export default async function TasksPage(props: PageProps) {
     });
   }
 
-  // Серверное условие фильтрации
+  // Серверная фильтрация
   const whereCondition: any = {
     isPerspective: currentTab === "perspective",
   };
@@ -218,6 +218,7 @@ export default async function TasksPage(props: PageProps) {
     whereCondition.OR = [
       { title: { contains: searchQuery.trim(), mode: "insensitive" } },
       { description: { contains: searchQuery.trim(), mode: "insensitive" } },
+      { adminNotes: { contains: searchQuery.trim(), mode: "insensitive" } },
     ];
   }
 

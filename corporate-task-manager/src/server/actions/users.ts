@@ -14,9 +14,9 @@ function generateInitials(name: string): string {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
   if (parts.length === 1 && parts[0].length > 0) {
-    return parts[0].slice(0, 2).toUpperCase();
+    return parts[0].slice(0, 3).toUpperCase();
   }
-  return "СП";
+  return "СОТР";
 }
 
 export async function createEmployee(formData: FormData) {
@@ -29,16 +29,16 @@ export async function createEmployee(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   
-  // Ручные инициалы
+  // Инициалы / сокращения (до 5 символов)
   const initialsRaw = formData.get("initials") as string;
   const initials = initialsRaw && initialsRaw.trim().length > 0 
-    ? initialsRaw.trim().toUpperCase() 
+    ? initialsRaw.trim().slice(0, 5).toUpperCase() 
     : generateInitials(name);
 
   // Подразделение сотрудника
-  const department = formData.get("department") as string || null;
+  const department = (formData.get("department") as string) || "Основное подразделение";
 
-  // Отчетный период сотрудника
+  // Отчетный период
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
   const periodEndDateRaw = formData.get("periodEndDate") as string;
@@ -55,13 +55,11 @@ export async function createEmployee(formData: FormData) {
   const canWriteContent = formData.get("canWriteContent") === "true";
   const canReadPost = formData.get("canReadPost") === "true";
   const canWritePost = formData.get("canWritePost") === "true";
-
-  // ⚡ НОВОЕ: Считываем права на ИНФОпространство
   const canReadInfo = formData.get("canReadInfo") === "true";
   const canWriteInfo = formData.get("canWriteInfo") === "true";
 
   if (!name || !email || !password) {
-    throw new Error("Все поля обязательны для заполнения");
+    throw new Error("ФИО, Email и Пароль обязательны для заполнения");
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -75,6 +73,7 @@ export async function createEmployee(formData: FormData) {
   const passwordHash = await bcrypt.hash(password, 10);
 
   await prisma.$transaction(async (tx) => {
+    // 1. Создаем пользователя
     const newUser = await tx.user.create({
       data: {
         email,
@@ -89,30 +88,31 @@ export async function createEmployee(formData: FormData) {
       },
     });
 
-    // Создаем записи о правах доступа для каждой таблицы
-    await tx.tableAccess.create({
-      data: { userId: newUser.id, tableName: "social_passport", canRead: canReadSocial, canWrite: canWriteSocial },
+    // 2. Создаем права доступа
+    await tx.tableAccess.createMany({
+      data: [
+        { userId: newUser.id, tableName: "social_passport", canRead: canReadSocial, canWrite: canWriteSocial },
+        { userId: newUser.id, tableName: "teambuilding", canRead: canReadTeam, canWrite: canWriteTeam },
+        { userId: newUser.id, tableName: "content_plan", canRead: canReadContent, canWrite: canWriteContent },
+        { userId: newUser.id, tableName: "post_request", canRead: canReadPost, canWrite: canWritePost },
+        { userId: newUser.id, tableName: "info_space", canRead: canReadInfo, canWrite: canWriteInfo },
+      ],
     });
 
-    await tx.tableAccess.create({
-      data: { userId: newUser.id, tableName: "teambuilding", canRead: canReadTeam, canWrite: canWriteTeam },
-    });
-
-    await tx.tableAccess.create({
-      data: { userId: newUser.id, tableName: "content_plan", canRead: canReadContent, canWrite: canWriteContent },
-    });
-
-    await tx.tableAccess.create({
-      data: { userId: newUser.id, tableName: "post_request", canRead: canReadPost, canWrite: canWritePost },
-    });
-
-    // ⚡ НОВОЕ: Записываем права ИНФОпространства в БД
-    await tx.tableAccess.create({
-      data: { userId: newUser.id, tableName: "info_space", canRead: canReadInfo, canWrite: canWriteInfo },
+    // ⚡ 3. АВТО-СИНХРОНИЗАЦИЯ: Автоматически создаем запись в «Составе коллектива»
+    await tx.socialPassport.create({
+      data: {
+        userId: newUser.id,
+        fullName: name,
+        department,
+        accountUrl: name,
+        notes: "",
+      },
     });
   });
 
   revalidatePath("/app/employees");
+  revalidatePath("/app/tables/social-passport");
 }
 
 export async function deleteEmployee(userId: string) {
@@ -125,11 +125,19 @@ export async function deleteEmployee(userId: string) {
     throw new Error("Вы не можете удалить свою собственную учетную запись");
   }
 
-  await prisma.user.delete({
-    where: { id: userId },
+  await prisma.$transaction(async (tx) => {
+    // ⚡ АВТО-СИНХРОНИЗАЦИЯ: Удаляем связанную запись из «Состава коллектива»
+    await tx.socialPassport.deleteMany({
+      where: { userId },
+    });
+
+    await tx.user.delete({
+      where: { id: userId },
+    });
   });
 
   revalidatePath("/app/employees");
+  revalidatePath("/app/tables/social-passport");
 }
 
 export async function updateEmployee(userId: string, formData: FormData) {
@@ -142,13 +150,13 @@ export async function updateEmployee(userId: string, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   
-  // Ручные инициалы при обновлении
+  // Инициалы / сокращения (до 5 символов)
   const initialsRaw = formData.get("initials") as string;
 
-  // Подразделение сотрудника при обновлении
-  const department = formData.get("department") as string || null;
+  // Подразделение сотрудника
+  const department = (formData.get("department") as string) || "Основное подразделение";
 
-  // Отчетный период сотрудника
+  // Отчетный период
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
   const periodEndDateRaw = formData.get("periodEndDate") as string;
@@ -164,8 +172,6 @@ export async function updateEmployee(userId: string, formData: FormData) {
   const canWriteContent = formData.get("canWriteContent") === "true";
   const canReadPost = formData.get("canReadPost") === "true";
   const canWritePost = formData.get("canWritePost") === "true";
-
-  // ⚡ НОВОЕ: Считываем права на ИНФОпространство при обновлении
   const canReadInfo = formData.get("canReadInfo") === "true";
   const canWriteInfo = formData.get("canWriteInfo") === "true";
 
@@ -183,9 +189,8 @@ export async function updateEmployee(userId: string, formData: FormData) {
       periodEndDate,
     };
     
-    // Если инициалы были введены, обновляем их
     if (initialsRaw && initialsRaw.trim().length > 0) {
-      updateData.initials = initialsRaw.trim().toUpperCase();
+      updateData.initials = initialsRaw.trim().slice(0, 5).toUpperCase();
     } else {
       updateData.initials = generateInitials(name);
     }
@@ -199,38 +204,46 @@ export async function updateEmployee(userId: string, formData: FormData) {
       data: updateData,
     });
 
-    // Обновляем права (upsert) для четырех таблиц
-    await tx.tableAccess.upsert({
-      where: { userId_tableName: { userId, tableName: "social_passport" } },
-      update: { canRead: canReadSocial, canWrite: canWriteSocial },
-      create: { userId, tableName: "social_passport", canRead: canReadSocial, canWrite: canWriteSocial }
-    });
+    // ⚡ АВТО-СИНХРОНИЗАЦИЯ: Обновляем ФИО и отдел в «Составе коллектива»
+    const existingPassport = await tx.socialPassport.findFirst({ where: { userId } });
+    if (existingPassport) {
+      await tx.socialPassport.update({
+        where: { id: existingPassport.id },
+        data: {
+          fullName: name,
+          department,
+          accountUrl: name,
+        },
+      });
+    } else {
+      await tx.socialPassport.create({
+        data: {
+          userId,
+          fullName: name,
+          department,
+          accountUrl: name,
+        },
+      });
+    }
 
-    await tx.tableAccess.upsert({
-      where: { userId_tableName: { userId, tableName: "teambuilding" } },
-      update: { canRead: canReadTeam, canWrite: canWriteTeam },
-      create: { userId, tableName: "teambuilding", canRead: canReadTeam, canWrite: canWriteTeam }
-    });
+    // Обновляем права
+    const tables = [
+      { name: "social_passport", r: canReadSocial, w: canWriteSocial },
+      { name: "teambuilding", r: canReadTeam, w: canWriteTeam },
+      { name: "content_plan", r: canReadContent, w: canWriteContent },
+      { name: "post_request", r: canReadPost, w: canWritePost },
+      { name: "info_space", r: canReadInfo, w: canWriteInfo },
+    ];
 
-    await tx.tableAccess.upsert({
-      where: { userId_tableName: { userId, tableName: "content_plan" } },
-      update: { canRead: canReadContent, canWrite: canWriteContent },
-      create: { userId, tableName: "content_plan", canRead: canReadContent, canWrite: canWriteContent }
-    });
-
-    await tx.tableAccess.upsert({
-      where: { userId_tableName: { userId, tableName: "post_request" } },
-      update: { canRead: canReadPost, canWrite: canWritePost },
-      create: { userId, tableName: "post_request", canRead: canReadPost, canWrite: canWritePost }
-    });
-
-    // ⚡ НОВОЕ: Обновляем/создаем права ИНФОпространства в БД
-    await tx.tableAccess.upsert({
-      where: { userId_tableName: { userId, tableName: "info_space" } },
-      update: { canRead: canReadInfo, canWrite: canWriteInfo },
-      create: { userId, tableName: "info_space", canRead: canReadInfo, canWrite: canWriteInfo }
-    });
+    for (const t of tables) {
+      await tx.tableAccess.upsert({
+        where: { userId_tableName: { userId, tableName: t.name } },
+        update: { canRead: t.r, canWrite: t.w },
+        create: { userId, tableName: t.name, canRead: t.r, canWrite: t.w },
+      });
+    }
   });
 
   revalidatePath("/app/employees");
+  revalidatePath("/app/tables/social-passport");
 }

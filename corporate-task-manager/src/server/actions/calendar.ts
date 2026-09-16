@@ -68,11 +68,11 @@ export async function createCalendarEvent(input: CreateEventInput) {
 
   const event = await prisma.calendarEvent.create({
     data: {
-      title,
+      title: title.trim(),
       startTime: start,
       endTime: end,
       type,
-      description,
+      description: description ? description.trim() : null,
       bookedById: session.user.id,
       participants: participantIds && participantIds.length > 0 ? {
         connect: participantIds.map(id => ({ id }))
@@ -112,7 +112,7 @@ export async function createCalendarEvent(input: CreateEventInput) {
       for (const user of invitedUsers) {
         await createNotification(
           user.id,
-          `Вам назначена задача: Принять участие во встрече «${title}» на ${start.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}.`,
+          `Приглашение на встречу «${title}» на ${start.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}.`,
           `/app/calendar`
         );
 
@@ -122,15 +122,15 @@ export async function createCalendarEvent(input: CreateEventInput) {
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px;">
               <h2 style="color: #2563eb; margin-bottom: 20px;">Приглашение на встречу штата</h2>
               <p style="font-size: 14px;">Здравствуйте, <strong>${user.name}</strong>!</p>
-              <p style="font-size: 14px; line-height: 1.6;">Руководитель пригласил вас принять участие в совещании:</p>
+              <p style="font-size: 14px; line-height: 1.6;">Вас пригласили принять участие в совещании:</p>
               <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
                 <tr>
-                  <td style="padding: 8px 0; border-b: 1px solid #f1f5f9; color: #64748b;">Тема встречи:</td>
-                  <td style="padding: 8px 0; border-b: 1px solid #f1f5f9; font-weight: bold; color: #1e293b;">${title}</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">Тема встречи:</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #1e293b;">${title}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; border-b: 1px solid #f1f5f9; color: #64748b;">Дата и время:</td>
-                  <td style="padding: 8px 0; border-b: 1px solid #f1f5f9; font-weight: bold; color: #1e293b;">${start.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">Дата и время:</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #1e293b;">${start.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}</td>
                 </tr>
               </table>
               <p style="margin-top: 25px;"><a href="${appUrl}/app/calendar" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Открыть Календарь</a></p>
@@ -150,7 +150,6 @@ export async function createCalendarEvent(input: CreateEventInput) {
   return event;
 }
 
-// ⚡ НОВОЕ: РЕДАКТИРОВАНИЕ ВСТРЕЧИ В КАЛЕНДАРЕ
 export async function updateCalendarEvent(input: UpdateEventInput) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -189,7 +188,6 @@ export async function updateCalendarEvent(input: UpdateEventInput) {
     throw new Error("Только руководитель может блокировать интервалы времени или устанавливать часы Главного корпуса");
   }
 
-  // Проверяем наложение на другие события, исключая текущее редактируемое событие
   const overlappingEvent = await prisma.calendarEvent.findFirst({
     where: {
       id: { not: id },
@@ -215,11 +213,11 @@ export async function updateCalendarEvent(input: UpdateEventInput) {
   const updatedEvent = await prisma.calendarEvent.update({
     where: { id },
     data: {
-      title,
+      title: title.trim(),
       startTime: start,
       endTime: end,
       type,
-      description,
+      description: description ? description.trim() : null,
       participants: participantIds ? {
         set: participantIds.map(userId => ({ id: userId }))
       } : undefined

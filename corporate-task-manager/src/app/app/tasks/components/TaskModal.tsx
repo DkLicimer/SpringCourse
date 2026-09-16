@@ -1,9 +1,9 @@
 // src/app/app/tasks/components/TaskModal.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createTask, updateTask } from "@/server/actions/tasks";
-import { X, ListOrdered, Users } from "lucide-react";
+import { X, ListOrdered, Users, CheckSquare, Sparkles } from "lucide-react";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -39,6 +39,15 @@ export function TaskModal({
   const [isPerspective, setIsPerspective] = useState(editingTask ? editingTask.isPerspective : false);
   const [createSeparateCopies, setCreateSeparateCopies] = useState(false);
 
+  // Умные даты: Дедлайн и Напоминание
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [reminderDateVal, setReminderDateVal] = useState<string>(
+    editingTask?.reminderDate ? editingTask.reminderDate.split("T")[0] : ""
+  );
+  const [deadlineVal, setDeadlineVal] = useState<string>(
+    editingTask?.deadline ? editingTask.deadline.split("T")[0] : ""
+  );
+
   const [stepInstructions, setStepInstructions] = useState<Record<string, string>>(() => {
     if (!editingTask) return {};
     const dict: Record<string, string> = {};
@@ -48,7 +57,14 @@ export function TaskModal({
     return dict;
   });
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Автоподстройка минимального дедлайна под дату напоминания
+  useEffect(() => {
+    if (isPerspective && reminderDateVal) {
+      if (!deadlineVal || deadlineVal < reminderDateVal) {
+        setDeadlineVal(reminderDateVal);
+      }
+    }
+  }, [reminderDateVal, isPerspective]);
 
   const toggleAssignee = (userId: string) => {
     if (assignmentType === "INDIVIDUAL" && !createSeparateCopies) {
@@ -77,7 +93,7 @@ export function TaskModal({
     const taskInput = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
-      deadline: formData.get("deadline") as string,
+      deadline: deadlineVal || (formData.get("deadline") as string),
       intermediateControl: formData.get("intermediateControl") === "true",
       adminNotes: formData.get("adminNotes") as string,
       assignmentType,
@@ -86,7 +102,7 @@ export function TaskModal({
       isPriority,
       isRecurring,
       isPerspective,
-      reminderDate: isPerspective ? (formData.get("reminderDate") as string) : undefined,
+      reminderDate: isPerspective ? reminderDateVal : undefined,
       stepInstructions: stepInstructionsArray,
       createSeparateCopies,
     };
@@ -122,6 +138,7 @@ export function TaskModal({
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4" autoComplete="off">
+          {/* Чекбоксы: Срочная / Регулярная */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center justify-between p-3 bg-red-50/50 border border-red-100 rounded-xl">
               <div className="space-y-0.5">
@@ -150,6 +167,7 @@ export function TaskModal({
             </div>
           </div>
 
+          {/* Перспективная задача */}
           <div className="grid grid-cols-1 gap-3">
             <div className="flex items-center justify-between p-3 bg-blue-50/30 border border-blue-100 rounded-xl">
               <div className="space-y-0.5">
@@ -165,21 +183,27 @@ export function TaskModal({
             </div>
 
             {isPerspective && (
-              <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl animate-fade-in">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Дата напоминания</label>
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1 animate-fade-in">
+                <label className="block text-xs font-bold text-amber-900">
+                  📅 Дата напоминания руководителю
+                </label>
                 <input
                   type="date"
                   name="reminderDate"
                   required
                   min={todayStr}
-                  defaultValue={editingTask?.reminderDate ? editingTask.reminderDate.split("T")[0] : ""}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  value={reminderDateVal}
+                  onChange={(e) => setReminderDateVal(e.target.value)}
+                  className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-500 text-slate-800"
                 />
+                <p className="text-[10px] text-amber-700 mt-1">
+                  * Дедлайн задачи ниже автоматически настроится не ранее этой даты.
+                </p>
               </div>
             )}
           </div>
 
-          {/* Тема (бывшая цель) */}
+          {/* Тема / Направление */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Тема (Направление)</label>
             <select
@@ -203,7 +227,7 @@ export function TaskModal({
               name="title"
               required
               defaultValue={editingTask?.title || ""}
-              placeholder="Например, Заполнить отчет по инфополям"
+              placeholder="Например, Уборка в кабинетах 238 и 245"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
             />
           </div>
@@ -214,20 +238,21 @@ export function TaskModal({
               name="description"
               rows={3}
               defaultValue={editingTask?.description || ""}
-              placeholder="Опишите суть работы, ссылки и чек-листы..."
+              placeholder="Общие детали, ссылки, файлы, чек-листы..."
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Дедлайн</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Срок сдачи (Дедлайн)</label>
               <input
                 type="date"
                 name="deadline"
-                min={todayStr}
-                defaultValue={editingTask?.deadline ? editingTask.deadline.split("T")[0] : ""}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                min={isPerspective && reminderDateVal ? reminderDateVal : todayStr}
+                value={deadlineVal}
+                onChange={(e) => setDeadlineVal(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-800 bg-white"
               />
             </div>
             <div>
@@ -238,7 +263,7 @@ export function TaskModal({
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 text-slate-800"
               >
                 <option value="false">Нет контроля</option>
-                <option value="true">Требуется текстовый отчет</option>
+                <option value="true">Требуется обратная связь / отчет</option>
               </select>
             </div>
           </div>
@@ -254,6 +279,7 @@ export function TaskModal({
             />
           </div>
 
+          {/* Тип назначения */}
           <div className="border-t border-slate-200 pt-4 space-y-3">
             <label className="block text-xs font-semibold text-slate-700 mb-1">Тип назначения</label>
             <div className="grid grid-cols-3 gap-2">
@@ -269,7 +295,7 @@ export function TaskModal({
                   }}
                   className={`px-3 py-2.5 rounded-lg border text-xs font-bold transition-all text-center cursor-pointer ${
                     assignmentType === type
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
                       : "border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
@@ -280,13 +306,12 @@ export function TaskModal({
               ))}
             </div>
 
-            {/* ⚡ ОПЦИЯ «ЗАДАЧА ДЛЯ ВСЕХ / КЛОНИРОВАНИЕ» */}
             {assignmentType === "INDIVIDUAL" && !editingTask && (
               <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <span className="text-xs font-bold text-emerald-900 block">Задача для всех (отдельные копии)</span>
                   <span className="text-[10px] text-emerald-700 leading-tight block">
-                    Создаст отдельную индивидуальную задачу каждому выбранному сотруднику
+                    Создаст отдельную задачу каждому выбранному сотруднику
                   </span>
                 </div>
                 <input
@@ -304,6 +329,7 @@ export function TaskModal({
             )}
           </div>
 
+          {/* Список сотрудников и индивидуальные комментарии под каждым */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="text-xs font-semibold text-slate-700">Выберите исполнителей</label>
@@ -318,39 +344,70 @@ export function TaskModal({
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto p-1 border rounded-lg bg-slate-50">
+            <div className="flex flex-col gap-2 max-h-60 overflow-y-auto p-2 border rounded-xl bg-slate-50">
               {users.map((u) => {
                 const isSelected = selectedAssignees.includes(u.id);
                 const indexInChain = selectedAssignees.indexOf(u.id);
 
                 return (
-                  <div key={u.id} className="w-full flex flex-col gap-1.5 p-1">
+                  <div
+                    key={u.id}
+                    className={`rounded-xl border transition-all p-2.5 ${
+                      isSelected
+                        ? "bg-white border-blue-300 shadow-sm"
+                        : "bg-white/60 border-slate-200 hover:bg-white"
+                    }`}
+                  >
                     <button
-                      key={u.id}
                       type="button"
                       onClick={() => toggleAssignee(u.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center justify-between gap-1.5 transition-all cursor-pointer ${
-                        isSelected
-                          ? "bg-blue-600 border-blue-600 text-white"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
+                      className="w-full flex items-center justify-between gap-2 text-left cursor-pointer"
                     >
-                      <span>{u.name} {u.department ? `(${u.department})` : ""}</span>
-                      {assignmentType === "SEQUENTIAL" && isSelected && (
-                        <span className="bg-blue-800 text-white text-[10px] h-4 w-4 rounded-full flex items-center justify-center font-bold">
-                          {indexInChain + 1}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                            isSelected ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {assignmentType === "SEQUENTIAL" && isSelected ? indexInChain + 1 : u.initials}
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800">{u.name}</span>
+                          {u.department && (
+                            <span className="text-[10px] text-slate-400 block">{u.department}</span>
+                          )}
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          isSelected ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {isSelected ? "Выбран" : "Выбрать"}
+                      </span>
                     </button>
-                    
-                    {assignmentType === "SEQUENTIAL" && isSelected && (
-                      <div className="pl-4">
+
+                    {/* Поле индивидуального комментария / подзадачи для ПАРАЛЛЕЛЬНОЙ или ПОСЛЕДОВАТЕЛЬНОЙ задачи */}
+                    {isSelected && (assignmentType === "SIMULTANEOUS" || assignmentType === "SEQUENTIAL") && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 animate-fade-in">
+                        <label className="block text-[10px] font-bold text-blue-700 mb-1 flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-blue-500" />
+                          {assignmentType === "SIMULTANEOUS"
+                            ? `Что конкретно делает ${u.name.split(" ")[0]}? (персональное указание)`
+                            : `Указание для этапа ${indexInChain + 1} (${u.name.split(" ")[0]}):`}
+                        </label>
                         <input
                           type="text"
-                          placeholder={`Указание для этапа ${indexInChain + 1}: Что должен сделать ${u.name.split(" ")[0]}?`}
-                          className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-[11px] focus:outline-none focus:border-blue-500 text-slate-800 bg-white"
+                          placeholder={
+                            assignmentType === "SIMULTANEOUS"
+                              ? "Например: моет окна в каб. 238, проверяет ведомости..."
+                              : "Например: готовит черновик договора..."
+                          }
+                          className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800 bg-slate-50 focus:bg-white"
                           value={stepInstructions[u.id] || ""}
-                          onChange={(e) => setStepInstructions(prev => ({ ...prev, [u.id]: e.target.value }))}
+                          onChange={(e) =>
+                            setStepInstructions((prev) => ({ ...prev, [u.id]: e.target.value }))
+                          }
                         />
                       </div>
                     )}
@@ -361,7 +418,9 @@ export function TaskModal({
 
             {assignmentType === "SEQUENTIAL" && selectedAssignees.length > 0 && (
               <div className="mt-3 text-xs bg-blue-50 text-blue-800 p-3 rounded-lg border border-blue-100 space-y-1">
-                <div className="font-bold flex items-center gap-1"><ListOrdered className="h-4 w-4" /> Порядок цепочки:</div>
+                <div className="font-bold flex items-center gap-1">
+                  <ListOrdered className="h-4 w-4" /> Порядок выполнения цепочки:
+                </div>
                 <div className="text-[11px] font-medium">
                   {selectedAssignees.map((id, index) => {
                     const name = users.find((u) => u.id === id)?.name;
@@ -370,7 +429,7 @@ export function TaskModal({
                         {index > 0 && " → "}
                         <span className="font-bold">{name}</span>
                         {index === 0 && " (Сразу)"}
-                        {index > 0 && " (Ожидает)"}
+                        {index > 0 && " (После предыдущего)"}
                       </span>
                     );
                   })}
@@ -379,18 +438,18 @@ export function TaskModal({
             )}
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm cursor-pointer"
+              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm cursor-pointer hover:bg-slate-50"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:bg-blue-400 cursor-pointer"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:bg-blue-400 cursor-pointer hover:bg-blue-700 shadow-sm"
             >
               {editingTask ? "Сохранить изменения" : "Создать задачу"}
             </button>

@@ -7,12 +7,12 @@ import {
   updateAssignmentStatus,
   addComment,
   deleteTask,
-  activateTask
+  activateTask,
+  submitTaskReport
 } from "@/server/actions/tasks";
 import { 
   Plus, 
   Settings, 
-  Sliders, 
   History, 
   FolderLock, 
   LayoutGrid, 
@@ -32,11 +32,14 @@ import {
   Play,
   Repeat,
   Send,
-  Lock
+  Lock,
+  MessageSquareCheck,
+  FileCheck2,
+  Sparkles
 } from "lucide-react";
 import { TaskModal } from "./components/TaskModal";
 import { ManageGoalsModal } from "./components/ManageGoalsModal";
-import { GlobalFocusBanner } from "./components/GlobalFocusBanner"; // ⚡ ИМПОРТ БАННЕРА
+import { GlobalFocusBanner } from "./components/GlobalFocusBanner";
 
 interface TasksClientProps {
   initialTasks: any[];
@@ -59,7 +62,7 @@ interface TasksClientProps {
     department: string;
     priorityOnly: boolean;
   };
-  globalFocus: any | null; // ⚡ ПРОП ФОКУСА
+  globalFocus: any | null;
 }
 
 export function TasksClient({
@@ -94,14 +97,21 @@ export function TasksClient({
   const [isManageGoalsOpen, setIsManageGoalsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
 
+  // Поле обратной связи / отчета исполнителя
+  const [reportInput, setReportInput] = useState("");
+
   const [searchQuery, setSearchQuery] = useState(currentFilters.search);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
   useEffect(() => {
-    if (taskToOpen) setActiveTask(taskToOpen);
-  }, [taskToOpen]);
+    if (taskToOpen) {
+      setActiveTask(taskToOpen);
+      const myAs = taskToOpen.assignments?.find((as: any) => as.userId === currentUserId);
+      setReportInput(myAs?.reportText || "");
+    }
+  }, [taskToOpen, currentUserId]);
 
   useEffect(() => {
     if (activeTask && chatEndRef.current) {
@@ -152,11 +162,28 @@ export function TasksClient({
   const handleStatusChange = async (assignmentId: string, newStatusId: string) => {
     startTransition(async () => {
       try {
-        await updateAssignmentStatus(assignmentId, newStatusId);
-        showToast("Статус задачи изменен", "success");
+        await updateAssignmentStatus(assignmentId, newStatusId, reportInput);
+        showToast("Статус задачи обновлен", "success");
         router.refresh();
       } catch (err: any) {
         showToast(err.message || "Ошибка смены статуса", "error");
+      }
+    });
+  };
+
+  const handleSaveReport = async (assignmentId: string) => {
+    if (!reportInput.trim()) {
+      showToast("Введите текст отчета", "error");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        await submitTaskReport(assignmentId, reportInput);
+        showToast("Обратная связь / отчет сохранен!", "success");
+        router.refresh();
+      } catch (err: any) {
+        showToast(err.message || "Ошибка отправки отчета", "error");
       }
     });
   };
@@ -179,7 +206,7 @@ export function TasksClient({
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
+      {/* Toast уведомления */}
       {toast && (
         <div className={`fixed bottom-6 left-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-xs font-semibold animate-slide-up ${
           toast.type === "success" 
@@ -202,7 +229,7 @@ export function TasksClient({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-slate-800">Задачи и темы</h2>
-          <p className="text-slate-500 text-sm">Оперативное управление задачами по всем темам и направлениям</p>
+          <p className="text-slate-500 text-sm">Оперативное управление задачами по всем направлениям</p>
         </div>
 
         {!isAdmin && currentUserPeriod && (
@@ -269,7 +296,7 @@ export function TasksClient({
         )}
       </div>
 
-      {/* ⚡ НОВЫЙ БАННЕР «ВАЖНОЕ СЕЙЧАС / ФОКУС НЕДЕЛИ» */}
+      {/* Баннер Фокуса Недели */}
       <GlobalFocusBanner
         initialFocus={globalFocus}
         isAdmin={isAdmin}
@@ -297,15 +324,15 @@ export function TasksClient({
         </div>
       )}
 
-      {/* Панель фильтрации */}
+      {/* Панель расширенной фильтрации (включая статус и архив) */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
           <Filter className="h-3.5 w-3.5 text-slate-400" /> Фильтрация задач
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 items-end">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Поиск</label>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Поиск (в т.ч. по архиву)</label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
@@ -319,7 +346,23 @@ export function TasksClient({
           </form>
 
           <div>
-            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Тема (Направление)</label>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Статус / Архив</label>
+            <select
+              value={currentFilters.statusId}
+              onChange={(e) => updateUrlFilters({ statusId: e.target.value })}
+              className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              <option value="all">Все статусы</option>
+              {statuses.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.id === "status-done" ? "Исполнено (Архив)" : st.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Тема</label>
             <select
               value={currentFilters.goalId}
               onChange={(e) => updateUrlFilters({ goalId: e.target.value })}
@@ -333,7 +376,7 @@ export function TasksClient({
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Отдел исполнителя</label>
+            <label className="block text-[10px] font-semibold text-slate-500 mb-1">Отдел</label>
             <select
               value={currentFilters.department}
               onChange={(e) => updateUrlFilters({ department: e.target.value })}
@@ -371,7 +414,7 @@ export function TasksClient({
               Срочные
             </label>
 
-            {(currentFilters.search || currentFilters.goalId !== "all" || currentFilters.assigneeId !== "all" || currentFilters.department !== "all" || currentFilters.priorityOnly) && (
+            {(currentFilters.search || currentFilters.goalId !== "all" || currentFilters.statusId !== "all" || currentFilters.assigneeId !== "all" || currentFilters.department !== "all" || currentFilters.priorityOnly) && (
               <button onClick={clearFilters} className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer">
                 Сбросить
               </button>
@@ -389,15 +432,15 @@ export function TasksClient({
                 <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Тема / Задача</th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Срок (Дедлайн)</th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Приоритет</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Исполнители</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Примечания</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Исполнители / Подзадачи</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider">Отчет / Контроль</th>
                 <th className="px-4 py-3 text-right font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {initialTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">Задач пока нет</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">Задач по выбранным фильтрам нет</td>
                 </tr>
               ) : (
                 initialTasks.map((task) => {
@@ -406,6 +449,7 @@ export function TasksClient({
                     ? task.assignments.every((as: any) => as.statusId === "status-done")
                     : myAs?.statusId === "status-done";
                   const isOverdue = !isCompleted && task.deadline && new Date(task.deadline) < startOfToday;
+                  const hasReports = task.assignments.some((as: any) => !!as.reportText);
 
                   return (
                     <tr 
@@ -424,6 +468,12 @@ export function TasksClient({
                           <span className={`font-bold text-slate-900 text-sm leading-snug ${isCompleted ? "line-through text-slate-400" : ""}`}>
                             {task.title}
                           </span>
+                          {/* Если для текущего сотрудника есть персональное указание */}
+                          {myAs?.stepInstruction && (
+                            <span className="text-[10px] bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-semibold flex items-center gap-1 mt-0.5">
+                              <Sparkles className="h-3 w-3 text-blue-500" /> Ваша часть: {myAs.stepInstruction}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -458,25 +508,31 @@ export function TasksClient({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex -space-x-1.5 overflow-hidden">
-                          {task.assignments.map((as: any) => (
-                            <div
-                              key={as.id}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-[10px] shadow-sm"
-                              title={`${as.user.name} (${as.isBlocked ? "Блокировано" : as.status.name})`}
-                            >
-                              {as.user.initials}
-                            </div>
-                          ))}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex -space-x-1.5 overflow-hidden">
+                            {task.assignments.map((as: any) => (
+                              <div
+                                key={as.id}
+                                className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-[10px] shadow-sm"
+                                title={`${as.user.name}: ${as.stepInstruction || as.status.name}`}
+                              >
+                                {as.user.initials}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 max-w-xs truncate text-slate-500">
-                        {task.adminNotes ? (
-                          <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                            {task.adminNotes}
+                        {hasReports ? (
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 w-fit">
+                            <FileCheck2 className="h-3 w-3 text-emerald-600" /> Есть отчет
+                          </span>
+                        ) : task.intermediateControl ? (
+                          <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 w-fit">
+                            <MessageSquareCheck className="h-3 w-3 text-amber-600" /> Ждет отчета
                           </span>
                         ) : (
-                          task.description || "—"
+                          <span className="text-slate-400">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right">
@@ -637,7 +693,7 @@ export function TasksClient({
         onError={(msg) => showToast(msg, "error")}
       />
 
-      {/* Модалка просмотра деталей задачи */}
+      {/* Модалка просмотра деталей задачи и сдачи отчета */}
       {activeTask && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-200 flex flex-col h-[85vh] overflow-hidden">
@@ -659,6 +715,11 @@ export function TasksClient({
                       Срочно
                     </span>
                   )}
+                  {activeTask.intermediateControl && (
+                    <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+                      Контроль / Требуется отчет
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -676,10 +737,42 @@ export function TasksClient({
                   </div>
                 )}
 
-                {/* Статус задачи сотрудника */}
+                {/* Персональные задания исполнителям в задаче */}
+                <div className="border-t border-slate-100 pt-4 space-y-2">
+                  <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Исполнители и подзадачи</h5>
+                  <div className="space-y-2">
+                    {activeTask.assignments.map((as: any) => (
+                      <div key={as.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-slate-800">{as.user.name}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                            {as.status.name}
+                          </span>
+                        </div>
+                        {as.stepInstruction && (
+                          <div className="text-[11px] text-blue-700 font-medium flex items-center gap-1">
+                            <Sparkles className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                            <span>Указание: {as.stepInstruction}</span>
+                          </div>
+                        )}
+                        {/* ⚡ БЕЛЫЙ БЛОК ОБРАТНОЙ СВЯЗИ / ОТЧЕТА */}
+                        {as.reportText && (
+                          <div className="mt-2 p-2.5 bg-white border border-slate-200 rounded-lg text-xs space-y-0.5 shadow-sm">
+                            <span className="text-[10px] font-bold text-emerald-700 uppercase flex items-center gap-1">
+                              <FileCheck2 className="h-3 w-3" /> Обратная связь / Отчет исполнителя:
+                            </span>
+                            <p className="text-slate-800 whitespace-pre-line leading-relaxed font-medium">{as.reportText}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Статус задачи сотрудника и форма отправки отчета */}
                 {!isAdmin && (
-                  <div className="border-t border-slate-100 pt-4 space-y-2">
-                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Мой статус</h5>
+                  <div className="border-t border-slate-100 pt-4 space-y-3">
+                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Мой статус и отчет</h5>
                     {(() => {
                       const myAs = activeTask.assignments.find((as: any) => as.userId === currentUserId);
                       if (!myAs) return null;
@@ -687,28 +780,53 @@ export function TasksClient({
                       if (myAs.isBlocked) {
                         return (
                           <div className="flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 border border-red-200 p-3 rounded-xl">
-                            <Lock className="h-4 w-4" /> Задача заблокирована. Ожидайте выполнения предыдущего этапа в цепочке.
+                            <Lock className="h-4 w-4" /> Задача заблокирована. Ожидайте завершения предыдущего этапа в цепочке.
                           </div>
                         );
                       }
 
                       return (
-                        <div className="flex gap-2">
-                          {statuses.map((st) => (
+                        <div className="space-y-3">
+                          <div className="flex gap-2">
+                            {statuses.map((st) => (
+                              <button
+                                key={st.id}
+                                disabled={isPending}
+                                onClick={() => handleStatusChange(myAs.id, st.id)}
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  myAs.statusId === st.id
+                                    ? "bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2"
+                                    : "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100"
+                                }`}
+                              >
+                                {myAs.statusId === st.id && "✓ "}
+                                {st.name}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Поле ввода отчета / обратной связи */}
+                          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                              <FileCheck2 className="h-4 w-4 text-emerald-600" />
+                              Ваш отчет / Обратная связь руководителю
+                            </label>
+                            <textarea
+                              rows={2}
+                              placeholder="Опишите результат выполнения, прикрепите ссылки на готовые файлы..."
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-blue-500 text-slate-800 bg-white"
+                              value={reportInput}
+                              onChange={(e) => setReportInput(e.target.value)}
+                            />
                             <button
-                              key={st.id}
-                              disabled={isPending}
-                              onClick={() => handleStatusChange(myAs.id, st.id)}
-                              className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                myAs.statusId === st.id
-                                  ? "bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2"
-                                  : "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100"
-                              }`}
+                              type="button"
+                              disabled={isPending || !reportInput.trim()}
+                              onClick={() => handleSaveReport(myAs.id)}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors disabled:bg-emerald-300 cursor-pointer"
                             >
-                              {myAs.statusId === st.id && "✓ "}
-                              {st.name}
+                              Сохранить отчет
                             </button>
-                          ))}
+                          </div>
                         </div>
                       );
                     })()}
@@ -716,7 +834,7 @@ export function TasksClient({
                 )}
               </div>
 
-              {/* Чат задачи */}
+              {/* Чат обсуждения задачи */}
               <div className="lg:col-span-5 p-6 bg-slate-50/50 flex flex-col h-full overflow-hidden border-t lg:border-t-0 lg:border-l border-slate-200">
                 <div className="border-b border-slate-100 pb-3 mb-3 flex items-center gap-2 shrink-0">
                   <Send className="h-4 w-4 text-blue-500" />
@@ -726,7 +844,7 @@ export function TasksClient({
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4">
                   {activeTask.comments.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-xs text-slate-400 italic">
-                      Сообщений нет.
+                      Сообщений пока нет.
                     </div>
                   ) : (
                     activeTask.comments.map((comment: any) => (

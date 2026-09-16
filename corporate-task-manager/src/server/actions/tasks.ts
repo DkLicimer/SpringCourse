@@ -21,7 +21,7 @@ interface CreateTaskInput {
   isPerspective?: boolean; 
   reminderDate?: string;    
   stepInstructions?: string[];
-  createSeparateCopies?: boolean; // Флаг: создать отдельную задачу каждому
+  createSeparateCopies?: boolean;
 }
 
 export async function createGoal(title: string, color: string) {
@@ -83,10 +83,13 @@ export async function createTask(input: CreateTaskInput) {
     }
   }
 
-  // ⚡ ФУНКЦИЯ «ЗАДАЧА ДЛЯ ВСЕХ»: Если выбран режим создания отдельных копий
+  // Режим «Задача для всех» (создание персональной копии каждому)
   if (assignmentType === "INDIVIDUAL" && createSeparateCopies && assigneeIds.length > 1) {
     await prisma.$transaction(async (tx) => {
-      for (const userId of assigneeIds) {
+      for (let i = 0; i < assigneeIds.length; i++) {
+        const userId = assigneeIds[i];
+        const personalInstruction = stepInstructions ? stepInstructions[i] || null : null;
+
         const individualTask = await tx.task.create({
           data: {
             title,
@@ -111,6 +114,7 @@ export async function createTask(input: CreateTaskInput) {
             statusId: "status-todo",
             sequenceOrder: 0,
             isBlocked: false,
+            stepInstruction: personalInstruction,
           },
         });
 
@@ -132,7 +136,7 @@ export async function createTask(input: CreateTaskInput) {
     return;
   }
 
-  // Обычное создание одиночной или групповой задачи
+  // Создание одиночной, параллельной или последовательной задачи
   const task = await prisma.$transaction(async (tx) => {
     const newTask = await tx.task.create({
       data: {
@@ -179,17 +183,18 @@ export async function createTask(input: CreateTaskInput) {
       for (let index = 0; index < assigneeIds.length; index++) {
         const userId = assigneeIds[index];
         const isBlocked = assignmentType === "SEQUENTIAL" && index > 0;
+        const personalInst = stepInstructions && stepInstructions[index] ? ` (Ваша часть: ${stepInstructions[index]})` : "";
 
         if (!isBlocked) {
           await createNotification(
             userId,
-            `Вам назначена новая задача: "${title}". Она уже доступна для выполнения.`,
+            `Вам назначена задача: "${title}"${personalInst}. Она доступна для выполнения.`,
             `/app/tasks?taskId=${task.id}`
           );
         } else {
           await createNotification(
             userId,
-            `Вы добавлены в последовательную цепочку по задаче "${title}" (задача временно заблокирована до вашей очереди).`,
+            `Вы добавлены в цепочку по задаче "${title}" (ожидает завершения предыдущего этапа).`,
             `/app/tasks?taskId=${task.id}`
           );
         }
@@ -203,7 +208,7 @@ export async function createTask(input: CreateTaskInput) {
   return task;
 }
 
-export async function updateAssignmentStatus(assignmentId: string, newStatusId: string) {
+export async function updateAssignmentStatus(assignmentId: string, newStatusId: string, reportText?: string) {
   const session = await getServerSession(authOptions);
   if (!session) {
     throw new Error("Вы не авторизованы");
@@ -249,6 +254,7 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
       data: {
         statusId: newStatusId,
         completedAt: isCompletedStatus ? new Date() : null,
+        reportText: reportText !== undefined ? reportText.trim() : currentAssignment.reportText,
       },
     });
 
@@ -267,8 +273,7 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
             },
           });
           nextAssigneeId = nextAssignment.userId;
-        } 
-        else if (!isCompletedStatus && wasCompleted) {
+        } else if (!isCompletedStatus && wasCompleted) {
           if (nextAssignment.statusId !== "status-todo" && !isAdmin) {
             throw new Error(
               "Вы не можете отменить выполнение, так как следующий исполнитель в цепочке уже начал работу над своим этапом."
@@ -297,6 +302,61 @@ export async function updateAssignmentStatus(assignmentId: string, newStatusId: 
     } catch (err) {
       console.error("Не удалось разослать уведомление о разблокировке цепочки:", err);
     }
+  }
+
+  if (reportText && reportText.trim()) {
+    try {
+      const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+      for (const admin of admins) {
+        await createNotification(
+          admin.id,
+          `Сотрудник ${session.user.name} предоставил отчет/обратную связь по задаче "${taskTitle}": "${reportText.slice(0, 50)}..."`,
+          `/app/tasks?taskId=${currentAssignment.taskId}`
+        );
+      }
+    } catch (err) {
+      console.error("Не удалось отправить отчет администраторам:", err);
+    }
+  }
+
+  revalidatePath("/app/tasks");
+}
+
+export async function submitTaskReport(assignmentId: string, reportText: string) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    throw new Error("Вы не авторизованы");
+  }
+
+  const assignment = await prisma.taskAssignment.findUnique({
+    where: { id: assignmentId },
+    include: { task: true },
+  });
+
+  if (!assignment) {
+    throw new Error("Назначение не найдено");
+  }
+
+  if (assignment.userId !== session.user.id && session.user.role !== "ADMIN") {
+    throw new Error("Недостаточно прав");
+  }
+
+  await prisma.taskAssignment.update({
+    where: { id: assignmentId },
+    data: { reportText: reportText.trim() },
+  });
+
+  try {
+    const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+    for (const admin of admins) {
+      await createNotification(
+        admin.id,
+        `${session.user.name} отправил обратную связь по задаче "${assignment.task.title}".`,
+        `/app/tasks?taskId=${assignment.taskId}`
+      );
+    }
+  } catch (err) {
+    console.error("Ошибка уведомления:", err);
   }
 
   revalidatePath("/app/tasks");
@@ -409,71 +469,6 @@ export async function addComment(taskId: string, text: string) {
   return comment;
 }
 
-export async function createTaskStatus(name: string, color: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
-
-  if (!name || !color) {
-    throw new Error("Укажите название статуса и цвет");
-  }
-
-  const maxStatus = await prisma.taskStatus.findFirst({
-    orderBy: { position: "desc" },
-  });
-  const nextPosition = maxStatus ? maxStatus.position + 1 : 1;
-
-  const status = await prisma.taskStatus.create({
-    data: {
-      name,
-      color,
-      isDefault: false,
-      position: nextPosition,
-    },
-  });
-
-  revalidatePath("/app/tasks");
-  return status;
-}
-
-export async function deleteTaskStatus(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
-
-  const status = await prisma.taskStatus.findUnique({
-    where: { id },
-  });
-
-  if (!status) {
-    throw new Error("Статус не найден");
-  }
-
-  if (status.isDefault) {
-    throw new Error("Системные статусы по умолчанию удалять нельзя");
-  }
-
-  const isUsed = await prisma.taskAssignment.count({
-    where: { statusId: id },
-  });
-
-  if (isUsed > 0) {
-    throw new Error(
-      "Этот статус сейчас используется в задачах. Переведите все зависимые задачи на другие статусы перед его удалением"
-    );
-  }
-
-  await prisma.taskStatus.delete({
-    where: {
-      id,
-    },
-  });
-
-  revalidatePath("/app/tasks");
-}
-
 export async function updateTask(taskId: string, input: CreateTaskInput) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -529,6 +524,10 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
       },
     });
 
+    const oldAssignments = await tx.taskAssignment.findMany({
+      where: { taskId },
+    });
+
     await tx.taskAssignment.deleteMany({
       where: { taskId },
     });
@@ -539,13 +538,16 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         isBlocked = true;
       }
 
+      const prev = oldAssignments.find((a) => a.userId === userId);
+
       return {
         taskId,
         userId,
-        statusId: "status-todo",
+        statusId: prev ? prev.statusId : "status-todo",
         sequenceOrder: assignmentType === "SEQUENTIAL" ? index : 0,
         isBlocked,
         stepInstruction: stepInstructions ? stepInstructions[index] || null : null,
+        reportText: prev ? prev.reportText : null,
       };
     });
 
@@ -568,212 +570,6 @@ export async function deleteTask(taskId: string) {
   });
 
   revalidatePath("/app/tasks");
-}
-
-export async function requestExtension(taskId: string, reason?: string) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    throw new Error("Вы не авторизованы");
-  }
-
-  const task = await prisma.task.findUnique({
-    where: { id: taskId },
-    include: { assignments: true },
-  });
-
-  if (!task) {
-    throw new Error("Задача не найдена");
-  }
-
-  const isAssigned = task.assignments.some((as) => as.userId === session.user.id);
-  if (!isAssigned && session.user.role !== "ADMIN") {
-    throw new Error("Вы не назначены на выполнение этой задачи");
-  }
-
-  const existingRequest = await prisma.extensionRequest.findFirst({
-    where: {
-      taskId,
-      userId: session.user.id,
-      status: "PENDING",
-    },
-  });
-
-  if (existingRequest) {
-    throw new Error("Вы уже отправили запрос на продление этой задачи. Ожидайте ответа руководителя.");
-  }
-
-  const request = await prisma.extensionRequest.create({
-    data: {
-      taskId,
-      userId: session.user.id,
-      reason: reason || "Причина не указана",
-      status: "PENDING",
-    },
-  });
-
-  try {
-    const admins = await prisma.user.findMany({
-      where: { role: "ADMIN" },
-      select: { id: true },
-    });
-
-    for (const admin of admins) {
-      await createNotification(
-        admin.id,
-        `Сотрудник ${session.user.name} запросил продление срока по задаче "${task.title}".`,
-        `/app/tasks?taskId=${task.id}`
-      );
-    }
-  } catch (err) {
-    console.error("Не удалось уведомить руководителя о запросе продления:", err);
-  }
-
-  revalidatePath("/app/tasks");
-  return request;
-}
-
-export async function approveExtension(requestId: string, newDeadline: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
-
-  if (!newDeadline) {
-    throw new Error("Укажите новый дедлайн для задачи");
-  }
-
-  const request = await prisma.extensionRequest.findUnique({
-    where: { id: requestId },
-    include: { task: true, user: true },
-  });
-
-  if (!request) {
-    throw new Error("Запрос на продление не найден");
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.extensionRequest.update({
-      where: { id: requestId },
-      data: { status: "APPROVED" },
-    });
-
-    await tx.task.update({
-      where: { id: request.taskId },
-      data: { deadline: new Date(newDeadline) },
-    });
-  });
-
-  try {
-    await createNotification(
-      request.userId,
-      `Руководитель утвердил новый срок по задаче "${request.task.title}": ${new Date(newDeadline).toLocaleDateString("ru-RU")}.`,
-      `/app/tasks?taskId=${request.taskId}`
-    );
-  } catch (err) {
-    console.error("Не удалось уведомить сотрудника об одобрении продления:", err);
-  }
-
-  revalidatePath("/app/tasks");
-}
-
-export async function rejectExtension(requestId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
-
-  const request = await prisma.extensionRequest.findUnique({
-    where: { id: requestId },
-    include: { task: true },
-  });
-
-  if (!request) {
-    throw new Error("Запрос на продление не найден");
-  }
-
-  await prisma.extensionRequest.update({
-    where: { id: requestId },
-    data: { status: "REJECTED" },
-  });
-
-  try {
-    await createNotification(
-      request.userId,
-      `Руководитель отклонил ваш запрос на перенос срока по задаче "${request.task.title}". Срок остается прежним.`,
-      `/app/tasks?taskId=${request.taskId}`
-    );
-  } catch (err) {
-    console.error("Не удалось уведомить сотрудника об отклонении продления:", err);
-  }
-
-  revalidatePath("/app/tasks");
-}
-
-export async function duplicateTask(taskId: string, newDeadline?: string) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Недостаточно прав");
-  }
-
-  const originalTask = await prisma.task.findUnique({
-    where: { id: taskId },
-    include: { assignments: true },
-  });
-
-  if (!originalTask) {
-    throw new Error("Оригинальная задача не найдена");
-  }
-
-  const duplicatedTask = await prisma.$transaction(async (tx) => {
-    const newTask = await tx.task.create({
-      data: {
-        title: `${originalTask.title} (Повтор)`,
-        description: originalTask.description,
-        deadline: newDeadline ? new Date(newDeadline) : null,
-        intermediateControl: originalTask.intermediateControl,
-        adminNotes: originalTask.adminNotes,
-        assignmentType: originalTask.assignmentType,
-        isPriority: originalTask.isPriority,
-        isRecurring: originalTask.isRecurring,
-        isPerspective: originalTask.isPerspective,
-        reminderDate: originalTask.reminderDate,
-        goalId: originalTask.goalId,
-        createdById: session.user.id,
-      },
-    });
-
-    const assignmentsData = originalTask.assignments.map((as) => {
-      return {
-        taskId: newTask.id,
-        userId: as.userId,
-        statusId: "status-todo",
-        sequenceOrder: as.sequenceOrder,
-        isBlocked: as.isBlocked,
-        stepInstruction: as.stepInstruction,
-      };
-    });
-
-    await tx.taskAssignment.createMany({
-      data: assignmentsData,
-    });
-
-    return newTask;
-  });
-
-  try {
-    for (const as of originalTask.assignments) {
-      await createNotification(
-        as.userId,
-        `Запущена повторная задача: "${duplicatedTask.title}".`,
-        `/app/tasks?taskId=${duplicatedTask.id}`
-      );
-    }
-  } catch (err) {
-    console.error("Не удалось разослать уведомления:", err);
-  }
-
-  revalidatePath("/app/tasks");
-  return duplicatedTask;
 }
 
 export async function activateTask(taskId: string) {

@@ -14,25 +14,43 @@ export default async function CalendarPage() {
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // Загружаем все события календаря вместе с забронировавшим и приглашенными участниками
+  // 1. Загружаем события календаря
   const events = await prisma.calendarEvent.findMany({
     orderBy: { startTime: "asc" },
     include: {
       bookedBy: {
         select: { name: true, initials: true, email: true },
       },
-      participants: { // <-- Загружаем участников встреч
+      participants: {
         select: { id: true, name: true, initials: true },
       },
     },
   });
 
-  // Загружаем сотрудников для формы выбора участников на совещание
+  // 2. Загружаем список сотрудников для выбора участников
   const users = await prisma.user.findMany({
     where: { role: "EMPLOYEE" },
     orderBy: { name: "asc" },
     select: { id: true, name: true, initials: true }
   });
+
+  // 3. Безопасно загружаем дни рождения сотрудников
+  let birthdays: any[] = [];
+  try {
+    birthdays = await prisma.socialPassport.findMany({
+      where: {
+        birthDate: { not: null }
+      },
+      select: {
+        id: true,
+        fullName: true,
+        birthDate: true,
+        department: true
+      }
+    });
+  } catch (err) {
+    console.error("Дни рождения пока недоступны:", err);
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -40,7 +58,8 @@ export default async function CalendarPage() {
         initialEvents={JSON.parse(JSON.stringify(events))}
         isAdmin={isAdmin}
         currentUserId={session.user.id}
-        users={JSON.parse(JSON.stringify(users))} // <-- Передаем на клиент
+        users={JSON.parse(JSON.stringify(users))}
+        birthdays={JSON.parse(JSON.stringify(birthdays))}
       />
     </div>
   );
