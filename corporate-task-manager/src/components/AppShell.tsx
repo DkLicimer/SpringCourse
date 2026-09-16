@@ -9,7 +9,8 @@ import {
   Calendar, 
   Table, 
   Users, 
-  LayoutDashboard, 
+  LayoutDashboard,
+  FileText, 
   Menu, 
   X 
 } from "lucide-react";
@@ -44,6 +45,12 @@ export function AppShell({ children, sessionUser }: AppShellProps) {
       title: "Календарь",
       href: "/app/calendar",
       icon: <Calendar className="h-5 w-5" />,
+      roles: ["ADMIN", "EMPLOYEE"],
+    },
+    {
+      title: "Протоколы совещаний",
+      href: "/app/protocols",
+      icon: <FileText className="h-5 w-5" />,
       roles: ["ADMIN", "EMPLOYEE"],
     },
     {

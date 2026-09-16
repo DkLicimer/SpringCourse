@@ -18,6 +18,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AudioConferenceModal } from "@/components/AudioConferenceModal";
+import { Mic } from "lucide-react";
 
 type CalendarEvent = {
   id: string;
@@ -54,6 +56,9 @@ const GRID_END_HOUR = 23;
 const HOURS_LIST = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR + 1 }, (_, i) => GRID_START_HOUR + i);
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const CELL_HEIGHT = 64; // px на 1 час
+const [isAudioRoomOpen, setIsAudioRoomOpen] = useState(false);
+const [currentRoomName, setCurrentRoomName] = useState("general-room");
+const [currentRoomTitle, setCurrentRoomTitle] = useState("Общая планерка");
 
 export function CalendarClient({
   initialEvents,
@@ -273,6 +278,18 @@ export function CalendarClient({
           <Plus className="h-4 w-4" />
           {isAdmin ? "Добавить событие / Блок" : "Забронировать встречу"}
         </button>
+
+        <button
+          onClick={() => {
+            setCurrentRoomName(`meeting-${Date.now()}`);
+            setCurrentRoomTitle("Оперативное совещание команды");
+            setIsAudioRoomOpen(true);
+          }}
+          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer"
+        >
+          <Mic className="h-4 w-4" />
+          Аудиосовещание
+        </button> 
       </div>
 
       {/* Панель недели */}
@@ -522,6 +539,17 @@ export function CalendarClient({
           </div>
         </div>
       </div>
+
+      <AudioConferenceModal
+        isOpen={isAudioRoomOpen}
+        onClose={() => setIsAudioRoomOpen(false)}
+        roomName={currentRoomName}
+        roomTitle={currentRoomTitle}
+        users={users}
+        goals={[]}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+      />
 
       {/* ========================================================================= */}
       {/* 📋 МОДАЛЬНОЕ ОКНО С ЭРГОНОМИЧНЫМ ШАГОМ 5 МИНУТ И БЫСТРЫМИ КНОПКАМИ */}

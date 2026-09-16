@@ -19,6 +19,13 @@ enum AssignmentType {
   SEQUENTIAL   // Последовательно (цепочка)
 }
 
+// Статусы протокола совещания
+enum ProtocolStatus {
+  DRAFT      // Черновик (в процессе совещания)
+  SIGNED     // Подписан и утвержден руководителем
+  ARCHIVED   // В архиве
+}
+
 // Модель пользователя
 model User {
   id                  String             @id @default(uuid())
@@ -49,11 +56,16 @@ model User {
   // Участие во встречах (многие-ко-многим)
   participatingEvents CalendarEvent[]    @relation("EventParticipants")
 
+  // Протоколы совещаний
+  chairedProtocols    MeetingProtocol[]  @relation("ChairmanProtocols")
+  secretaryProtocols  MeetingProtocol[]  @relation("SecretaryProtocols")
+  attendedProtocols   MeetingProtocol[]  @relation("ProtocolAttendees")
+
   // Авторство в контент-плане
   contentPlans        ContentPlan[]
   postRequests        PostRequest[]
 
-  // ⚡ Связь с Составом коллектива (1-к-1)
+  // Связь с Составом коллектива (1-к-1)
   socialPassport      SocialPassport?
 }
 
@@ -95,6 +107,36 @@ model TaskStatus {
   assignments TaskAssignment[]
 }
 
+// Протокол совещания
+model MeetingProtocol {
+  id              String          @id @default(uuid())
+  protocolNumber  String          @unique // Например: "ПР-2026/09-001"
+  title           String                  // Тема совещания
+  meetingDate     DateTime        @default(now())
+  startTime       DateTime?
+  endTime         DateTime?
+  location        String?         @default("Онлайн-аудиокомната")
+  
+  calendarEventId String?         @unique
+  calendarEvent   CalendarEvent?  @relation(fields: [calendarEventId], references: [id], onDelete: SetNull)
+
+  chairmanId      String
+  chairman        User            @relation("ChairmanProtocols", fields: [chairmanId], references: [id])
+  secretaryId     String?
+  secretary       User?           @relation("SecretaryProtocols", fields: [secretaryId], references: [id])
+
+  agenda          String?         // Повестка дня
+  discussionText  String?         // Краткое содержание выступлений (Слушали)
+  decisionsText   String?         // Решения / Постановили
+  status          ProtocolStatus  @default(DRAFT)
+
+  attendees       User[]          @relation("ProtocolAttendees")
+  tasks           Task[]          @relation("ProtocolTasks")
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
 // Основная модель задачи
 model Task {
   id                  String             @id @default(uuid())
@@ -116,6 +158,10 @@ model Task {
   
   createdById         String
   createdBy           User               @relation("CreatedBy", fields: [createdById], references: [id])
+
+  // Связь с протоколом совещания (если задача выдана на созвоне)
+  protocolId          String?
+  protocol            MeetingProtocol?   @relation("ProtocolTasks", fields: [protocolId], references: [id], onDelete: SetNull)
   
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -221,14 +267,14 @@ model PostRequest {
   createdAt     DateTime @default(now())
 }
 
-// ⚡ ОБНОВЛЕНО: СОСТАВ КОЛЛЕКТИВА (КАДРОВАЯ СТРУКТУРА + 12 ПОЛЕЙ АНКЕТЫ)
+// Состав коллектива
 model SocialPassport {
   id             String    @id @default(uuid())
   userId         String?   @unique
   user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  fullName       String    @default("") // Защита от ошибок при добавлении колонки
-  department     String    @default("") // Защита от ошибок при добавлении колонки
+  fullName       String    @default("") 
+  department     String    @default("") 
   position       String?   
   mobilePhone    String?   
   workPhone      String?   
@@ -241,7 +287,6 @@ model SocialPassport {
   achievements   String?   
   preferredGifts String?   
 
-  // Поля для совместимости
   accountUrl     String?   @default("")
   followers      Int?      @default(0)
   notes          String?   
@@ -301,6 +346,7 @@ model CalendarEvent {
   bookedBy    User              @relation("BookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
 
   participants User[]           @relation("EventParticipants") 
+  protocol     MeetingProtocol?
 
   createdAt   DateTime          @default(now())
 }
