@@ -1,7 +1,7 @@
 // src/app/app/calendar/CalendarClient.tsx
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition } from "react";
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/server/actions/calendar";
 import { 
   Plus, 
@@ -15,11 +15,11 @@ import {
   Users,
   Calendar as CalendarIcon,
   Cake,
-  Sparkles
+  Mic,
+  Video
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AudioConferenceModal } from "@/components/AudioConferenceModal";
-import { Mic } from "lucide-react";
 
 type CalendarEvent = {
   id: string;
@@ -46,31 +46,34 @@ interface CalendarClientProps {
   currentUserId: string;
   users?: { id: string; name: string; initials: string }[];
   birthdays?: BirthdayRecord[];
+  goals?: { id: string; title: string; color: string }[];
 }
 
-// Список минут с шагом 5 минут
 const MINUTE_STEPS = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
-// Часы сетки календаря с 07:00 до 23:00
 const GRID_START_HOUR = 7;
 const GRID_END_HOUR = 23;
 const HOURS_LIST = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR + 1 }, (_, i) => GRID_START_HOUR + i);
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const CELL_HEIGHT = 64; // px на 1 час
-const [isAudioRoomOpen, setIsAudioRoomOpen] = useState(false);
-const [currentRoomName, setCurrentRoomName] = useState("general-room");
-const [currentRoomTitle, setCurrentRoomTitle] = useState("Общая планерка");
+const CELL_HEIGHT = 64;
 
 export function CalendarClient({
   initialEvents,
   isAdmin,
   currentUserId,
   users = [],
-  birthdays = []
+  birthdays = [],
+  goals = []
 }: CalendarClientProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // Стейт аудиоконференции
+  const [isAudioRoomOpen, setIsAudioRoomOpen] = useState(false);
+  const [currentRoomName, setCurrentRoomName] = useState("general-team-room");
+  const [currentRoomTitle, setCurrentRoomTitle] = useState("Общая планерка команды");
+  const [currentCalendarEventId, setCurrentCalendarEventId] = useState<string | undefined>(undefined);
 
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
@@ -78,7 +81,6 @@ export function CalendarClient({
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [dateVal, setDateVal] = useState("");
   
-  // Раздельный выбор часов и минут (шаг 5 минут)
   const [startHour, setStartHour] = useState("10");
   const [startMinute, setStartMinute] = useState("00");
   const [endHour, setEndHour] = useState("11");
@@ -137,12 +139,10 @@ export function CalendarClient({
     setSelectedDayIndex(day === 0 ? 6 : day - 1);
   };
 
-  // Быстрое выставление длительности (+30м, +45м, +1ч, +1.5ч)
   const addDuration = (minutesToAdd: number) => {
     let totalMins = parseInt(startHour, 10) * 60 + parseInt(startMinute, 10) + minutesToAdd;
     let newH = Math.floor(totalMins / 60) % 24;
     let newM = totalMins % 60;
-    // Округляем до ближайших 5 минут
     newM = Math.round(newM / 5) * 5;
     if (newM >= 60) {
       newH = (newH + 1) % 24;
@@ -152,7 +152,6 @@ export function CalendarClient({
     setEndMinute(String(newM).padStart(2, "0"));
   };
 
-  // Клик по свободной ячейке в сетке для мгновенного бронирования
   const handleCellClick = (dayDate: Date, hour: number) => {
     setError(null);
     setEditingEvent(null);
@@ -200,6 +199,23 @@ export function CalendarClient({
     setTitleVal(event.title);
     setDescVal(event.description || "");
     setIsOpen(true);
+  };
+
+  // ⚡ ПОДКЛЮЧЕНИЕ К ОБЩЕЙ КОМНАТЕ КОМАНДЫ (ЕДИНАЯ ДЛЯ ВСЕХ)
+  const joinGeneralTeamRoom = () => {
+    setCurrentRoomName("general-team-room");
+    setCurrentRoomTitle("Общая планерка команды");
+    setCurrentCalendarEventId(undefined);
+    setIsAudioRoomOpen(true);
+  };
+
+  // ⚡ ПОДКЛЮЧЕНИЕ К КОНКРЕТНОЙ ВСТРЕЧЕ ИЗ КАЛЕНДАРЯ
+  const joinEventRoom = (event: CalendarEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentRoomName(`event-${event.id}`);
+    setCurrentRoomTitle(`Совещание: ${event.title}`);
+    setCurrentCalendarEventId(event.id);
+    setIsAudioRoomOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -271,25 +287,25 @@ export function CalendarClient({
           <p className="text-slate-500 text-sm">Сетка встреч, совещаний и бронирования рабочего времени</p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm w-full md:w-auto cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          {isAdmin ? "Добавить событие / Блок" : "Забронировать встречу"}
-        </button>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* Кнопка входа в общую планерку (все попадают в одну комнату!) */}
+          <button
+            onClick={joinGeneralTeamRoom}
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer"
+            title="Войти в общую аудиокомнату команды"
+          >
+            <Mic className="h-4 w-4" />
+            Общая планерка
+          </button>
 
-        <button
-          onClick={() => {
-            setCurrentRoomName(`meeting-${Date.now()}`);
-            setCurrentRoomTitle("Оперативное совещание команды");
-            setIsAudioRoomOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer"
-        >
-          <Mic className="h-4 w-4" />
-          Аудиосовещание
-        </button> 
+          <button
+            onClick={openCreateModal}
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            {isAdmin ? "Запланировать встречу" : "Забронировать встречу"}
+          </button>
+        </div>
       </div>
 
       {/* Панель недели */}
@@ -353,10 +369,9 @@ export function CalendarClient({
 
       {/* ГЛАВНАЯ СЕТКА КАЛЕНДАРЯ */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* ДЕСКТОПНАЯ СЕТКА */}
         <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[900px] relative flex flex-col">
-            {/* Шапка дней недели + Дни Рождения */}
+            {/* Шапка дней недели */}
             <div className="grid grid-cols-[70px_repeat(7,1fr)] border-b border-slate-200 bg-slate-50/70">
               <div className="p-2 border-r border-slate-200 flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">
                 Время
@@ -365,7 +380,6 @@ export function CalendarClient({
                 const dayDateStr = day.toISOString().split("T")[0];
                 const isToday = dayDateStr === todayStr;
 
-                // Поиск именинников в этот день
                 const bDaysToday = birthdays.filter((b) => {
                   const bd = new Date(b.birthDate);
                   return bd.getDate() === day.getDate() && bd.getMonth() === day.getMonth();
@@ -385,7 +399,6 @@ export function CalendarClient({
                       {day.getDate()}
                     </span>
 
-                    {/* 🎂 Плашка дня рождения */}
                     {bDaysToday.map((b) => (
                       <div
                         key={b.id}
@@ -401,9 +414,8 @@ export function CalendarClient({
               })}
             </div>
 
-            {/* Сетка часов и ячеек */}
+            {/* Сетка часов */}
             <div className="relative grid grid-cols-[70px_repeat(7,1fr)]">
-              {/* Колонка времени */}
               <div className="flex flex-col bg-slate-50/30 border-r border-slate-200 shrink-0">
                 {HOURS_LIST.map((hour) => (
                   <div 
@@ -415,12 +427,10 @@ export function CalendarClient({
                 ))}
               </div>
 
-              {/* 7 колонок дней */}
               {Array.from({ length: 7 }).map((_, colIdx) => {
                 const columnDate = weekDays[colIdx];
                 return (
                   <div key={colIdx} className="flex flex-col border-r border-slate-100 last:border-0 relative">
-                    {/* Кликабельные часовые слоты */}
                     {HOURS_LIST.map((hour) => (
                       <div
                         key={hour}
@@ -434,7 +444,6 @@ export function CalendarClient({
                       </div>
                     ))}
 
-                    {/* Отрисовка событий на этот день */}
                     {initialEvents
                       .filter((event) => {
                         const eventDate = new Date(event.startTime);
@@ -447,12 +456,11 @@ export function CalendarClient({
                         const startHourDec = start.getHours() + start.getMinutes() / 60;
                         const endHourDec = end.getHours() + end.getMinutes() / 60;
                         
-                        // Безопасное ограничение в пределах видимой сетки
                         const clampedStart = Math.max(startHourDec, GRID_START_HOUR);
                         const clampedEnd = Math.min(endHourDec > startHourDec ? endHourDec : 24, GRID_END_HOUR + 1);
 
                         const topOffset = (clampedStart - GRID_START_HOUR) * CELL_HEIGHT;
-                        const heightVal = Math.max((clampedEnd - clampedStart) * CELL_HEIGHT, 42);
+                        const heightVal = Math.max((clampedEnd - clampedStart) * CELL_HEIGHT, 48);
 
                         const isBusy = event.type === "BUSY";
                         const isGc = event.type === "GC";
@@ -476,12 +484,11 @@ export function CalendarClient({
                               e.stopPropagation();
                               if (isOwner || isAdmin) openEditModal(event);
                             }}
-                            title={`${displayTitle}${displayDescription ? `\n${displayDescription}` : ""}\nВремя: ${start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}-${end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`}
                             className={`absolute left-1 right-1 rounded-xl p-2 shadow-xs flex flex-col justify-between overflow-hidden border transition-all cursor-pointer hover:shadow-md z-10 ${bgBorderClass}`}
                             style={{ 
                               top: `${topOffset}px`, 
                               height: `${heightVal}px`,
-                              minHeight: "42px" 
+                              minHeight: "48px" 
                             }}
                           >
                             <div className="space-y-0.5 min-w-0">
@@ -489,27 +496,41 @@ export function CalendarClient({
                                 <h4 className="font-bold text-[11px] leading-tight line-clamp-1 truncate">
                                   {displayTitle}
                                 </h4>
-                                {(isOwner || isAdmin) && (
-                                  <div className="flex items-center gap-1 shrink-0">
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* ⚡ КНОПКА ПОДКЛЮЧЕНИЯ К КОНКРЕТНОЙ ВСТРЕЧЕ */}
+                                  {!isBusy && (
                                     <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openEditModal(event);
-                                      }}
-                                      className="text-slate-400 hover:text-blue-700 p-0.5 rounded transition-colors"
-                                      title="Редактировать встречу"
+                                      onClick={(e) => joinEventRoom(event, e)}
+                                      className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-xs cursor-pointer"
+                                      title="Войти в аудиокомнату этой встречи"
                                     >
-                                      <Pencil className="h-3 w-3" />
+                                      <Mic className="h-3 w-3" />
                                     </button>
-                                    <button
-                                      onClick={(e) => handleDelete(event.id, event.title, e)}
-                                      className="text-slate-400 hover:text-red-700 p-0.5 rounded transition-colors"
-                                      title="Отменить встречу"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                )}
+                                  )}
+
+                                  {(isOwner || isAdmin) && (
+                                    <>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openEditModal(event);
+                                        }}
+                                        className="text-slate-400 hover:text-blue-700 p-0.5 rounded transition-colors"
+                                        title="Редактировать встречу"
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => handleDelete(event.id, event.title, e)}
+                                        className="text-slate-400 hover:text-red-700 p-0.5 rounded transition-colors"
+                                        title="Отменить встречу"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                               {displayDescription && (
                                 <p className="text-[9px] text-slate-500 line-clamp-1 leading-none truncate">
@@ -540,20 +561,20 @@ export function CalendarClient({
         </div>
       </div>
 
+      {/* МОДАЛЬНОЕ ОКНО АУДИОКОНФЕРЕНЦИИ */}
       <AudioConferenceModal
         isOpen={isAudioRoomOpen}
         onClose={() => setIsAudioRoomOpen(false)}
         roomName={currentRoomName}
         roomTitle={currentRoomTitle}
+        calendarEventId={currentCalendarEventId}
         users={users}
-        goals={[]}
+        goals={goals}
         currentUserId={currentUserId}
         isAdmin={isAdmin}
       />
 
-      {/* ========================================================================= */}
-      {/* 📋 МОДАЛЬНОЕ ОКНО С ЭРГОНОМИЧНЫМ ШАГОМ 5 МИНУТ И БЫСТРЫМИ КНОПКАМИ */}
-      {/* ========================================================================= */}
+      {/* МОДАЛЬНОЕ ОКНО БРОНИРОВАНИЯ */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden">
@@ -644,7 +665,6 @@ export function CalendarClient({
                 />
               </div>
 
-              {/* ⚡ ЭРГОНОМИЧНЫЙ ВЫБОР ВРЕМЕНИ С ШАГОМ 5 МИНУТ */}
               <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Начало</label>
@@ -694,7 +714,6 @@ export function CalendarClient({
                   </div>
                 </div>
 
-                {/* Быстрые кнопки длительности */}
                 <div className="col-span-2 pt-1 flex items-center justify-between gap-1 text-[10px] font-bold">
                   <span className="text-slate-400">Длительность:</span>
                   <div className="flex gap-1">

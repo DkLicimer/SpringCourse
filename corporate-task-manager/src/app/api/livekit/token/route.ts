@@ -17,26 +17,44 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing room parameter" }, { status: 400 });
   }
 
-  const apiKey = process.env.LIVEKIT_API_KEY || "devkey";
-  const apiSecret = process.env.LIVEKIT_API_SECRET || "secret";
+  const apiKey = process.env.LIVEKIT_API_KEY;
+  const apiSecret = process.env.LIVEKIT_API_SECRET;
 
-  const at = new AccessToken(apiKey, apiSecret, {
-    identity: session.user.id,
-    name: session.user.name || "Сотрудник",
-    metadata: JSON.stringify({
-      role: session.user.role,
-      initials: session.user.initials,
-    }),
-  });
+  if (!apiKey || !apiSecret) {
+    return NextResponse.json(
+      { error: "LiveKit credentials not configured in .env" },
+      { status: 500 }
+    );
+  }
 
-  at.addGrant({
-    room,
-    roomJoin: true,
-    canPublish: true,
-    canSubscribe: true,
-  });
+  try {
+    // ⚡ Уникальный ID подключения (предотвращает конфликт при входе под одной учеткой с ПК и телефона)
+    const connectionUniqueId = `${session.user.id}__${Math.random().toString(36).substring(2, 7)}`;
 
-  const token = await at.toJwt();
+    const at = new AccessToken(apiKey, apiSecret, {
+      identity: connectionUniqueId,
+      name: session.user.name || "Сотрудник",
+      metadata: JSON.stringify({
+        userId: session.user.id,
+        name: session.user.name || "Сотрудник",
+        role: session.user.role,
+        initials: session.user.initials || "СО",
+      }),
+      ttl: "6h",
+    });
 
-  return NextResponse.json({ token });
+    at.addGrant({
+      room,
+      roomJoin: true,
+      canPublish: true,
+      canSubscribe: true,
+    });
+
+    const token = await at.toJwt();
+
+    return NextResponse.json({ token });
+  } catch (err: any) {
+    console.error("Ошибка при генерации токена LiveKit:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

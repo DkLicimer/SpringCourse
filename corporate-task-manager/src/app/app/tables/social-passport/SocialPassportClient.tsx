@@ -14,22 +14,17 @@ import {
   ArrowLeft, 
   Search, 
   X, 
-  User, 
   Phone, 
   PhoneCall, 
-  Briefcase, 
   Cake, 
   Heart, 
-  Home, 
   Baby, 
   Sparkles, 
   Trophy, 
   Gift, 
   Eye, 
   Printer, 
-  Calendar,
-  Building2,
-  Filter
+  Building2 
 } from "lucide-react";
 import Link from "next/link";
 
@@ -85,7 +80,6 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
     return matchesSearch && matchesDept;
   });
 
-  // Расчет ближайших дней рождения (в текущем месяце / ближайшие 30 дней)
   const now = new Date();
   const currentMonth = now.getMonth();
 
@@ -327,7 +321,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                         <button
                           onClick={(e) => { e.stopPropagation(); setViewingRow(row); }}
                           className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-lg transition-colors cursor-pointer"
-                          title="Личное дело (Все 12 полей)"
+                          title="Личное дело"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -360,7 +354,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
         </table>
       </div>
 
-      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      {/* 📱 МОБИЛЬНАЯ ВЕРСИЯ */}
       <div className="block lg:hidden space-y-3">
         {filteredRows.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-xs bg-white rounded-2xl border">
@@ -427,13 +421,10 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
         )}
       </div>
 
-      {/* ========================================================================= */}
-      {/* 📋 МОДАЛЬНОЕ ОКНО «ЛИЧНОЕ ДЕЛО СОТРУДНИКА» (ВСЕ 12 ПОЛЕЙ) */}
-      {/* ========================================================================= */}
+      {/* 📋 ПРОСМОТР ЛИЧНОГО ДЕЛА */}
       {viewingRow && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
-            {/* Шапка модалки */}
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md">
@@ -461,9 +452,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
               </div>
             </div>
 
-            {/* Тело карточки со всеми 12 полями */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs sm:text-sm">
-              {/* Секция 1: Контакты и место жительства */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5 text-blue-500" /> Контактная информация и адрес
@@ -496,7 +485,6 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                 </div>
               </div>
 
-              {/* Секция 2: Семья, жилье и дети */}
               <div className="space-y-3 border-t border-slate-100 pt-4">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Heart className="h-3.5 w-3.5 text-rose-500" /> Семейное положение и имущество
@@ -521,7 +509,6 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
                 </div>
               </div>
 
-              {/* Секция 3: Хобби, награды и подарки */}
               <div className="space-y-3 border-t border-slate-100 pt-4">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Личные интересы и предпочтения
@@ -579,9 +566,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* ✍️ МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ СОТРУДНИКА (12 ПОЛЕЙ) */}
-      {/* ========================================================================= */}
+      {/* ✍️ МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ (БЕЗ ПОТЕРИ ДАННЫХ ПРИ СМЕНЕ ВКЛАДОК) */}
       {isOpenForm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden">
@@ -589,7 +574,7 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
               <h3 className="text-lg font-bold text-slate-800">
                 {editingRow ? `Редактировать анкету: ${editingRow.fullName}` : "Добавить сотрудника в состав коллектива"}
               </h3>
-              <button onClick={() => setIsOpenForm(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setIsOpenForm(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -626,186 +611,178 @@ export function SocialPassportClient({ initialRows, canWrite }: SocialPassportCl
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4" autoComplete="off">
+            <form key={editingRow?.id || "new-passport"} onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4" autoComplete="off">
               {/* Вкладка 1: Основное */}
-              {activeTab === "main" && (
-                <div className="space-y-3 animate-fade-in">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">ФИО сотрудника *</label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      required
-                      defaultValue={editingRow?.fullName || ""}
-                      placeholder="Например, Сидоренко Наталья Владимировна"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Подразделение (Отдел) *</label>
-                    <input
-                      type="text"
-                      name="department"
-                      required
-                      defaultValue={editingRow?.department || ""}
-                      placeholder="Например, Администрация, Художественный отдел..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Должность</label>
-                    <input
-                      type="text"
-                      name="position"
-                      defaultValue={editingRow?.position || ""}
-                      placeholder="Например, Руководитель студии, Паспортист..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
+              <div className={activeTab === "main" ? "space-y-3 animate-fade-in" : "hidden"}>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">ФИО сотрудника *</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    required
+                    defaultValue={editingRow?.fullName || ""}
+                    placeholder="Например, Сидоренко Наталья Владимировна"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Подразделение (Отдел) *</label>
+                  <input
+                    type="text"
+                    name="department"
+                    required
+                    defaultValue={editingRow?.department || ""}
+                    placeholder="Например, Администрация, Художественный отдел..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Должность</label>
+                  <input
+                    type="text"
+                    name="position"
+                    defaultValue={editingRow?.position || ""}
+                    placeholder="Например, Руководитель студии, Паспортист..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+              </div>
 
               {/* Вкладка 2: Контакты и адрес */}
-              {activeTab === "contacts" && (
-                <div className="space-y-3 animate-fade-in">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Номер телефона сот. (Мобильный)</label>
-                      <input
-                        type="text"
-                        name="mobilePhone"
-                        defaultValue={editingRow?.mobilePhone || ""}
-                        placeholder="+7 (999) 000-00-00"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Номер телефона рабочий / Внутренний</label>
-                      <input
-                        type="text"
-                        name="workPhone"
-                        defaultValue={editingRow?.workPhone || ""}
-                        placeholder="Каб. 204, внутр. 104"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                      />
-                    </div>
-                  </div>
-
+              <div className={activeTab === "contacts" ? "space-y-3 animate-fade-in" : "hidden"}>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Дата рождения</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Номер телефона сот. (Мобильный)</label>
                     <input
-                      type="date"
-                      name="birthDate"
-                      defaultValue={editingRow?.birthDate ? editingRow.birthDate.split("T")[0] : ""}
+                      type="text"
+                      name="mobilePhone"
+                      defaultValue={editingRow?.mobilePhone || ""}
+                      placeholder="+7 (999) 000-00-00"
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Место жительства (Фактический адрес)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Номер телефона рабочий / Внутренний</label>
                     <input
                       type="text"
-                      name="livingAddress"
-                      defaultValue={editingRow?.livingAddress || ""}
-                      placeholder="г. Санкт-Петербург, ул. Ленина, д. 10, кв. 5"
+                      name="workPhone"
+                      defaultValue={editingRow?.workPhone || ""}
+                      placeholder="Каб. 204, внутр. 104"
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
                     />
                   </div>
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Дата рождения</label>
+                  <input
+                    type="date"
+                    name="birthDate"
+                    defaultValue={editingRow?.birthDate ? editingRow.birthDate.split("T")[0] : ""}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Место жительства (Фактический адрес)</label>
+                  <input
+                    type="text"
+                    name="livingAddress"
+                    defaultValue={editingRow?.livingAddress || ""}
+                    placeholder="г. Санкт-Петербург, ул. Ленина, д. 10, кв. 5"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+              </div>
 
               {/* Вкладка 3: Семья, жилье и дети */}
-              {activeTab === "family" && (
-                <div className="space-y-3 animate-fade-in">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Социальное положение</label>
-                      <select
-                        name="maritalStatus"
-                        defaultValue={editingRow?.maritalStatus || "Не указано"}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 text-slate-800 cursor-pointer"
-                      >
-                        <option value="Не указано">Не указано</option>
-                        <option value="Холост / Не замужем">Холост / Не замужем</option>
-                        <option value="Женат / Замужем">Женат / Замужем</option>
-                        <option value="В разводе">В разводе</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Есть ли жилье в собственности?</label>
-                      <select
-                        name="hasOwnHousing"
-                        defaultValue={editingRow?.hasOwnHousing || "Да"}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 text-slate-800 cursor-pointer"
-                      >
-                        <option value="Да">Да (в собственности)</option>
-                        <option value="Ипотека">Ипотека</option>
-                        <option value="Съемное жилье">Съемное жилье</option>
-                        <option value="Нет">Нет</option>
-                      </select>
-                    </div>
-                  </div>
-
+              <div className={activeTab === "family" ? "space-y-3 animate-fade-in" : "hidden"}>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Дети (ФИО, дата рождения, номер свидетельства о рождении)
-                    </label>
-                    <textarea
-                      name="childrenInfo"
-                      rows={3}
-                      defaultValue={editingRow?.childrenInfo || ""}
-                      placeholder="1. Иванов Михаил Петрович, 12.05.2018, № 123456&#10;2. Иванова София Петровна, 04.09.2021"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800 leading-relaxed"
-                    />
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Социальное положение</label>
+                    <select
+                      name="maritalStatus"
+                      defaultValue={editingRow?.maritalStatus || "Не указано"}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 text-slate-800 cursor-pointer"
+                    >
+                      <option value="Не указано">Не указано</option>
+                      <option value="Холост / Не замужем">Холост / Не замужем</option>
+                      <option value="Женат / Замужем">Женат / Замужем</option>
+                      <option value="В разводе">В разводе</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Есть ли жилье в собственности?</label>
+                    <select
+                      name="hasOwnHousing"
+                      defaultValue={editingRow?.hasOwnHousing || "Да"}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 text-slate-800 cursor-pointer"
+                    >
+                      <option value="Да">Да (в собственности)</option>
+                      <option value="Ипотека">Ипотека</option>
+                      <option value="Съемное жилье">Съемное жилье</option>
+                      <option value="Нет">Нет</option>
+                    </select>
                   </div>
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Дети (ФИО, дата рождения, номер свидетельства о рождении)
+                  </label>
+                  <textarea
+                    name="childrenInfo"
+                    rows={3}
+                    defaultValue={editingRow?.childrenInfo || ""}
+                    placeholder="1. Иванов Михаил Петрович, 12.05.2018, № 123456&#10;2. Иванова София Петровна, 04.09.2021"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800 leading-relaxed"
+                  />
+                </div>
+              </div>
 
               {/* Вкладка 4: Личные интересы и подарки */}
-              {activeTab === "extra" && (
-                <div className="space-y-3 animate-fade-in">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Увлечения, от которых получаете удовольствие (Хобби)</label>
-                    <textarea
-                      name="hobbies"
-                      rows={2}
-                      defaultValue={editingRow?.hobbies || ""}
-                      placeholder="Театр, путешествия, выпечка, спорт, книги..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Достижения (награды, победы, грамоты и др.)</label>
-                    <textarea
-                      name="achievements"
-                      rows={2}
-                      defaultValue={editingRow?.achievements || ""}
-                      placeholder="Лауреат городского конкурса 2025, грамота комитета..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Какие подарки вам нравится получать на праздник?</label>
-                    <textarea
-                      name="preferredGifts"
-                      rows={2}
-                      defaultValue={editingRow?.preferredGifts || ""}
-                      placeholder="Книги, сертификаты в книжный/косметику, сладости, чай..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Дополнительные служебные примечания</label>
-                    <input
-                      type="text"
-                      name="notes"
-                      defaultValue={editingRow?.notes || ""}
-                      placeholder="Внутренние заметки руководителя..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
-                    />
-                  </div>
+              <div className={activeTab === "extra" ? "space-y-3 animate-fade-in" : "hidden"}>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Увлечения, от которых получаете удовольствие (Хобби)</label>
+                  <textarea
+                    name="hobbies"
+                    rows={2}
+                    defaultValue={editingRow?.hobbies || ""}
+                    placeholder="Театр, путешествия, выпечка, спорт, книги..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Достижения (награды, победы, грамоты и др.)</label>
+                  <textarea
+                    name="achievements"
+                    rows={2}
+                    defaultValue={editingRow?.achievements || ""}
+                    placeholder="Лауреат городского конкурса 2025, грамота комитета..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Какие подарки вам нравится получать на праздник?</label>
+                  <textarea
+                    name="preferredGifts"
+                    rows={2}
+                    defaultValue={editingRow?.preferredGifts || ""}
+                    placeholder="Книги, сертификаты в книжный/косметику, сладости, чай..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Дополнительные служебные примечания</label>
+                  <input
+                    type="text"
+                    name="notes"
+                    defaultValue={editingRow?.notes || ""}
+                    placeholder="Внутренние заметки руководителя..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                  />
+                </div>
+              </div>
 
               <div className="flex gap-3 pt-4 border-t border-slate-100">
                 <button

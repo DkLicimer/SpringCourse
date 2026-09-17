@@ -5,7 +5,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { PrintProtocolButton } from "./PrintProtocolButton";
 
 export default async function ProtocolDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -40,12 +41,7 @@ export default async function ProtocolDetailPage({ params }: { params: Promise<{
         >
           <ArrowLeft className="h-4 w-4" /> Назад к реестру протоколов
         </Link>
-        <button
-          onClick={() => {}}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-        >
-          <Printer className="h-4 w-4" /> Распечатать / Сохранить в PDF
-        </button>
+        <PrintProtocolButton />
       </div>
 
       {/* ОФИЦИАЛЬНЫЙ БЛАНК ПРОТОКОЛА */}

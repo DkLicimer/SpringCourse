@@ -34,7 +34,13 @@ export default async function CalendarPage() {
     select: { id: true, name: true, initials: true }
   });
 
-  // 3. Безопасно загружаем дни рождения сотрудников
+  // 3. Загружаем темы/цели для создания задач во время созвона
+  const goals = await prisma.goal.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true, color: true }
+  });
+
+  // 4. Безопасно загружаем дни рождения сотрудников
   let birthdays: any[] = [];
   try {
     birthdays = await prisma.socialPassport.findMany({
@@ -60,6 +66,7 @@ export default async function CalendarPage() {
         currentUserId={session.user.id}
         users={JSON.parse(JSON.stringify(users))}
         birthdays={JSON.parse(JSON.stringify(birthdays))}
+        goals={JSON.parse(JSON.stringify(goals))}
       />
     </div>
   );
