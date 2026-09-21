@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // ⚡ Уникальный ID подключения (предотвращает конфликт при входе под одной учеткой с ПК и телефона)
-    const connectionUniqueId = `${session.user.id}__${Math.random().toString(36).substring(2, 7)}`;
+    // ⚡ Генерируем уникальный connectionId для каждого подключения (защита от сброса микрофона при входе с 2-х устройств)
+    const connectionUniqueId = `${session.user.id}__${Math.random().toString(36).substring(2, 8)}`;
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: connectionUniqueId,
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
       roomJoin: true,
       canPublish: true,
       canSubscribe: true,
+      canPublishData: true,
     });
 
     const token = await at.toJwt();

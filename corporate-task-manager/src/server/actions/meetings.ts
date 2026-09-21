@@ -7,12 +7,12 @@ import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 declare global {
-  var activeMeetingRooms: Map<string, { startedById: string; startedByName: string; title: string; startedAt: number }> | undefined;
+  var activeMeetingRoomsGlobal: Map<string, { startedById: string; startedByName: string; title: string; startedAt: number }> | undefined;
 }
 
-const activeRooms = globalThis.activeMeetingRooms ?? new Map();
+const activeRooms = globalThis.activeMeetingRoomsGlobal ?? new Map();
 if (process.env.NODE_ENV !== "production") {
-  globalThis.activeMeetingRooms = activeRooms;
+  globalThis.activeMeetingRoomsGlobal = activeRooms;
 }
 
 export async function checkMeetingRoomStatus(roomName: string) {

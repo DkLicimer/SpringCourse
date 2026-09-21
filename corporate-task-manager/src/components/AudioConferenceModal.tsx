@@ -9,7 +9,9 @@ import {
   RoomAudioRenderer,
   useRoomContext,
   useChat,
+  useTrackToggle,
 } from "@livekit/components-react";
+import { Track } from "livekit-client";
 import {
   Mic,
   MicOff,
@@ -25,7 +27,9 @@ import {
   Lock,
   Play,
   Clock,
-  AlertCircle
+  Monitor,
+  MonitorOff,
+  Volume2
 } from "lucide-react";
 import { saveMeetingProtocol, ProtocolDraftTask } from "@/server/actions/protocols";
 import { checkMeetingRoomStatus, startMeetingRoom, closeMeetingRoom } from "@/server/actions/meetings";
@@ -43,106 +47,7 @@ interface AudioConferenceModalProps {
   isAdmin: boolean;
 }
 
-// 💬 ВНУТРЕННИЙ ЧАТ В СОЗВОНЕ
-function InCallChatTab({
-  currentUserId,
-  currentUserName,
-  currentUserInitials,
-}: {
-  currentUserId: string;
-  currentUserName: string;
-  currentUserInitials: string;
-}) {
-  const { chatMessages, send, isSending } = useChat();
-  const [text, setText] = useState("");
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages.length]);
-
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!text.trim() || isSending) return;
-    const msg = text.trim();
-    setText("");
-    try {
-      await send(msg);
-    } catch (err) {
-      console.error("Ошибка отправки сообщения:", err);
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-[480px] bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden">
-      <div className="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs">
-        {chatMessages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center p-4">
-            <MessageSquare className="h-6 w-6 text-blue-400 mb-1 opacity-60" />
-            <span>Сообщений пока нет.<br />Напишите первое сообщение коллегам!</span>
-          </div>
-        ) : (
-          chatMessages.map((m) => {
-            // Извлекаем реальное имя отправителя из объекта или метаданных
-            let senderName = m.from?.name;
-            let senderInitials = "УЧ";
-
-            if (m.from?.metadata) {
-              try {
-                const meta = JSON.parse(m.from.metadata);
-                if (meta.name) senderName = meta.name;
-                if (meta.initials) senderInitials = meta.initials;
-              } catch (e) {}
-            }
-
-            const senderIdentity = m.from?.identity || "";
-            const isMe = senderIdentity.startsWith(currentUserId) || m.from?.isLocal;
-
-            return (
-              <div key={m.timestamp} className={`flex flex-col group ${isMe ? "items-end" : "items-start"}`}>
-                <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5 px-1">
-                  <span className="font-bold text-slate-700">
-                    {isMe ? "Вы" : senderName || "Сотрудник"}
-                  </span>
-                  <span>• {new Date(m.timestamp).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
-                </div>
-                <div
-                  className={`p-2.5 rounded-2xl text-xs max-w-[85%] whitespace-pre-line leading-relaxed shadow-xs ${
-                    isMe
-                      ? "bg-blue-600 text-white rounded-br-none"
-                      : "bg-white border border-slate-200 text-slate-800 rounded-bl-none font-medium"
-                  }`}
-                >
-                  {m.message}
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={chatEndRef} />
-      </div>
-
-      <form onSubmit={handleSend} className="p-2.5 bg-white border-t border-slate-200 flex gap-2 items-center">
-        <input
-          type="text"
-          placeholder="Написать сообщение в созвон..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50"
-        />
-        <button
-          type="submit"
-          disabled={!text.trim() || isSending}
-          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:bg-blue-300 transition-colors cursor-pointer"
-        >
-          <Send className="h-4 w-4" />
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// 🎛️ ОСНОВНОЙ ПУЛЬТ УПРАВЛЕНИЯ
+// 🎛️ ОСНОВНОЙ ПУЛЬТ УПРАВЛЕНИЯ ЗВОНКОМ
 function RoomControlsAndDrafting({
   roomName,
   roomTitle,
@@ -165,12 +70,23 @@ function RoomControlsAndDrafting({
   const router = useRouter();
   const room = useRoomContext();
   const participants = useParticipants();
-  const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
-  const { chatMessages } = useChat();
+  
+  // ⚡ Официальный хук LiveKit для микрофона
+  const { toggle: rawToggleMic, enabled: isMicrophoneEnabled, pending: micPending } = useTrackToggle({
+    source: Track.Source.Microphone,
+  });
+
+  // ⚡ Официальный хук LiveKit для демонстрации экрана
+  const { toggle: rawToggleScreen, enabled: isScreenShareEnabled, pending: screenPending } = useTrackToggle({
+    source: Track.Source.ScreenShare,
+  });
+
+  // 💬 ВСТРОЕННЫЙ ЧАТ LIVEKIT
+  const { chatMessages, send, isSending } = useChat();
+  const [chatInputText, setChatInputText] = useState("");
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const [activeTab, setActiveTab] = useState<"protocol" | "chat">("protocol");
-  const [micLoading, setMicLoading] = useState(false);
-  const [micErrorToast, setMicErrorToast] = useState<string | null>(null);
 
   // Счётчик непрочитанных сообщений в чате
   const [lastReadMessageCount, setLastReadMessageCount] = useState(0);
@@ -178,6 +94,7 @@ function RoomControlsAndDrafting({
   useEffect(() => {
     if (activeTab === "chat") {
       setLastReadMessageCount(chatMessages.length);
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [activeTab, chatMessages.length]);
 
@@ -196,44 +113,46 @@ function RoomControlsAndDrafting({
   const [taskDeadline, setTaskDeadline] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // ⚡ УМНОЕ ВКЛЮЧЕНИЕ МИКРОФОНА С ДЕТАЛИЗИРОВАННОЙ ДИАГНОСТИКОЙ
+  useEffect(() => {
+    if (goals.length > 0 && !taskGoalId) {
+      setTaskGoalId(goals[0].id);
+    }
+  }, [goals, taskGoalId]);
+
   const toggleMic = async () => {
-    if (!localParticipant || micLoading) return;
-    setMicLoading(true);
-    setMicErrorToast(null);
-
     try {
-      if (isMicrophoneEnabled) {
-        await localParticipant.setMicrophoneEnabled(false);
-      } else {
-        await localParticipant.setMicrophoneEnabled(true);
-      }
+      await rawToggleMic();
     } catch (err: any) {
-      console.error("Детальная ошибка микрофона:", err);
-      let errorMsg = "Не удалось включить микрофон.";
-
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        errorMsg = "Доступ к микрофону заблокирован браузером. Нажмите на иконку замка в адресной строке и разрешите микрофон.";
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        errorMsg = "Микрофон не обнаружен. Проверьте подключение гарнитуры/микрофона к компьютеру.";
-      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-        errorMsg = "Микрофон сейчас занят другой программой (Telegram, Zoom, Discord). Закройте их и повторите попытку.";
-      } else {
-        errorMsg = `Ошибка микрофона: ${err.message || err.name || "неизвестный сбой"}`;
-      }
-
-      setMicErrorToast(errorMsg);
-    } finally {
-      setMicLoading(false);
+      console.error("Ошибка микрофона:", err);
+      alert("Не удалось получить доступ к микрофону. Проверьте разрешения в браузере.");
     }
   };
 
-  // ⚡ МГНОВЕННЫЙ ВЫХОД БЕЗ ОСТАВЛЕНИЯ "ПРИЗРАКОВ"
+  const toggleScreenShare = async () => {
+    try {
+      await rawToggleScreen();
+    } catch (err: any) {
+      console.error("Ошибка демонстрации экрана:", err);
+    }
+  };
+
   const handleCleanExit = async () => {
     try {
       await room.disconnect();
     } catch (e) {}
     onLeave();
+  };
+
+  const handleSendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInputText.trim() || isSending) return;
+    const msg = chatInputText.trim();
+    setChatInputText("");
+    try {
+      await send(msg);
+    } catch (err) {
+      console.error("Ошибка отправки сообщения:", err);
+    }
   };
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -262,13 +181,12 @@ function RoomControlsAndDrafting({
   };
 
   const handleFinalizeMeeting = async () => {
-    if (!window.confirm("Завершить совещание, закрыть комнату и подписать протокол?")) {
+    if (!window.confirm("Завершить совещание, закрыть комнату и подписать официальный протокол?")) {
       return;
     }
 
     setIsSaving(true);
     try {
-      // Извлекаем чистые userId из метаданных каждого участника
       const attendeeIds: string[] = [];
       participants.forEach((p) => {
         if (p.metadata) {
@@ -297,7 +215,7 @@ function RoomControlsAndDrafting({
       });
 
       await closeMeetingRoom(roomName);
-      alert(`Протокол № ${protocol.protocolNumber} успешно сформирован!`);
+      alert(`Протокол № ${protocol.protocolNumber} успешно сформирован! Задачи созданы.`);
       await handleCleanExit();
       router.push(`/app/protocols/${protocol.id}`);
     } catch (err: any) {
@@ -307,40 +225,31 @@ function RoomControlsAndDrafting({
     }
   };
 
-  const currentUser = users.find((u) => u.id === currentUserId);
-
   return (
     <div className="flex flex-col lg:flex-row h-full relative">
-      {/* Тост с ошибкой микрофона, если возникнет */}
-      {micErrorToast && (
-        <div className="absolute top-4 left-4 right-4 z-50 p-3.5 bg-rose-50 border border-rose-200 text-rose-900 rounded-2xl shadow-xl flex items-start justify-between gap-3 text-xs animate-slide-up">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-            <span className="font-semibold leading-relaxed">{micErrorToast}</span>
-          </div>
-          <button onClick={() => setMicErrorToast(null)} className="text-rose-400 hover:text-rose-700 font-bold">
-            ✕
-          </button>
-        </div>
-      )}
-
       {/* ЛЕВАЯ ЧАСТЬ: Аудиокомната */}
       <div className="flex-1 bg-slate-900 text-white p-6 flex flex-col justify-between border-r border-slate-800">
         <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
-            <h3 className="font-bold text-sm tracking-wide text-white">{roomTitle}</h3>
+            <div>
+              <h3 className="font-bold text-sm tracking-wide text-white">{roomTitle}</h3>
+              <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                <Volume2 className="h-3 w-3 text-emerald-400" />
+                <span>Защищенный голосовой канал</span>
+              </div>
+            </div>
           </div>
-          <div className="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+          <div className="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 font-bold">
             <Users className="h-3.5 w-3.5 text-blue-400" />
-            <span>В сети: {participants.length}</span>
+            <span>Участников: {participants.length}</span>
           </div>
         </div>
 
-        {/* Сетка аватаров */}
+        {/* Сетка участников */}
         <div className="py-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto">
           {participants.map((p) => {
             const isSpeaking = p.isSpeaking;
@@ -362,29 +271,33 @@ function RoomControlsAndDrafting({
                 key={p.sid}
                 className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all ${
                   isSpeaking
-                    ? "bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg"
+                    ? "bg-emerald-950/50 border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg scale-[1.02]"
                     : "bg-slate-800/60 border-slate-700/50"
                 }`}
               >
                 <div className="relative">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+                  <div className={`h-14 w-14 rounded-full font-extrabold flex items-center justify-center text-sm shadow-md transition-all ${
+                    isSpeaking 
+                      ? "bg-gradient-to-tr from-emerald-600 to-teal-500 text-white ring-4 ring-emerald-400/40" 
+                      : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white"
+                  }`}>
                     {displayInitials}
                   </div>
                   {isMuted && (
-                    <div className="absolute -bottom-1 -right-1 bg-rose-600 text-white p-1 rounded-full ring-2 ring-slate-900 shadow">
+                    <div className="absolute -bottom-1 -right-1 bg-rose-600 text-white p-1 rounded-full ring-2 ring-slate-900 shadow" title="Микрофон выключен">
                       <MicOff className="h-3 w-3" />
                     </div>
                   )}
                   {isSpeaking && (
-                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full ring-2 ring-slate-900 shadow animate-pulse">
+                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full ring-2 ring-slate-900 shadow animate-pulse" title="Говорит">
                       <Radio className="h-3 w-3" />
                     </div>
                   )}
                 </div>
-                <span className="font-bold text-xs text-slate-200 mt-2 text-center truncate max-w-[110px]" title={displayName}>
+                <span className="font-bold text-xs text-slate-200 mt-2.5 text-center truncate max-w-[110px]" title={displayName}>
                   {displayName}
                 </span>
-                <span className="text-[9px] text-slate-400">
+                <span className="text-[9px] text-slate-400 mt-0.5">
                   {p.isLocal ? "(Вы)" : isSpeaking ? "Говорит..." : isMuted ? "Без звука" : "Слушает"}
                 </span>
               </div>
@@ -392,39 +305,52 @@ function RoomControlsAndDrafting({
           })}
         </div>
 
-        {/* Кнопки микрофона и выхода */}
-        <div className="flex items-center justify-center gap-3 pt-4 border-t border-slate-800">
+        {/* Пульт управления */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-800">
           <button
             onClick={toggleMic}
-            disabled={micLoading}
-            className={`p-3.5 rounded-2xl font-bold flex items-center gap-2 text-xs transition-all shadow-md cursor-pointer ${
+            disabled={micPending}
+            className={`px-5 py-3 rounded-2xl font-bold flex items-center gap-2 text-xs transition-all shadow-md cursor-pointer ${
               isMicrophoneEnabled
                 ? "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
                 : "bg-rose-600 hover:bg-rose-700 text-white animate-pulse"
             }`}
           >
-            {isMicrophoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-            <span>{micLoading ? "Подключение..." : isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}</span>
+            {isMicrophoneEnabled ? <Mic className="h-4.5 w-4.5 text-emerald-400" /> : <MicOff className="h-4.5 w-4.5" />}
+            <span>{micPending ? "Подключение..." : isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}</span>
+          </button>
+
+          <button
+            onClick={toggleScreenShare}
+            disabled={screenPending}
+            className={`px-4 py-3 rounded-2xl font-bold flex items-center gap-2 text-xs transition-all border cursor-pointer ${
+              isScreenShareEnabled
+                ? "bg-blue-600 text-white border-blue-500"
+                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+            }`}
+            title="Демонстрация экрана"
+          >
+            {isScreenShareEnabled ? <MonitorOff className="h-4.5 w-4.5" /> : <Monitor className="h-4.5 w-4.5" />}
+            <span className="hidden sm:inline">{isScreenShareEnabled ? "Остановить экран" : "Поделиться экраном"}</span>
           </button>
 
           <button
             onClick={handleCleanExit}
-            className="p-3.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 rounded-2xl font-bold flex items-center gap-2 text-xs transition-all cursor-pointer"
+            className="px-4 py-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 rounded-2xl font-bold flex items-center gap-2 text-xs transition-all cursor-pointer"
           >
-            <PhoneOff className="h-5 w-5" />
+            <PhoneOff className="h-4.5 w-4.5" />
             <span>Выйти</span>
           </button>
         </div>
       </div>
 
-      {/* ПРАВАЯ ЧАСТЬ: Вкладки (Протокол / Чат) */}
+      {/* ПРАВАЯ ЧАСТЬ: Вкладки (Протокол и задачи / Чат звонка) */}
       <div className="w-full lg:w-[480px] bg-white p-6 flex flex-col justify-between overflow-y-auto space-y-4">
         <div className="space-y-4">
-          {/* Переключатель вкладок с бейджем непрочитанных */}
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
             <button
               onClick={() => setActiveTab("protocol")}
-              className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === "protocol" ? "bg-white text-blue-600 shadow-xs" : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -433,7 +359,7 @@ function RoomControlsAndDrafting({
             </button>
             <button
               onClick={() => setActiveTab("chat")}
-              className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer relative ${
+              className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer relative ${
                 activeTab === "chat" ? "bg-white text-blue-600 shadow-xs" : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -447,131 +373,185 @@ function RoomControlsAndDrafting({
             </button>
           </div>
 
-          {activeTab === "chat" ? (
-            <InCallChatTab
-              currentUserId={currentUserId}
-              currentUserName={currentUser?.name || "Сотрудник"}
-              currentUserInitials={currentUser?.initials || "СО"}
-            />
-          ) : (
-            <div className="space-y-3.5">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Повестка дня</label>
-                <input
-                  type="text"
-                  placeholder="1. Итоги недели; 2. План мероприятий..."
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800"
-                  value={agenda}
-                  onChange={(e) => setAgenda(e.target.value)}
-                />
-              </div>
+          {/* 💬 ВКЛАДКА ЧАТА (Сохраняет сообщения на протяжении созвона) */}
+          <div style={{ display: activeTab === "chat" ? "flex" : "none" }} className="flex-col h-[480px] bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs">
+              {chatMessages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center p-4">
+                  <MessageSquare className="h-6 w-6 text-blue-400 mb-1 opacity-60" />
+                  <span>Сообщений пока нет.<br />Напишите сообщение участникам совещания!</span>
+                </div>
+              ) : (
+                chatMessages.map((m) => {
+                  let senderName = m.from?.name || "Участник";
+                  if (m.from?.metadata) {
+                    try {
+                      const meta = JSON.parse(m.from.metadata);
+                      if (meta.name) senderName = meta.name;
+                    } catch (e) {}
+                  }
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Ключевые тезисы / Слушали</label>
-                <textarea
-                  rows={2}
-                  placeholder="Краткие тезисы выступлений..."
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800"
-                  value={discussion}
-                  onChange={(e) => setDiscussion(e.target.value)}
-                />
-              </div>
+                  const senderIdentity = m.from?.identity || "";
+                  const isMe = senderIdentity.startsWith(currentUserId) || m.from?.isLocal;
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Решения / Постановили</label>
-                <textarea
-                  rows={2}
-                  placeholder="Принятые решения..."
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800"
-                  value={decisions}
-                  onChange={(e) => setDecisions(e.target.value)}
-                />
-              </div>
-
-              {/* Поручения */}
-              <div className="border-t pt-3 space-y-2">
-                <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                  Поручения по итогам ({tasks.length})
-                </span>
-
-                {isAdmin && (
-                  <form onSubmit={handleAddTask} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Что необходимо сделать?"
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                      value={taskTitle}
-                      onChange={(e) => setTaskTitle(e.target.value)}
-                    />
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        required
-                        value={taskAssigneeId}
-                        onChange={(e) => setTaskAssigneeId(e.target.value)}
-                        className="px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  return (
+                    <div key={m.timestamp} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5 px-1">
+                        <span className="font-bold text-slate-700">{isMe ? "Вы" : senderName}</span>
+                        <span>• {new Date(m.timestamp).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                      <div
+                        className={`p-2.5 rounded-2xl text-xs max-w-[85%] whitespace-pre-line leading-relaxed shadow-xs ${
+                          isMe
+                            ? "bg-blue-600 text-white rounded-br-none"
+                            : "bg-white border border-slate-200 text-slate-800 rounded-bl-none font-medium"
+                        }`}
                       >
-                        <option value="">Кому поручить...</option>
-                        {users.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={taskGoalId}
-                        onChange={(e) => setTaskGoalId(e.target.value)}
-                        className="px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                      >
-                        {goals.map((g) => (
-                          <option key={g.id} value={g.id}>
-                            {g.title}
-                          </option>
-                        ))}
-                      </select>
+                        {m.message}
+                      </div>
                     </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
 
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="date"
-                        className="flex-1 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                        value={taskDeadline}
-                        onChange={(e) => setTaskDeadline(e.target.value)}
-                      />
-                      <button
-                        type="submit"
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Добавить
+            <form onSubmit={handleSendChatMessage} className="p-2.5 bg-white border-t border-slate-200 flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Написать в чат совещания..."
+                value={chatInputText}
+                onChange={(e) => setChatInputText(e.target.value)}
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50"
+              />
+              <button
+                type="submit"
+                disabled={!chatInputText.trim() || isSending}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:bg-blue-300 transition-colors cursor-pointer"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </form>
+          </div>
+
+          {/* 📋 ВКЛАДКА ПРОТОКОЛА */}
+          <div style={{ display: activeTab === "protocol" ? "block" : "none" }} className="space-y-3.5">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Повестка дня</label>
+              <input
+                type="text"
+                placeholder="1. Итоги недели; 2. План мероприятий..."
+                className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                value={agenda}
+                onChange={(e) => setAgenda(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Ключевые тезисы / Слушали</label>
+              <textarea
+                rows={2}
+                placeholder="Краткие тезисы выступлений..."
+                className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                value={discussion}
+                onChange={(e) => setDiscussion(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Решения / Постановили</label>
+              <textarea
+                rows={2}
+                placeholder="Принятые решения..."
+                className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800"
+                value={decisions}
+                onChange={(e) => setDecisions(e.target.value)}
+              />
+            </div>
+
+            {/* Добавление задач по итогам созвона */}
+            <div className="border-t pt-3 space-y-2">
+              <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+                Поручения по итогам ({tasks.length})
+              </span>
+
+              {isAdmin && (
+                <form onSubmit={handleAddTask} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Что необходимо сделать?"
+                    className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      required
+                      value={taskAssigneeId}
+                      onChange={(e) => setTaskAssigneeId(e.target.value)}
+                      className="px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Кому поручить...</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={taskGoalId}
+                      onChange={(e) => setTaskGoalId(e.target.value)}
+                      className="px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    >
+                      {goals.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="date"
+                      className="flex-1 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                      value={taskDeadline}
+                      onChange={(e) => setTaskDeadline(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Добавить
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {tasks.map((t, idx) => {
+                  const assignee = users.find((u) => u.id === t.assigneeIds[0]);
+                  return (
+                    <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-slate-900 truncate">{t.title}</div>
+                        <div className="text-[10px] text-slate-500">
+                          👤 {assignee?.name || "Сотрудник"} {t.deadline && `• До ${new Date(t.deadline).toLocaleDateString("ru-RU")}`}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => handleRemoveTask(idx)} className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer">
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  </form>
-                )}
-
-                <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                  {tasks.map((t, idx) => {
-                    const assignee = users.find((u) => u.id === t.assigneeIds[0]);
-                    return (
-                      <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs flex items-center justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-slate-900 truncate">{t.title}</div>
-                          <div className="text-[10px] text-slate-500">
-                            👤 {assignee?.name || "Сотрудник"} {t.deadline && `• До ${new Date(t.deadline).toLocaleDateString("ru-RU")}`}
-                          </div>
-                        </div>
-                        <button type="button" onClick={() => handleRemoveTask(idx)} className="text-slate-400 hover:text-rose-600 p-1">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                  );
+                })}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {isAdmin && activeTab === "protocol" && (
@@ -591,7 +571,7 @@ function RoomControlsAndDrafting({
   );
 }
 
-// 🛡️ ГЛАВНАЯ ОБЕРТКА
+// 🛡️ ГЛАВНАЯ ОБЕРТКА (Зал ожидания + Однократное получение токена)
 export function AudioConferenceModal({
   roomName,
   roomTitle,
@@ -605,49 +585,59 @@ export function AudioConferenceModal({
 }: AudioConferenceModalProps) {
   const [token, setToken] = useState<string>("");
   const [isRoomActive, setIsRoomActive] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
-
-  const checkStatus = async () => {
-    try {
-      const res = await checkMeetingRoomStatus(roomName);
-      setIsRoomActive(res.isActive);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsChecking(false);
-    }
-  };
 
   useEffect(() => {
     if (!isOpen) {
       setToken("");
       setIsRoomActive(false);
-      setIsChecking(true);
       return;
     }
 
-    checkStatus();
-    const interval = setInterval(checkStatus, 3000);
-    return () => clearInterval(interval);
-  }, [isOpen, roomName]);
+    let isMounted = true;
 
-  useEffect(() => {
-    if (!isOpen || (!isRoomActive && !isAdmin)) return;
-
-    async function fetchToken() {
-      try {
-        const res = await fetch(`/api/livekit/token?room=${encodeURIComponent(roomName)}`);
-        const data = await res.json();
-        if (data.token) {
-          setToken(data.token);
-        }
-      } catch (err) {
-        console.error("Не удалось получить токен:", err);
-      }
+    // 1. Для Администратора комната активна сразу
+    if (isAdmin) {
+      setIsRoomActive(true);
+      fetch(`/api/livekit/token?room=${encodeURIComponent(roomName)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted && data.token) setToken(data.token);
+        })
+        .catch((err) => console.error("Ошибка получения токена:", err));
+      return;
     }
 
-    fetchToken();
-  }, [isOpen, isRoomActive, isAdmin, roomName]);
+    // 2. Для Сотрудника: опрашиваем статус, пока комната не станет активной
+    const check = async () => {
+      try {
+        const res = await checkMeetingRoomStatus(roomName);
+        if (res.isActive && isMounted) {
+          setIsRoomActive(true);
+          // Получаем токен СТРОГО 1 РАЗ
+          const tokenRes = await fetch(`/api/livekit/token?room=${encodeURIComponent(roomName)}`);
+          const tokenData = await tokenRes.json();
+          if (isMounted && tokenData.token) {
+            setToken(tokenData.token);
+          }
+        }
+      } catch (err) {
+        console.error("Ошибка проверки комнаты:", err);
+      }
+    };
+
+    check();
+    const interval = setInterval(() => {
+      // Опрашиваем только пока комната не запущена
+      if (!isRoomActive) {
+        check();
+      }
+    }, 2500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isOpen, roomName, isAdmin, isRoomActive]);
 
   const handleStartByAdmin = async () => {
     try {
