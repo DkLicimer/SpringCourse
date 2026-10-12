@@ -36,6 +36,9 @@ export async function createEmployee(formData: FormData) {
 
   const department = (formData.get("department") as string) || "Основное подразделение";
 
+  // Флаг участия в назначении задач (по умолчанию true)
+  const isAssignable = formData.get("isAssignable") !== "false";
+
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
   const periodEndDateRaw = formData.get("periodEndDate") as string;
@@ -43,7 +46,7 @@ export async function createEmployee(formData: FormData) {
   const periodStartDate = periodStartDateRaw ? new Date(periodStartDateRaw) : null;
   const periodEndDate = periodEndDateRaw ? new Date(periodEndDateRaw) : null;
 
-  // ⚡ Чтение обязанностей сотрудника (Пункт 8)
+  // Обязанности сотрудника
   const mainDuties = (formData.get("mainDuties") as string) || "";
   const extraDuties = (formData.get("extraDuties") as string) || "";
   const orderDuties = (formData.get("orderDuties") as string) || "";
@@ -83,6 +86,7 @@ export async function createEmployee(formData: FormData) {
         initials,
         role: "EMPLOYEE",
         department,
+        isAssignable,
         reportingPeriodType,
         periodStartDate,
         periodEndDate,
@@ -115,6 +119,7 @@ export async function createEmployee(formData: FormData) {
 
   revalidatePath("/app/employees");
   revalidatePath("/app/tables/social-passport");
+  revalidatePath("/app/tasks");
 }
 
 export async function deleteEmployee(userId: string) {
@@ -139,6 +144,7 @@ export async function deleteEmployee(userId: string) {
 
   revalidatePath("/app/employees");
   revalidatePath("/app/tables/social-passport");
+  revalidatePath("/app/tasks");
 }
 
 export async function updateEmployee(userId: string, formData: FormData) {
@@ -153,6 +159,9 @@ export async function updateEmployee(userId: string, formData: FormData) {
   const initialsRaw = formData.get("initials") as string;
   const department = (formData.get("department") as string) || "Основное подразделение";
 
+  // Флаг участия в назначении задач
+  const isAssignable = formData.get("isAssignable") !== "false";
+
   const reportingPeriodType = (formData.get("reportingPeriodType") as string) || "MONTH";
   const periodStartDateRaw = formData.get("periodStartDate") as string;
   const periodEndDateRaw = formData.get("periodEndDate") as string;
@@ -160,7 +169,7 @@ export async function updateEmployee(userId: string, formData: FormData) {
   const periodStartDate = periodStartDateRaw ? new Date(periodStartDateRaw) : null;
   const periodEndDate = periodEndDateRaw ? new Date(periodEndDateRaw) : null;
 
-  // ⚡ Чтение обязанностей сотрудника (Пункт 8)
+  // Обязанности сотрудника
   const mainDuties = (formData.get("mainDuties") as string) || "";
   const extraDuties = (formData.get("extraDuties") as string) || "";
   const orderDuties = (formData.get("orderDuties") as string) || "";
@@ -185,6 +194,7 @@ export async function updateEmployee(userId: string, formData: FormData) {
       name, 
       email,
       department,
+      isAssignable,
       reportingPeriodType,
       periodStartDate,
       periodEndDate,
@@ -248,4 +258,5 @@ export async function updateEmployee(userId: string, formData: FormData) {
 
   revalidatePath("/app/employees");
   revalidatePath("/app/tables/social-passport");
+  revalidatePath("/app/tasks");
 }

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createTask, updateTask } from "@/server/actions/tasks";
-import { X, ListOrdered, Users, CheckSquare, Sparkles, RotateCcw, AlertTriangle, Clock } from "lucide-react";
+import { X, ListOrdered, Users, CheckSquare, Sparkles, RotateCcw, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -15,6 +15,28 @@ interface TaskModalProps {
   isPending: boolean;
   onSaved: (msg: string) => void;
   onError: (msg: string) => void;
+}
+
+const DAYS_OF_WEEK = [
+  { id: 1, label: "ПН", full: "Понедельник" },
+  { id: 2, label: "ВТ", full: "Вторник" },
+  { id: 3, label: "СР", full: "Среда" },
+  { id: 4, label: "ЧТ", full: "Четверг" },
+  { id: 5, label: "ПТ", full: "Пятница" },
+  { id: 6, label: "СБ", full: "Суббота" },
+  { id: 7, label: "ВС", full: "Воскресенье" },
+];
+
+function calculateNextDayOfWeek(dayId: number): string {
+  const now = new Date();
+  const currentDay = now.getDay() === 0 ? 7 : now.getDay();
+  let daysUntil = dayId - currentDay;
+  if (daysUntil <= 0) {
+    daysUntil += 7;
+  }
+  const target = new Date(now);
+  target.setDate(now.getDate() + daysUntil);
+  return target.toISOString().split("T")[0];
 }
 
 export function TaskModal({
@@ -41,6 +63,12 @@ export function TaskModal({
   );
   const [isPriority, setIsPriority] = useState(sourceTask ? sourceTask.isPriority : false);
   const [isRecurring, setIsRecurring] = useState(sourceTask ? sourceTask.isRecurring : false);
+  
+  // Регулярный день недели (1..7 или null)
+  const [recurringDayOfWeek, setRecurringDayOfWeek] = useState<number | null>(
+    sourceTask?.recurringDayOfWeek ?? null
+  );
+
   const [isPerspective, setIsPerspective] = useState(sourceTask ? sourceTask.isPerspective : false);
   const [createSeparateCopies, setCreateSeparateCopies] = useState(false);
 
@@ -70,6 +98,17 @@ export function TaskModal({
     }
   }, [reminderDateVal, isPerspective]);
 
+  const handleSelectDayOfWeek = (dayId: number) => {
+    if (recurringDayOfWeek === dayId) {
+      setRecurringDayOfWeek(null);
+    } else {
+      setRecurringDayOfWeek(dayId);
+      // Автоматически выставляем дедлайн на ближайший такой день
+      const nextDate = calculateNextDayOfWeek(dayId);
+      setDeadlineVal(nextDate);
+    }
+  };
+
   const toggleAssignee = (userId: string) => {
     if (assignmentType === "INDIVIDUAL" && !createSeparateCopies) {
       setSelectedAssignees([userId]);
@@ -94,7 +133,6 @@ export function TaskModal({
     const formData = new FormData(e.currentTarget);
     const deadlineValue = deadlineVal || (formData.get("deadline") as string);
 
-    // ⚡ Строгая проверка обязательного дедлайна (Пункт 9)
     if (!deadlineValue || !deadlineValue.trim()) {
       onError("Укажите обязательный срок выполнения (дедлайн) задачи!");
       return;
@@ -113,6 +151,7 @@ export function TaskModal({
       assigneeIds: selectedAssignees,
       isPriority,
       isRecurring,
+      recurringDayOfWeek: isRecurring ? recurringDayOfWeek : null,
       isPerspective,
       reminderDate: isPerspective ? reminderDateVal : undefined,
       stepInstructions: stepInstructionsArray,
@@ -191,16 +230,57 @@ export function TaskModal({
             <div className="flex items-center justify-between p-3 bg-purple-50/50 border border-purple-100 rounded-xl">
               <div className="space-y-0.5">
                 <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Регулярная</h4>
-                <p className="text-[9px] text-slate-500">Маркер повтора</p>
+                <p className="text-[9px] text-slate-500">Повторяющееся дело</p>
               </div>
               <input
                 type="checkbox"
                 checked={isRecurring}
-                onChange={(e) => setIsRecurring(e.target.checked)}
+                onChange={(e) => {
+                  setIsRecurring(e.target.checked);
+                  if (!e.target.checked) setRecurringDayOfWeek(null);
+                }}
                 className="h-4 w-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500 cursor-pointer"
               />
             </div>
           </div>
+
+          {/* ⚡ ВЫБОР ДНЯ НЕДЕЛИ ДЛЯ РЕГУЛЯРНОЙ ЗАДАЧИ (ПУНКТ 5) */}
+          {isRecurring && (
+            <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl space-y-2 animate-fade-in">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                  <CalendarDays className="h-4 w-4 text-purple-600" />
+                  <span>Повторять в конкретный день недели:</span>
+                </label>
+                {recurringDayOfWeek && (
+                  <span className="text-[10px] font-bold text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200">
+                    Каждый {DAYS_OF_WEEK.find(d => d.id === recurringDayOfWeek)?.full.toLowerCase()}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5">
+                {DAYS_OF_WEEK.map((day) => {
+                  const isSelected = recurringDayOfWeek === day.id;
+                  return (
+                    <button
+                      key={day.id}
+                      type="button"
+                      onClick={() => handleSelectDayOfWeek(day.id)}
+                      className={`py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-purple-600 text-white shadow-xs scale-105"
+                          : "bg-white text-slate-700 border border-purple-200 hover:bg-purple-100"
+                      }`}
+                      title={day.full}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Перспективная задача */}
           <div className="grid grid-cols-1 gap-3">
@@ -259,7 +339,7 @@ export function TaskModal({
               name="title"
               required
               defaultValue={sourceTask?.title || ""}
-              placeholder="Например, Подготовка сметы"
+              placeholder="Например, Работа по договорам или Заседание профкома"
               className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
             />
           </div>
@@ -275,7 +355,7 @@ export function TaskModal({
             />
           </div>
 
-          {/* ⚡ ОБЯЗАТЕЛЬНЫЙ СРОК СДАЧИ (ПУНКТ 9) */}
+          {/* СРОК СДАЧИ (ДЕЙДЛАЙН) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1">
@@ -285,7 +365,7 @@ export function TaskModal({
               <input
                 type="date"
                 name="deadline"
-                required // Обязательно для всех задач
+                required
                 min={isPerspective && reminderDateVal ? reminderDateVal : todayStr}
                 value={deadlineVal}
                 onChange={(e) => setDeadlineVal(e.target.value)}

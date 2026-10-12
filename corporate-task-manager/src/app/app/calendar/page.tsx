@@ -14,12 +14,12 @@ export default async function CalendarPage() {
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // 1. Загружаем события календаря
+  // 1. Загружаем события календаря (совещания, бронирования, Главный корпус)
   const events = await prisma.calendarEvent.findMany({
     orderBy: { startTime: "asc" },
     include: {
       bookedBy: {
-        select: { name: true, initials: true, email: true },
+        select: { id: true, name: true, initials: true, email: true, role: true },
       },
       participants: {
         select: { id: true, name: true, initials: true },
@@ -27,20 +27,38 @@ export default async function CalendarPage() {
     },
   });
 
-  // 2. Загружаем список сотрудников для выбора участников
+  // 2. Загружаем активные задачи с дедлайнами (мониторинги / поручения)
+  const tasksWithDeadlines = await prisma.task.findMany({
+    where: {
+      deadline: { not: null },
+      ...(isAdmin ? {} : { assignments: { some: { userId: session.user.id } } })
+    },
+    include: {
+      goal: { select: { title: true, color: true } },
+      assignments: {
+        include: {
+          user: { select: { id: true, name: true, initials: true } },
+          status: { select: { id: true, name: true, color: true } }
+        }
+      }
+    },
+    orderBy: { deadline: "asc" }
+  });
+
+  // 3. Загружаем список сотрудников для выбора участников
   const users = await prisma.user.findMany({
-    where: { role: "EMPLOYEE" },
+    where: { role: "EMPLOYEE", isAssignable: true },
     orderBy: { name: "asc" },
     select: { id: true, name: true, initials: true }
   });
 
-  // 3. Загружаем темы/цели для создания задач во время созвона
+  // 4. Загружаем темы/цели
   const goals = await prisma.goal.findMany({
     orderBy: { createdAt: "desc" },
     select: { id: true, title: true, color: true }
   });
 
-  // 4. Безопасно загружаем дни рождения сотрудников
+  // 5. Безопасно загружаем дни рождения сотрудников и руководителя
   let birthdays: any[] = [];
   try {
     birthdays = await prisma.socialPassport.findMany({
@@ -51,7 +69,8 @@ export default async function CalendarPage() {
         id: true,
         fullName: true,
         birthDate: true,
-        department: true
+        department: true,
+        user: { select: { role: true } }
       }
     });
   } catch (err) {
@@ -62,6 +81,7 @@ export default async function CalendarPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       <CalendarClient
         initialEvents={JSON.parse(JSON.stringify(events))}
+        tasksWithDeadlines={JSON.parse(JSON.stringify(tasksWithDeadlines))}
         isAdmin={isAdmin}
         currentUserId={session.user.id}
         users={JSON.parse(JSON.stringify(users))}

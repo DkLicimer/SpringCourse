@@ -15,8 +15,15 @@ import {
   UserCheck,
   CalendarRange,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Archive,
+  Download,
+  Trash2,
+  ShieldAlert,
+  X
 } from "lucide-react";
+import { deleteYearArchiveData } from "@/server/actions/archive";
+import { useRouter } from "next/navigation";
 
 type Goal = { title: string; color: string };
 
@@ -59,7 +66,6 @@ interface DashboardClientProps {
   employees: Employee[];
 }
 
-// 🕒 Хелпер вычисления границ индивидуального отчетного периода сотрудника
 function getEmployeePeriodDates(
   type: string = "MONTH",
   customStart?: string | null,
@@ -103,11 +109,25 @@ function getEmployeePeriodDates(
 }
 
 export function DashboardClient({ tasks, employees }: DashboardClientProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
   
-  // Режим периода: "employee_period" (по умолчанию для сотрудника) | "all" | "month" | "quarter"
+  // Режимы периода
   const [periodMode, setPeriodMode] = useState<"employee_period" | "all" | "month" | "quarter">("employee_period");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("all");
+
+  // Блок резервного копирования
+  const currentYear = new Date().getFullYear();
+  const [archiveYear, setArchiveYear] = useState<number>(currentYear - 1);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [confirmPhraseInput, setConfirmPhraseInput] = useState("");
+  const [isExportingZip, setIsExportingZip] = useState(false);
 
   const now = new Date();
   const startOfToday = new Date();
@@ -123,7 +143,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       : null;
   }, [selectedEmployeeId, employees]);
 
-  // Данные индивидуального периода выбранного сотрудника
   const employeePeriodData = useMemo(() => {
     if (!currentEmployee) return null;
     return getEmployeePeriodDates(
@@ -133,7 +152,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     );
   }, [currentEmployee]);
 
-  // Проверка попадания даты в выбранный период
   const isDateInSelectedPeriod = (dateStr: string | null) => {
     if (!dateStr) return false;
     const date = new Date(dateStr);
@@ -179,7 +197,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
   }[] = [];
 
   if (currentEmployee) {
-    // Фильтруем назначения сотрудника по дате создания задачи или дедлайну
     const periodAssignments = currentEmployee.assignments.filter((as) => {
       const taskObj = tasks.find(t => t.id === as.task.id);
       if (!taskObj) return false;
@@ -231,7 +248,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
       };
     });
   } else {
-    // Общий отчет по компании
     const filteredTasks = tasks.filter((t) => isDateInSelectedPeriod(t.createdAt));
     totalTasksCount = filteredTasks.length;
 
@@ -265,11 +281,9 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     companyCompletionRate = totalAssignments > 0 ? Math.round((totalCompleted / totalAssignments) * 100) : 0;
   }
 
-  // Сводная таблица по сотрудникам
   const employeeStats = employees.map((emp) => {
     const empPeriod = getEmployeePeriodDates(emp.reportingPeriodType, emp.periodStartDate, emp.periodEndDate);
 
-    // Считаем показатели каждого сотрудника по его персональному отчетному периоду
     const periodAssignments = emp.assignments.filter((as) => {
       const taskObj = tasks.find(t => t.id === as.task.id);
       if (!taskObj) return false;
@@ -326,7 +340,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
   const normalLoadCount = employeeStats.filter(emp => emp.active >= 3 && emp.active <= 5).length;
   const highLoadCount = employeeStats.filter(emp => emp.active >= 6).length;
 
-  // Экспорт в CSV с учетом периода сотрудника
   const handleExportCSV = () => {
     startTransition(() => {
       let headers: string[] = [];
@@ -392,8 +405,66 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     });
   };
 
+  // Скачивание ZIP-архива
+  const handleDownloadZipArchive = () => {
+    setIsExportingZip(true);
+    const downloadUrl = `/api/archive/export?year=${archiveYear}`;
+    
+    // Создаем невидимую ссылку для запуска загрузки файла браузером
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `TaskManager_Archive_${archiveYear}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => {
+      setIsExportingZip(false);
+      showToast(`Архив за ${archiveYear} год сформирован и скачивается!`, "success");
+    }, 1500);
+  };
+
+  // Удаление архива за выбранный год
+  const handleExecuteDeleteArchive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      try {
+        const res = await deleteYearArchiveData({
+          year: archiveYear,
+          confirmationPhrase: confirmPhraseInput,
+        });
+
+        setIsDeleteModalOpen(false);
+        setConfirmPhraseInput("");
+        showToast(res.message, "success");
+        router.refresh();
+      } catch (err: any) {
+        showToast(err.message || "Ошибка удаления архива", "error");
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 left-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-xs font-semibold animate-slide-up ${
+          toast.type === "success" 
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
+            : toast.type === "error" 
+            ? "bg-rose-50 border-rose-200 text-rose-800" 
+            : "bg-blue-50 border-blue-200 text-blue-800"
+        }`}>
+          {toast.type === "success" && <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />}
+          {toast.type === "error" && <AlertCircle className="h-4.5 w-4.5 text-rose-600 shrink-0" />}
+          {toast.type === "info" && <Clock className="h-4.5 w-4.5 text-blue-600 shrink-0" />}
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 cursor-pointer">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Шапка для печати */}
       <div className="hidden print:block border-b border-slate-300 pb-4 mb-6">
         <h1 className="text-2xl font-bold text-slate-900 uppercase">
@@ -411,7 +482,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
       {/* Панель селекторов */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between print:hidden">
-        {/* Переключатель режимов фильтрации периода */}
         <div className="flex bg-slate-200/60 p-1 rounded-xl max-w-md border border-slate-200 text-xs font-bold">
           {currentEmployee && (
             <button
@@ -484,7 +554,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* ⚡ КАРТОЧКА ИНДИВИДУАЛЬНОГО ОТЧЕТНОГО ПЕРИОДА СОТРУДНИКА (ПУНКТ 5) */}
+      {/* Карточка периода сотрудника */}
       {currentEmployee && employeePeriodData && (
         <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 border border-blue-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-3">
@@ -574,29 +644,67 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* Баланс нагрузки команды (в общем отчете) */}
-      {selectedEmployeeId === "all" && (
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 print:hidden">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <Users className="h-4 w-4 text-blue-500" />
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Баланс нагрузки команды</h4>
+      {/* 📦 НОВЫЙ БЛОК: ГОДОВОЙ АРХИВ И РЕЗЕРВНОЕ КОПИРОВАНИЕ ДАННЫХ */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 border border-slate-800 shadow-md space-y-4 print:hidden">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-xs">
+              <Archive className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-black tracking-tight text-white flex items-center gap-2">
+                <span>Годовой архив и резервное копирование (ZIP)</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Выгрузка закрытого календарного периода (с 1 января по 31 декабря) в ZIP со всеми задачами, отчетами, протоколами и дампом базы
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="bg-emerald-50/50 border border-emerald-100 p-3.5 rounded-xl flex flex-col items-center">
-              <span className="text-2xl font-black text-emerald-600">{lowLoadCount}</span>
-              <span className="text-[10px] text-emerald-700 font-bold mt-1 uppercase tracking-wider">Низкая нагрузка / Свободны</span>
-            </div>
-            <div className="bg-blue-50/50 border border-blue-100 p-3.5 rounded-xl flex flex-col items-center">
-              <span className="text-2xl font-black text-blue-600">{normalLoadCount}</span>
-              <span className="text-[10px] text-blue-700 font-bold mt-1 uppercase tracking-wider">Оптимальная нагрузка</span>
-            </div>
-            <div className="bg-orange-50/50 border border-orange-100 p-3.5 rounded-xl flex flex-col items-center">
-              <span className="text-2xl font-black text-orange-600">{highLoadCount}</span>
-              <span className="text-[10px] text-orange-700 font-bold mt-1 uppercase tracking-wider">Высокая нагрузка / Завал</span>
-            </div>
+
+          <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700 self-stretch sm:self-auto">
+            <span className="text-[11px] font-bold text-slate-400 uppercase">Архивный год:</span>
+            <select
+              value={archiveYear}
+              onChange={(e) => setArchiveYear(parseInt(e.target.value, 10))}
+              className="bg-transparent text-white font-extrabold text-sm focus:outline-none cursor-pointer"
+            >
+              {Array.from({ length: 6 }, (_, i) => currentYear - i).map((y) => (
+                <option key={y} value={y} className="bg-slate-900 text-white">
+                  {y} год {y === currentYear - 1 ? "(Прошлый)" : y === currentYear ? "(Текущий)" : ""}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-      )}
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+          <div className="text-xs text-slate-300 leading-relaxed">
+            📦 В архив включаются: <strong className="text-white">tasks_{archiveYear}.(csv/json)</strong>, <strong className="text-white">daily_reports_{archiveYear}.(csv/json)</strong>, <strong className="text-white">protocols_{archiveYear}.(csv/json)</strong> и полный дамп <strong className="text-white">database_backup_{archiveYear}.json</strong>.
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+            <button
+              onClick={handleDownloadZipArchive}
+              disabled={isExportingZip}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer disabled:bg-blue-800"
+            >
+              <Download className="h-4 w-4" />
+              <span>{isExportingZip ? "Формирование ZIP..." : `Скачать архив (${archiveYear})`}</span>
+            </button>
+
+            {archiveYear < currentYear && (
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                title="Очистить данные за этот год в базе данных после создания копии"
+              >
+                <Trash2 className="h-4 w-4 text-rose-400" />
+                <span>Очистить {archiveYear}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Таблица аналитики */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm print:border-slate-300 print:shadow-none">
@@ -787,6 +895,68 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </div>
         )}
       </div>
+
+      {/* МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ОЧИСТКИ СТАРЫХ ДАННЫХ */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-200 bg-rose-50 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-rose-600" />
+                <h3 className="text-sm font-black text-rose-950 uppercase tracking-tight">
+                  Очистка базы данных за {archiveYear} год
+                </h3>
+              </div>
+              <button onClick={() => setIsDeleteModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteDeleteArchive} className="p-6 space-y-4" autoComplete="off">
+              <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
+                <p className="font-bold text-slate-900">
+                  ⚠️ Вы собираетесь безвозвратно удалить из рабочей базы данных все задачи, ежедневные отчеты и протоколы совещаний за <span className="text-rose-600 font-black">{archiveYear} год</span>.
+                </p>
+                <p className="text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200 font-semibold">
+                  Убедитесь, что перед удалением вы скачали ZIP-архив за этот год для резервного сохранения!
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-800">
+                  Для подтверждения введите фразу: <span className="text-rose-600 font-black tracking-wider select-all">УДАЛИТЬ {archiveYear}</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={`УДАЛИТЬ ${archiveYear}`}
+                  value={confirmPhraseInput}
+                  onChange={(e) => setConfirmPhraseInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold focus:outline-none focus:border-rose-500 text-slate-900"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending || confirmPhraseInput.trim() !== `УДАЛИТЬ ${archiveYear}`}
+                  className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>{isPending ? "Удаление..." : "Удалить данные"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,13 +16,11 @@ import {
   Briefcase,
   AlertTriangle,
   Clock,
-  CheckCircle2,
-  Calendar,
-  AlertCircle,
   ClipboardList,
   Layers,
-  FileText,
-  ListTodo
+  ListTodo,
+  UserCheck,
+  UserX
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -39,6 +37,7 @@ type UserWithAccess = {
   initials: string;
   role: string;
   department?: string | null;
+  isAssignable?: boolean; // Флаг: true = выдавать задачи, false = только учет
   reportingPeriodType?: string;
   periodStartDate?: string | null;
   periodEndDate?: string | null;
@@ -116,7 +115,6 @@ function getEmployeePeriodStatus(
   };
 }
 
-// Хелпер подсчета строк в обязанностях
 function countDutyItems(text?: string | null): number {
   if (!text || !text.trim()) return 0;
   return text.split("\n").filter((line) => line.trim().length > 0).length;
@@ -141,7 +139,10 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
   const [showPassword, setShowPassword] = useState(false);
   const [passwordValue, setPasswordValue] = useState("");
 
-  // ⚡ Стейт 3-х категорий обязанностей сотрудника (Пункт 8)
+  // Флаг: выдавать ли задачи (isAssignable)
+  const [isAssignable, setIsAssignable] = useState(true);
+
+  // Обязанности сотрудника
   const [mainDuties, setMainDuties] = useState("");
   const [extraDuties, setExtraDuties] = useState("");
   const [orderDuties, setOrderDuties] = useState("");
@@ -200,6 +201,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setDepartment("");
     setShowPassword(false);
     setPasswordValue("");
+    setIsAssignable(true); // По умолчанию участвует в задачах
     setMainDuties("");
     setExtraDuties("");
     setOrderDuties("");
@@ -227,8 +229,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     setDepartment(user.department || "");
     setShowPassword(false);
     setPasswordValue("");
+    setIsAssignable(user.isAssignable ?? true);
 
-    // ⚡ Загружаем существующие обязанности в стейт
     setMainDuties(user.mainDuties || "");
     setExtraDuties(user.extraDuties || "");
     setOrderDuties(user.orderDuties || "");
@@ -276,7 +278,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
     formData.append("initials", initials);
     formData.append("department", department);
 
-    // ⚡ Передаем обязанности на сервер
+    // Флаг выдачи задач
+    formData.append("isAssignable", String(isAssignable));
+
     formData.append("mainDuties", mainDuties);
     formData.append("extraDuties", extraDuties);
     formData.append("orderDuties", orderDuties);
@@ -406,7 +410,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </button>
       </div>
 
-      {/* ДЕСКТОПНАЯ ТАБЛИЦА С КОЛОНКОЙ ОБЯЗАННОСТЕЙ */}
+      {/* ДЕСКТОПНАЯ ТАБЛИЦА */}
       <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-xs">
         <table className="min-w-full divide-y divide-slate-200 text-xs">
           <thead className="bg-slate-50">
@@ -414,7 +418,9 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
               <th className="sticky left-0 bg-slate-50 z-20 px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wider min-w-[220px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
                 Сотрудник (ФИО)
               </th>
-              {/* ⚡ НОВАЯ КОЛОНКА «ОБЯЗАННОСТИ» (ПУНКТ 8) */}
+              <th className="px-3 py-3 text-center font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                Статус в пуле задач
+              </th>
               <th className="px-3 py-3 text-center font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                 Обязанности
               </th>
@@ -440,6 +446,8 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
               const orderCount = countDutyItems(user.orderDuties);
               const totalDuties = mainCount + extraCount + orderCount;
               
+              const isAssignable = user.isAssignable ?? true;
+
               return (
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="sticky left-0 bg-white z-10 px-4 py-3 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
@@ -459,7 +467,24 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     </div>
                   </td>
 
-                  {/* ⚡ КНОПКА ПРОСМОТРА ОБЯЗАННОСТЕЙ В ТАБЛИЦЕ (ПУНКТ 8) */}
+                  {/* Бейдж статуса в пуле задач */}
+                  <td className="px-3 py-3 whitespace-nowrap text-center">
+                    {user.role === "ADMIN" ? (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-purple-100 text-purple-800">
+                        Администратор
+                      </span>
+                    ) : isAssignable ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                        <UserCheck className="h-3 w-3 text-emerald-600" /> Исполнитель
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-full font-medium" title="Только учёт и дни рождения в календаре, задачи не назначаются">
+                        <UserX className="h-3 w-3 text-slate-400" /> Только учёт
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Кнопка обязанностей */}
                   <td className="px-3 py-3 whitespace-nowrap text-center">
                     {user.role === "ADMIN" ? (
                       <span className="text-[10px] text-slate-400 italic">—</span>
@@ -545,7 +570,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </table>
       </div>
 
-      {/* МОБИЛЬНАЯ ВЕРСИЯ КАРТОЧЕК */}
+      {/* МОБИЛЬНАЯ ВЕРСИЯ */}
       <div className="block lg:hidden space-y-4">
         {filteredUsers.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm bg-white rounded-xl border">
@@ -553,17 +578,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
           </div>
         ) : (
           filteredUsers.map((user) => {
-            const socialAccess = user.tableAccesses.find((a) => a.tableName === "social_passport");
-            const teamAccess = user.tableAccesses.find((a) => a.tableName === "teambuilding");
-            const contentAccess = user.tableAccesses.find((a) => a.tableName === "content_plan");
-            const postAccess = user.tableAccesses.find((a) => a.tableName === "post_request");
-            const infoAccess = user.tableAccesses.find((a) => a.tableName === "info_space");
-
-            const mainCount = countDutyItems(user.mainDuties);
-            const extraCount = countDutyItems(user.extraDuties);
-            const orderCount = countDutyItems(user.orderDuties);
-            const totalDuties = mainCount + extraCount + orderCount;
-
+            const isAssignable = user.isAssignable ?? true;
             return (
               <div key={user.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
                 <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
@@ -579,53 +594,19 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                      user.role === "ADMIN" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-800"
-                    }`}>
-                      {user.role === "ADMIN" ? "Админ" : "Сотрудник"}
-                    </span>
-                    {user.role !== "ADMIN" && (
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border ${user.periodInfo.badgeClass}`}>
-                        {user.periodInfo.label}
+                    {user.role === "ADMIN" ? (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-purple-100 text-purple-800">
+                        Админ
+                      </span>
+                    ) : isAssignable ? (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-emerald-100 text-emerald-800">
+                        Исполнитель
+                      </span>
+                    ) : (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-slate-100 text-slate-500">
+                        Только учёт
                       </span>
                     )}
-                  </div>
-                </div>
-
-                {/* Обязанности в мобильной карточке */}
-                {user.role !== "ADMIN" && (
-                  <div className="flex items-center justify-between bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 text-xs">
-                    <span className="font-semibold text-slate-600">Обязанности:</span>
-                    <button
-                      onClick={() => setViewingDutiesUser(user)}
-                      className="px-2.5 py-1 bg-white border border-blue-200 text-blue-700 rounded-lg font-bold text-[10px] shadow-2xs cursor-pointer flex items-center gap-1"
-                    >
-                      <ClipboardList className="h-3 w-3" />
-                      {totalDuties > 0 ? `${totalDuties} шт. (${mainCount}/${extraCount}/${orderCount})` : "Задать"}
-                    </button>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
-                    <span className="text-slate-400 font-medium text-[10px]">Коллектив</span>
-                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(socialAccess?.canRead || false, socialAccess?.canWrite || false)}
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
-                    <span className="text-slate-400 font-medium text-[10px]">Тимбилдинг</span>
-                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(teamAccess?.canRead || false, teamAccess?.canWrite || false)}
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
-                    <span className="text-slate-400 font-medium text-[10px]">Контент</span>
-                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(contentAccess?.canRead || false, contentAccess?.canWrite || false)}
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center">
-                    <span className="text-slate-400 font-medium text-[10px]">Заявки</span>
-                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(postAccess?.canRead || false, postAccess?.canWrite || false)}
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex justify-between items-center col-span-2">
-                    <span className="text-slate-400 font-medium text-[10px]">ИНФО</span>
-                    {user.role === "ADMIN" ? <span className="text-[10px] font-bold text-slate-400">ПОЛНЫЙ</span> : renderAccessBadge(infoAccess?.canRead || false, infoAccess?.canWrite || false)}
                   </div>
                 </div>
 
@@ -636,7 +617,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
-                  {user.id !== currentUserId ? (
+                  {user.id !== currentUserId && (
                     <button
                       onClick={() => handleDelete(user.id, user.name)}
                       disabled={isPending}
@@ -644,8 +625,6 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                  ) : (
-                    <span className="text-xs text-slate-400 italic flex items-center px-1">Это вы</span>
                   )}
                 </div>
               </div>
@@ -654,7 +633,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         )}
       </div>
 
-      {/* ⚡ МОДАЛЬНОЕ ОКНО СОЗДАНИЯ / РЕДАКТИРОВАНИЯ СО СЕТКОЙ ИЗ 3 КОЛОНОК (ПУНКТ 8) */}
+      {/* МОДАЛЬНОЕ ОКНО СОЗДАНИЯ / РЕДАКТИРОВАНИЯ */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden">
@@ -723,32 +702,53 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                 </div>
               </div>
 
-              {/* Пароль */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {editingUser ? "Новый пароль (оставьте пустым для сохранения прежнего)" : "Пароль"}
-                </label>
-                <div className="relative max-w-md">
+              {/* Пароль и ТУМБЛЕР НАЗНАЧЕНИЯ ЗАДАЧ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {editingUser ? "Новый пароль (оставьте пустым для сохранения прежнего)" : "Пароль"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      required={!editingUser}
+                      value={passwordValue}
+                      onChange={(e) => setPasswordValue(e.target.value)}
+                      placeholder={editingUser ? "Введите новый пароль, если нужно изменить" : "Укажите пароль для входа"}
+                      className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ⚡ ТУМБЛЕР: УЧАСТИЕ В ВЫДАЧЕ ЗАДАЧ (ПУНКТ 4) */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <label className="text-xs font-bold text-slate-800 block cursor-pointer" htmlFor="isAssignableCheck">
+                      Участвует в назначении задач
+                    </label>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Если выключить — сотрудник остаётся в общем учёте и календаре (дни рождения), но скрывается из списка выдачи задач
+                    </p>
+                  </div>
                   <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    required={!editingUser}
-                    value={passwordValue}
-                    onChange={(e) => setPasswordValue(e.target.value)}
-                    placeholder={editingUser ? "Введите новый пароль, если нужно изменить" : "Укажите пароль для входа"}
-                    className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 text-slate-800"
+                    type="checkbox"
+                    id="isAssignableCheck"
+                    checked={isAssignable}
+                    onChange={(e) => setIsAssignable(e.target.checked)}
+                    className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer shrink-0"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-                  </button>
                 </div>
               </div>
 
-              {/* ⚡ ТАБЛИЦА ОБЯЗАННОСТЕЙ СОТРУДНИКА НА 3 КОЛОНКИ (ПУНКТ 8) */}
+              {/* ТАБЛИЦА ОБЯЗАННОСТЕЙ СОТРУДНИКА */}
               <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs space-y-0">
                 <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -758,12 +758,11 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                     </span>
                   </div>
                   <span className="text-[10px] text-slate-400 hidden sm:inline">
-                    Каждый пункт с новой строки (можно вносить 10+ пунктов)
+                    Каждый пункт с новой строки
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 bg-slate-50/50">
-                  {/* Колонка 1: Основные */}
                   <div className="p-4 space-y-2 bg-blue-50/20">
                     <div className="flex items-center justify-between border-b border-blue-200 pb-1.5">
                       <label className="text-xs font-black text-blue-900 flex items-center gap-1.5 uppercase">
@@ -775,15 +774,14 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       </span>
                     </div>
                     <textarea
-                      rows={6}
-                      placeholder={"1. Ведение учебных журналов\n2. Проведение занятий по расписанию\n3. Составление планов на четверть..."}
+                      rows={5}
+                      placeholder={"1. Ведение учебных журналов\n2. Проведение занятий по расписанию..."}
                       value={mainDuties}
                       onChange={(e) => setMainDuties(e.target.value)}
                       className="w-full px-3 py-2 border border-blue-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800 bg-white leading-relaxed"
                     />
                   </div>
 
-                  {/* Колонка 2: Дополнительные */}
                   <div className="p-4 space-y-2 bg-purple-50/20">
                     <div className="flex items-center justify-between border-b border-purple-200 pb-1.5">
                       <label className="text-xs font-black text-purple-900 flex items-center gap-1.5 uppercase">
@@ -795,15 +793,14 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       </span>
                     </div>
                     <textarea
-                      rows={6}
-                      placeholder={"1. Дежурство на этаже\n2. Участие в методических советах\n3. Подготовка стендов к праздникам..."}
+                      rows={5}
+                      placeholder={"1. Дежурство на этаже\n2. Участие в методических советах..."}
                       value={extraDuties}
                       onChange={(e) => setExtraDuties(e.target.value)}
                       className="w-full px-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:border-purple-500 text-slate-800 bg-white leading-relaxed"
                     />
                   </div>
 
-                  {/* Колонка 3: Поручения */}
                   <div className="p-4 space-y-2 bg-amber-50/20">
                     <div className="flex items-center justify-between border-b border-amber-200 pb-1.5">
                       <label className="text-xs font-black text-amber-900 flex items-center gap-1.5 uppercase">
@@ -815,17 +812,17 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                       </span>
                     </div>
                     <textarea
-                      rows={6}
-                      placeholder={"1. Контроль сдачи отчетов по кружкам\n2. Связь с типографией\n3. Организация трансфера на выезд..."}
+                      rows={5}
+                      placeholder={"1. Контроль сдачи отчетов\n2. Связь с типографией..."}
                       value={orderDuties}
                       onChange={(e) => setOrderDuties(e.target.value)}
-                      className="w-full px-3 py-2 border border-amber-200 rounded-xl text-xs focus:outline-none focus:border-amber-500 text-slate-800 bg-white leading-relaxed"
+                      className="w-full px-3 py-2 border border-amber-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-800 bg-white leading-relaxed"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Настройка и сигнал отчетного периода */}
+              {/* Настройка отчетного периода */}
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-black text-slate-800 uppercase flex items-center gap-1.5">
@@ -970,7 +967,7 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
         </div>
       )}
 
-      {/* ⚡ МОДАЛЬНОЕ ОКНО БЫСТРОГО ПРОСМОТРА ОБЯЗАННОСТЕЙ СОТРУДНИКА (ПУНКТ 8) */}
+      {/* МОДАЛЬНОЕ ОКНО ПРОСМОТРА ОБЯЗАННОСТЕЙ */}
       {viewingDutiesUser && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -992,7 +989,6 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              {/* Колонка 1: Основные */}
               <div className="p-4 bg-blue-50/40 border border-blue-200 rounded-2xl flex flex-col justify-start space-y-2">
                 <div className="flex items-center justify-between border-b border-blue-200 pb-2">
                   <h4 className="font-black text-blue-900 uppercase text-xs flex items-center gap-1.5">
@@ -1016,7 +1012,6 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                 </div>
               </div>
 
-              {/* Колонка 2: Дополнительные */}
               <div className="p-4 bg-purple-50/40 border border-purple-200 rounded-2xl flex flex-col justify-start space-y-2">
                 <div className="flex items-center justify-between border-b border-purple-200 pb-2">
                   <h4 className="font-black text-purple-900 uppercase text-xs flex items-center gap-1.5">
@@ -1040,7 +1035,6 @@ export function EmployeesClient({ initialUsers, currentUserId }: EmployeesClient
                 </div>
               </div>
 
-              {/* Колонка 3: Поручения */}
               <div className="p-4 bg-amber-50/40 border border-amber-200 rounded-2xl flex flex-col justify-start space-y-2">
                 <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                   <h4 className="font-black text-amber-900 uppercase text-xs flex items-center gap-1.5">

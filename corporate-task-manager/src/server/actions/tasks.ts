@@ -18,11 +18,26 @@ interface CreateTaskInput {
   assigneeIds: string[];
   isPriority: boolean;
   isRecurring?: boolean; 
+  recurringDayOfWeek?: number | null; // 1 = ПН, 2 = ВТ, 3 = СР, 4 = ЧТ, 5 = ПТ, 6 = СБ, 7 = ВС
   isPerspective?: boolean; 
   reminderDate?: string;    
   stepInstructions?: string[];
   createSeparateCopies?: boolean;
   parentTaskId?: string;
+}
+
+// Расчет даты ближайшего дня недели (1 = ПН ... 7 = ВС)
+function getNextDayOfWeekDate(dayOfWeek: number): Date {
+  const now = new Date();
+  const currentDay = now.getDay() === 0 ? 7 : now.getDay(); // Приводим ВС к 7
+  let daysUntil = dayOfWeek - currentDay;
+  if (daysUntil <= 0) {
+    daysUntil += 7; // Следующая неделя
+  }
+  const targetDate = new Date(now);
+  targetDate.setDate(now.getDate() + daysUntil);
+  targetDate.setHours(23, 59, 59, 999);
+  return targetDate;
 }
 
 export async function createGoal(title: string, color: string) {
@@ -63,6 +78,7 @@ export async function createTask(input: CreateTaskInput) {
     assigneeIds,
     isPriority,
     isRecurring,
+    recurringDayOfWeek,
     isPerspective,
     reminderDate,
     stepInstructions,
@@ -74,18 +90,22 @@ export async function createTask(input: CreateTaskInput) {
     throw new Error("Заполните обязательные поля и выберите исполнителей");
   }
 
-  // ⚡ ОБЯЗАТЕЛЬНЫЙ СРОК ВЫПОЛНЕНИЯ (ПУНКТ 9)
-  if (!deadline || !deadline.trim()) {
-    throw new Error("У каждой задачи должен быть обязательно указан срок выполнения (дедлайн)!");
-  }
-
+  // Расчет дедлайна
+  let deadlineDate: Date;
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  const deadlineDate = new Date(deadline);
-  deadlineDate.setHours(23, 59, 59, 999);
-  if (deadlineDate < startOfToday) {
-    throw new Error("Дедлайн задачи не может быть в прошлом");
+  if (isRecurring && recurringDayOfWeek && (!deadline || !deadline.trim())) {
+    deadlineDate = getNextDayOfWeekDate(recurringDayOfWeek);
+  } else {
+    if (!deadline || !deadline.trim()) {
+      throw new Error("У каждой задачи должен быть обязательно указан срок выполнения (дедлайн)!");
+    }
+    deadlineDate = new Date(deadline);
+    deadlineDate.setHours(23, 59, 59, 999);
+    if (deadlineDate < startOfToday) {
+      throw new Error("Дедлайн задачи не может быть в прошлом");
+    }
   }
 
   let parentTaskNumber: number | null = null;
@@ -116,6 +136,7 @@ export async function createTask(input: CreateTaskInput) {
             assignmentType: "INDIVIDUAL",
             isPriority,
             isRecurring: isRecurring || false,
+            recurringDayOfWeek: isRecurring ? recurringDayOfWeek || null : null,
             isPerspective: isPerspective || false,
             reminderDate: reminderDate ? new Date(reminderDate) : null,
             goalId,
@@ -165,6 +186,7 @@ export async function createTask(input: CreateTaskInput) {
         assignmentType,
         isPriority,
         isRecurring: isRecurring || false,
+        recurringDayOfWeek: isRecurring ? recurringDayOfWeek || null : null,
         isPerspective: isPerspective || false,
         reminderDate: reminderDate ? new Date(reminderDate) : null,
         goalId,
@@ -765,6 +787,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     assignmentType,
     isPriority,
     isRecurring,
+    recurringDayOfWeek,
     isPerspective,
     reminderDate,
     goalId,
@@ -776,7 +799,6 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     throw new Error("Заполните обязательные поля и выберите исполнителей");
   }
 
-  // ⚡ ОБЯЗАТЕЛЬНЫЙ СРОК ВЫПОЛНЕНИЯ (ПУНКТ 9)
   if (!deadline || !deadline.trim()) {
     throw new Error("У каждой задачи должен быть обязательно указан срок выполнения (дедлайн)!");
   }
@@ -802,6 +824,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         assignmentType,
         isPriority,
         isRecurring: isRecurring || false,
+        recurringDayOfWeek: isRecurring ? recurringDayOfWeek || null : null,
         isPerspective: isPerspective || false,
         reminderDate: reminderDate ? new Date(reminderDate) : null,
         goalId,

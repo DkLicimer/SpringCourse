@@ -11,10 +11,11 @@ interface PageProps {
   searchParams: Promise<{
     page?: string;
     taskId?: string;
-    tab?: string;           // "active" | "perspective"
+    tab?: string;           // "active" | "archive" | "perspective"
+    filterPreset?: string;  // "all" | "urgent" | "overdue" | "priority" | "control"
     search?: string;        // Поисковая строка
     goalId?: string;        // Фильтр по Теме
-    statusId?: string;      // Фильтр по статусу (включая "overdue")
+    statusId?: string;      // Фильтр по статусу
     assigneeId?: string;    // Фильтр по исполнителю
     department?: string;    // Фильтр по отделу
     priorityOnly?: string;  // "true"
@@ -60,7 +61,13 @@ export default async function TasksPage(props: PageProps) {
   const skip = (page - 1) * pageSize;
 
   const taskId = searchParams.taskId;
-  const currentTab = searchParams.tab === "perspective" ? "perspective" : "active";
+  
+  // Вкладки: active (по умолчанию) | archive | perspective
+  const currentTab = (searchParams.tab === "archive" || searchParams.tab === "perspective") 
+    ? searchParams.tab 
+    : "active";
+
+  const filterPreset = searchParams.filterPreset || "all";
   const searchQuery = searchParams.search || "";
   const filterGoalId = searchParams.goalId || "all";
   const filterStatusId = searchParams.statusId || "all";
@@ -81,16 +88,14 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // Проверка напоминаний отложенных задач для руководителя
+  // Проверка напоминаний для руководителя по перспективным задачам
   if (isAdmin) {
     try {
       const now = new Date();
       const tasksWithPendingReminders = await prisma.task.findMany({
         where: {
           isPerspective: true,
-          reminderDate: {
-            lte: now,
-          },
+          reminderDate: { lte: now },
         },
       });
 
@@ -98,9 +103,7 @@ export default async function TasksPage(props: PageProps) {
         const existingNotification = await prisma.notification.findFirst({
           where: {
             userId: session.user.id,
-            text: {
-              startsWith: `Напоминание по отложенной задаче: "${task.title}"`,
-            },
+            text: { startsWith: `Напоминание по отложенной задаче: "${task.title}"` },
           },
         });
 
@@ -119,7 +122,7 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // Загрузка блока «Важное сейчас / Фокус недели»
+  // Загрузка блока фокуса
   const globalFocus = await prisma.globalFocus.findUnique({
     where: { id: "current_focus" },
     include: {
@@ -180,8 +183,12 @@ export default async function TasksPage(props: PageProps) {
     orderBy: { createdAt: "desc" },
   });
 
+  // ⚡ В пул назначения задач включаем только сотрудников с isAssignable: true
   const users = await prisma.user.findMany({
-    where: { role: "EMPLOYEE" },
+    where: { 
+      role: "EMPLOYEE",
+      isAssignable: true,
+    },
     select: { id: true, name: true, initials: true, department: true },
     orderBy: { name: "asc" },
   });
@@ -201,9 +208,53 @@ export default async function TasksPage(props: PageProps) {
     });
   }
 
+  // --- ФОРМИРОВАНИЕ УСЛОВИЙ ВЫБОРКИ (WHERE) ---
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const endOfThreeDays = new Date(startOfToday);
+  endOfThreeDays.setDate(startOfToday.getDate() + 3);
+  endOfThreeDays.setHours(23, 59, 59, 999);
+
   const whereCondition: any = {
     isPerspective: currentTab === "perspective",
   };
+
+  if (currentTab === "active") {
+    whereCondition.assignments = {
+      some: {
+        statusId: { not: "status-done" },
+        ...(isAdmin ? {} : { userId: session.user.id }),
+      },
+    };
+  } else if (currentTab === "archive") {
+    if (isAdmin) {
+      whereCondition.assignments = {
+        every: { statusId: "status-done" },
+      };
+    } else {
+      whereCondition.assignments = {
+        some: {
+          userId: session.user.id,
+          statusId: "status-done",
+        },
+      };
+    }
+  }
+
+  // Быстрые пресеты фильтрации
+  if (filterPreset === "urgent") {
+    whereCondition.deadline = {
+      gte: startOfToday,
+      lte: endOfThreeDays,
+    };
+  } else if (filterPreset === "overdue") {
+    whereCondition.deadline = { lt: startOfToday };
+  } else if (filterPreset === "priority") {
+    whereCondition.isPriority = true;
+  } else if (filterPreset === "control") {
+    whereCondition.intermediateControl = true;
+  }
 
   if (filterPriorityOnly) {
     whereCondition.isPriority = true;
@@ -225,33 +276,34 @@ export default async function TasksPage(props: PageProps) {
     ];
   }
 
-  const assignmentFilters: any = {};
-  if (!isAdmin) {
-    assignmentFilters.userId = session.user.id;
+  const assignmentSpecificFilters: any = {};
+  if (!isAdmin && currentTab === "perspective") {
+    assignmentSpecificFilters.userId = session.user.id;
   } else if (filterAssigneeId !== "all") {
-    assignmentFilters.userId = filterAssigneeId;
+    assignmentSpecificFilters.userId = filterAssigneeId;
   }
 
   if (filterDepartment !== "all") {
-    assignmentFilters.user = { department: filterDepartment };
+    assignmentSpecificFilters.user = { department: filterDepartment };
   }
 
   if (filterStatusId === "overdue") {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
     whereCondition.deadline = { lt: startOfToday };
-    assignmentFilters.statusId = { not: "status-done" };
   } else if (filterStatusId !== "all") {
-    assignmentFilters.statusId = filterStatusId;
+    assignmentSpecificFilters.statusId = filterStatusId;
   }
 
-  if (Object.keys(assignmentFilters).length > 0) {
+  if (Object.keys(assignmentSpecificFilters).length > 0) {
     whereCondition.assignments = {
-      some: assignmentFilters,
+      ...(whereCondition.assignments || {}),
+      some: {
+        ...(whereCondition.assignments?.some || {}),
+        ...assignmentSpecificFilters,
+      },
     };
   }
 
-  // ⚡ Включаем связи родительской и дочерней задачи
+  // Связи
   const includeRelations = {
     goal: true,
     parentTask: {
@@ -269,9 +321,7 @@ export default async function TasksPage(props: PageProps) {
     },
     comments: {
       include: {
-        user: {
-          select: { id: true, name: true, initials: true },
-        },
+        user: { select: { id: true, name: true, initials: true } },
       },
       orderBy: { createdAt: "asc" as const },
     },
@@ -307,6 +357,33 @@ export default async function TasksPage(props: PageProps) {
 
   const totalPages = Math.ceil(totalTasksCount / pageSize);
 
+  const activeCount = await prisma.task.count({
+    where: {
+      isPerspective: false,
+      assignments: {
+        some: {
+          statusId: { not: "status-done" },
+          ...(isAdmin ? {} : { userId: session.user.id }),
+        },
+      },
+    },
+  });
+
+  const archiveCount = await prisma.task.count({
+    where: {
+      isPerspective: false,
+      ...(isAdmin ? {
+        assignments: { every: { statusId: "status-done" } }
+      } : {
+        assignments: { some: { userId: session.user.id, statusId: "status-done" } }
+      }),
+    },
+  });
+
+  const perspectiveCount = isAdmin ? await prisma.task.count({
+    where: { isPerspective: true },
+  }) : 0;
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <TasksClient
@@ -321,8 +398,14 @@ export default async function TasksPage(props: PageProps) {
         taskToOpen={taskToOpen ? JSON.parse(JSON.stringify(taskToOpen)) : null}
         currentUserPeriod={currentUserPeriod}
         extensionRequests={JSON.parse(JSON.stringify(extensionRequests))}
+        tabCounts={{
+          active: activeCount,
+          archive: archiveCount,
+          perspective: perspectiveCount,
+        }}
         currentFilters={{
           tab: currentTab,
+          filterPreset,
           search: searchQuery,
           goalId: filterGoalId,
           statusId: filterStatusId,

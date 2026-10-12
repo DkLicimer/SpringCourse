@@ -38,12 +38,15 @@ model User {
   updatedAt           DateTime           @updatedAt
   department          String?            // Подразделение сотрудника
 
+  // Флаг участия в выдаче задач (false = только учет и дни рождения)
+  isAssignable        Boolean            @default(true)
+
   // Индивидуальный отчетный период сотрудника
   reportingPeriodType String             @default("MONTH") // MONTH, QUARTER, CUSTOM
   periodStartDate     DateTime?          // Дата начала (для CUSTOM)
   periodEndDate       DateTime?          // Дата окончания (для CUSTOM)
 
-  // Обязанности сотрудника (Пункт 8)
+  // Обязанности сотрудника
   mainDuties          String?            @default("") // Основные обязанности
   extraDuties         String?            @default("") // Дополнительные обязанности
   orderDuties         String?            @default("") // Поручения
@@ -57,7 +60,7 @@ model User {
   tableAccesses       TableAccess[]      // Индивидуальные права доступа к таблицам
   extensionRequests   ExtensionRequest[] // Запросы на продление срока задач
   updatedFocuses      GlobalFocus[]      // Связь с обновлениями фокуса недели
-  dailyReports        DailyReport[]      // ⚡ Отчеты за рабочий день (Пункт 10)
+  dailyReports        DailyReport[]      // Отчеты за рабочий день
 
   // Участие во встречах (многие-ко-многим)
   participatingEvents CalendarEvent[]    @relation("EventParticipants")
@@ -75,7 +78,7 @@ model User {
   socialPassport      SocialPassport?
 }
 
-// ⚡ Отчет за рабочий день (Пункт 10)
+// Отчет за рабочий день
 model DailyReport {
   id             String   @id @default(uuid())
   userId         String
@@ -171,6 +174,9 @@ model Task {
   assignmentType      AssignmentType     @default(INDIVIDUAL)
   isPriority          Boolean            @default(false) 
   isRecurring         Boolean            @default(false) 
+
+  // Регулярный день недели: 1 = ПН, 2 = ВТ, 3 = СР, 4 = ЧТ, 5 = ПТ, 6 = СБ, 7 = ВС
+  recurringDayOfWeek  Int?
   
   isPerspective       Boolean            @default(false) 
   reminderDate        DateTime?          

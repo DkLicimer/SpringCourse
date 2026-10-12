@@ -21,7 +21,7 @@ import {
   FolderLock, 
   LayoutGrid, 
   TableProperties, 
-  Calendar,
+  Calendar, 
   CalendarDays,
   Search, 
   Filter, 
@@ -47,7 +47,10 @@ import {
   Check,
   AlertTriangle,
   Copy,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Archive,
+  Flame,
+  CheckSquare2
 } from "lucide-react";
 import { TaskModal } from "./components/TaskModal";
 import { ManageGoalsModal } from "./components/ManageGoalsModal";
@@ -65,8 +68,14 @@ interface TasksClientProps {
   taskToOpen: any | null;
   currentUserPeriod?: any;
   extensionRequests?: any[];
+  tabCounts: {
+    active: number;
+    archive: number;
+    perspective: number;
+  };
   currentFilters: {
     tab: string;
+    filterPreset: string;
     search: string;
     goalId: string;
     statusId: string;
@@ -76,6 +85,16 @@ interface TasksClientProps {
   };
   globalFocus: any | null;
 }
+
+const DAY_OF_WEEK_NAMES: Record<number, string> = {
+  1: "Каждый понедельник",
+  2: "Каждый вторник",
+  3: "Каждую среду",
+  4: "Каждый четверг",
+  5: "Каждую пятницу",
+  6: "Каждую субботу",
+  7: "Каждое воскресенье",
+};
 
 export function TasksClient({
   initialTasks,
@@ -89,6 +108,7 @@ export function TasksClient({
   taskToOpen,
   currentUserPeriod,
   extensionRequests = [],
+  tabCounts,
   currentFilters,
   globalFocus,
 }: TasksClientProps) {
@@ -105,7 +125,7 @@ export function TasksClient({
   const [viewMode, setViewMode] = useState<"standard" | "table">("table");
   const [activeTask, setActiveTask] = useState<any | null>(taskToOpen);
   const [editingTask, setEditingTask] = useState<any | null>(null);
-  const [reassignParentTask, setReassignParentTask] = useState<any | null>(null); // ⚡ Задача для переназначения (Пункт 7)
+  const [reassignParentTask, setReassignParentTask] = useState<any | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isManageGoalsOpen, setIsManageGoalsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -143,6 +163,7 @@ export function TasksClient({
     const merged: Record<string, string | number | boolean | null | undefined> = {
       page: 1,
       tab: currentFilters.tab,
+      filterPreset: currentFilters.filterPreset,
       search: searchQuery,
       goalId: currentFilters.goalId,
       statusId: currentFilters.statusId,
@@ -187,7 +208,6 @@ export function TasksClient({
     }
   };
 
-  // ⚡ Функция открытия модалки повторного назначения
   const handleOpenReassignModal = (task: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setActiveTask(null); 
@@ -451,24 +471,51 @@ export function TasksClient({
         isAdmin={isAdmin}
       />
 
-      {/* 2. Панель управления и переключателей */}
+      {/* 2. Главные вкладки (В работе / Архив / Перспектива) */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-center gap-2">
-          {isAdmin ? (
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            {/* Вкладка 1: В работе */}
+            <button
+              onClick={() => updateUrlFilters({ tab: "active", filterPreset: "all" })}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentFilters.tab === "active" 
+                  ? "bg-white text-blue-600 shadow-xs" 
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Briefcase className="h-3.5 w-3.5 text-blue-600" />
+              <span>В работе</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                currentFilters.tab === "active" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-600"
+              }`}>
+                {tabCounts.active}
+              </span>
+            </button>
+
+            {/* Вкладка 2: Архив */}
+            <button
+              onClick={() => updateUrlFilters({ tab: "archive", filterPreset: "all" })}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentFilters.tab === "archive" 
+                  ? "bg-white text-emerald-600 shadow-xs" 
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Archive className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Архив (Исполнено)</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                currentFilters.tab === "archive" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
+              }`}>
+                {tabCounts.archive}
+              </span>
+            </button>
+
+            {/* Вкладка 3: Перспектива */}
+            {isAdmin && (
               <button
-                onClick={() => updateUrlFilters({ tab: "active" })}
-                className={`py-1.5 px-3.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  currentFilters.tab === "active" 
-                    ? "bg-white text-blue-600 shadow-xs" 
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                В работе (активные)
-              </button>
-              <button
-                onClick={() => updateUrlFilters({ tab: "perspective" })}
-                className={`py-1.5 px-3.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                onClick={() => updateUrlFilters({ tab: "perspective", filterPreset: "all" })}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   currentFilters.tab === "perspective" 
                     ? "bg-white text-purple-600 shadow-xs" 
                     : "text-slate-600 hover:text-slate-900"
@@ -476,16 +523,17 @@ export function TasksClient({
               >
                 <FolderLock className="h-3.5 w-3.5 text-purple-600" /> 
                 <span>На перспективу</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                  currentFilters.tab === "perspective" ? "bg-purple-100 text-purple-800" : "bg-slate-200 text-slate-600"
+                }`}>
+                  {tabCounts.perspective}
+                </span>
               </button>
-            </div>
-          ) : (
-            <div className="text-xs font-bold text-slate-700 px-2 flex items-center gap-1.5">
-              <Briefcase className="h-4 w-4 text-blue-600" />
-              <span>Мои задачи</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
+        {/* Переключатель вида (Таблица / Канбан) и действия */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
@@ -543,15 +591,82 @@ export function TasksClient({
         </div>
       </div>
 
-      {/* Панель фильтрации */}
+      {/* 3. Быстрые чипы-фильтры */}
+      <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Быстрый отбор:</span>
+        
+        <button
+          onClick={() => updateUrlFilters({ filterPreset: "all" })}
+          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            currentFilters.filterPreset === "all"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+          }`}
+        >
+          Все ({initialTasks.length})
+        </button>
+
+        <button
+          onClick={() => updateUrlFilters({ filterPreset: "urgent" })}
+          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentFilters.filterPreset === "urgent"
+              ? "bg-amber-500 text-white shadow-xs"
+              : "bg-white text-amber-700 border border-amber-200 hover:bg-amber-50"
+          }`}
+        >
+          <Flame className="h-3.5 w-3.5" /> Горящие (≤ 3 дня)
+        </button>
+
+        <button
+          onClick={() => updateUrlFilters({ filterPreset: "overdue" })}
+          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentFilters.filterPreset === "overdue"
+              ? "bg-rose-600 text-white shadow-xs"
+              : "bg-white text-rose-700 border border-rose-200 hover:bg-rose-50"
+          }`}
+        >
+          <AlertCircle className="h-3.5 w-3.5" /> Просроченные
+        </button>
+
+        <button
+          onClick={() => updateUrlFilters({ filterPreset: "priority" })}
+          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentFilters.filterPreset === "priority"
+              ? "bg-red-600 text-white shadow-xs"
+              : "bg-white text-red-700 border border-red-200 hover:bg-red-50"
+          }`}
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Срочные
+        </button>
+
+        <button
+          onClick={() => updateUrlFilters({ filterPreset: "control" })}
+          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentFilters.filterPreset === "control"
+              ? "bg-indigo-600 text-white shadow-xs"
+              : "bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50"
+          }`}
+        >
+          <MessageSquareCheck className="h-3.5 w-3.5" /> С контролем / отчетом
+        </button>
+      </div>
+
+      {/* 4. Расширенная панель фильтрации */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-          <Filter className="h-3.5 w-3.5 text-slate-400" /> Фильтрация задач
+        <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <div className="flex items-center gap-2">
+            <Filter className="h-3.5 w-3.5 text-slate-400" /> Точные фильтры
+          </div>
+          {(currentFilters.search || currentFilters.goalId !== "all" || currentFilters.statusId !== "all" || currentFilters.assigneeId !== "all" || currentFilters.department !== "all" || currentFilters.priorityOnly || currentFilters.filterPreset !== "all") && (
+            <button onClick={clearFilters} className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer">
+              Сбросить все фильтры
+            </button>
+          )}
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <label className="block text-[10px] font-bold text-slate-500 mb-1">Поиск по №, тексту, архиву</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-1">Поиск по №, тексту, названию</label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
@@ -565,7 +680,7 @@ export function TasksClient({
           </form>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1">Статус / Архив</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-1">Статус задачи</label>
             <select
               value={currentFilters.statusId}
               onChange={(e) => updateUrlFilters({ statusId: e.target.value })}
@@ -574,15 +689,13 @@ export function TasksClient({
               <option value="all">Все статусы</option>
               <option value="overdue" className="text-red-600 font-bold">⚠️ Просроченные задачи</option>
               {statuses.map((st) => (
-                <option key={st.id} value={st.id}>
-                  {st.id === "status-done" ? "Исполнено (Архив)" : st.name}
-                </option>
+                <option key={st.id} value={st.id}>{st.name}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1">Тема</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-1">Тема (Направление)</label>
             <select
               value={currentFilters.goalId}
               onChange={(e) => updateUrlFilters({ goalId: e.target.value })}
@@ -622,28 +735,10 @@ export function TasksClient({
               ))}
             </select>
           </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <label className="flex items-center gap-1.5 text-[11px] text-slate-700 font-bold cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={currentFilters.priorityOnly}
-                onChange={(e) => updateUrlFilters({ priorityOnly: e.target.checked })}
-                className="rounded border-slate-300 text-red-600 focus:ring-red-500 h-3.5 w-3.5 cursor-pointer"
-              />
-              Срочные
-            </label>
-
-            {(currentFilters.search || currentFilters.goalId !== "all" || currentFilters.statusId !== "all" || currentFilters.assigneeId !== "all" || currentFilters.department !== "all" || currentFilters.priorityOnly) && (
-              <button onClick={clearFilters} className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer">
-                Сбросить
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* ТАБЛИЦА ЗАДАЧ */}
+      {/* 5. ТАБЛИЦА ЗАДАЧ */}
       {viewMode === "table" ? (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-xs">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
@@ -652,7 +747,7 @@ export function TasksClient({
                 <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider">Тема / Задача</th>
                 <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Поставлена</th>
                 <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Срок (Дедлайн)</th>
-                <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider">Приоритет</th>
+                <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider">Приоритет / Регулярность</th>
                 <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider">Исполнители / Подзадачи</th>
                 <th className="px-4 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider">Отчет / Контроль</th>
                 <th className="px-4 py-3.5 text-right font-bold text-slate-500 uppercase tracking-wider">Действия</th>
@@ -661,7 +756,11 @@ export function TasksClient({
             <tbody className="divide-y divide-slate-100 bg-white">
               {initialTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-slate-400 italic">Задач по выбранным фильтрам нет</td>
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400 italic">
+                    {currentFilters.tab === "archive" 
+                      ? "В архиве пока нет завершенных задач" 
+                      : "Задач по выбранным фильтрам не найдено"}
+                  </td>
                 </tr>
               ) : (
                 initialTasks.map((task) => {
@@ -673,11 +772,18 @@ export function TasksClient({
                   const hasReports = task.assignments.some((as: any) => !!as.reportText);
                   const hasPendingExtension = task.extensionRequests?.some((r: any) => r.status === "PENDING");
 
+                  // ⚡ Подпись дня недели для регулярной задачи
+                  const recurringLabel = task.recurringDayOfWeek 
+                    ? DAY_OF_WEEK_NAMES[task.recurringDayOfWeek] 
+                    : "Регулярная";
+
                   return (
                     <tr 
                       key={task.id} 
                       onClick={() => setActiveTask(task)}
-                      className={`hover:bg-slate-50/70 transition-colors cursor-pointer ${isCompleted ? "opacity-60 bg-slate-50/30" : ""}`}
+                      className={`hover:bg-slate-50/70 transition-colors cursor-pointer ${
+                        isCompleted ? "bg-slate-50/40" : ""
+                      }`}
                     >
                       <td className="px-4 py-3.5">
                         <div className="flex flex-col gap-1 items-start">
@@ -694,15 +800,19 @@ export function TasksClient({
                             >
                               {task.goal.title}
                             </span>
-                            {/* ⚡ Бейдж повторной задачи */}
                             {task.parentTask && (
                               <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-orange-100 text-orange-800 border border-orange-200 flex items-center gap-0.5">
                                 <RotateCcw className="h-2.5 w-2.5 text-orange-600" /> Повторная (от №{task.parentTask.taskNumber})
                               </span>
                             )}
+                            {isCompleted && (
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-0.5">
+                                <CheckSquare2 className="h-2.5 w-2.5 text-emerald-600" /> Исполнено
+                              </span>
+                            )}
                           </div>
                           
-                          <span className={`font-bold text-slate-900 text-sm leading-snug ${isCompleted ? "line-through text-slate-400" : ""}`}>
+                          <span className={`font-bold text-slate-900 text-sm leading-snug ${isCompleted ? "text-slate-600" : ""}`}>
                             {task.title}
                           </span>
                           {myAs?.stepInstruction && (
@@ -741,14 +851,16 @@ export function TasksClient({
                           <span className="text-slate-400">—</span>
                         )}
                       </td>
+
+                      {/* Приоритет и Регулярность (с днем недели) */}
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <div className="flex flex-col gap-1 items-start">
                           {task.isPriority && (
                             <span className="text-[9px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">Срочно!</span>
                           )}
                           {task.isRecurring && (
-                            <span className="text-[9px] bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-0.5">
-                              <Repeat className="h-2.5 w-2.5" /> Регулярная
+                            <span className="text-[9px] bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-full font-black uppercase tracking-wider flex items-center gap-0.5 shadow-2xs">
+                              <Repeat className="h-2.5 w-2.5 text-purple-600" /> {recurringLabel}
                             </span>
                           )}
                           {!task.isPriority && !task.isRecurring && (
@@ -756,6 +868,7 @@ export function TasksClient({
                           )}
                         </div>
                       </td>
+
                       <td className="px-4 py-3.5">
                         <div className="flex flex-col gap-1">
                           <div className="flex -space-x-1.5 overflow-hidden">
@@ -771,6 +884,7 @@ export function TasksClient({
                           </div>
                         </div>
                       </td>
+
                       <td className="px-4 py-3.5 max-w-xs truncate text-slate-500">
                         {hasReports ? (
                           <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 w-fit">
@@ -784,11 +898,11 @@ export function TasksClient({
                           <span className="text-slate-400">—</span>
                         )}
                       </td>
+
                       <td className="px-4 py-3.5 whitespace-nowrap text-right">
                         <div className="flex justify-end gap-1.5">
                           {isAdmin && (
                             <>
-                              {/* ⚡ Кнопка «Назначить повторно» для просроченной задачи (Пункт 7) */}
                               {isOverdue && (
                                 <button
                                   onClick={(e) => handleOpenReassignModal(task, e)}
@@ -893,47 +1007,58 @@ export function TasksClient({
                   {tasksInStatus.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-xs text-slate-400 py-12">Нет задач</div>
                   ) : (
-                    tasksInStatus.map((task) => (
-                      <div
-                        key={task.id}
-                        onClick={() => setActiveTask(task)}
-                        className="bg-white rounded-xl p-4 shadow-xs border-l-4 hover:shadow-md transition-all cursor-pointer space-y-2"
-                        style={{ borderLeftColor: task.goal.color }}
-                      >
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-black bg-slate-900 text-white px-2 py-0.5 rounded shadow-xs">
-                              № {task.taskNumber || "—"}
+                    tasksInStatus.map((task) => {
+                      const recurringLabel = task.recurringDayOfWeek 
+                        ? DAY_OF_WEEK_NAMES[task.recurringDayOfWeek] 
+                        : "Регулярная";
+
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => setActiveTask(task)}
+                          className="bg-white rounded-xl p-4 shadow-xs border-l-4 hover:shadow-md transition-all cursor-pointer space-y-2"
+                          style={{ borderLeftColor: task.goal.color }}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-black bg-slate-900 text-white px-2 py-0.5 rounded shadow-xs">
+                                № {task.taskNumber || "—"}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-0.5 rounded border">
+                                {task.goal.title}
+                              </span>
+                              {task.parentTask && (
+                                <span className="text-[9px] font-bold bg-orange-50 text-orange-800 border border-orange-200 px-1.5 py-0.2 rounded">
+                                  Повт. №{task.parentTask.taskNumber}
+                                </span>
+                              )}
+                              {task.isRecurring && (
+                                <span className="text-[9px] font-bold bg-purple-50 text-purple-800 border border-purple-200 px-1.5 py-0.2 rounded">
+                                  {recurringLabel}
+                                </span>
+                              )}
+                            </div>
+                            {task.isPriority && (
+                              <span className="text-red-600 font-bold text-[9px] uppercase">Срочно</span>
+                            )}
+                          </div>
+                          <h4 className="font-bold text-slate-800 text-sm leading-snug">{task.title}</h4>
+                          
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+                            <span className="flex items-center gap-1" title="Дата постановки">
+                              <Calendar className="h-3 w-3 text-slate-400" />
+                              {new Date(task.createdAt).toLocaleDateString("ru-RU")}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-0.5 rounded border">
-                              {task.goal.title}
-                            </span>
-                            {task.parentTask && (
-                              <span className="text-[9px] font-bold bg-orange-50 text-orange-800 border border-orange-200 px-1.5 py-0.2 rounded">
-                                Повт. №{task.parentTask.taskNumber}
+                            {task.deadline && (
+                              <span className="flex items-center gap-1 font-semibold text-slate-600" title="Срок сдачи">
+                                <Clock className="h-3 w-3 text-slate-400" />
+                                До {new Date(task.deadline).toLocaleDateString("ru-RU")}
                               </span>
                             )}
                           </div>
-                          {task.isPriority && (
-                            <span className="text-red-600 font-bold text-[9px] uppercase">Срочно</span>
-                          )}
                         </div>
-                        <h4 className="font-bold text-slate-800 text-sm leading-snug">{task.title}</h4>
-                        
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
-                          <span className="flex items-center gap-1" title="Дата постановки">
-                            <Calendar className="h-3 w-3 text-slate-400" />
-                            {new Date(task.createdAt).toLocaleDateString("ru-RU")}
-                          </span>
-                          {task.deadline && (
-                            <span className="flex items-center gap-1 font-semibold text-slate-600" title="Срок сдачи">
-                              <Clock className="h-3 w-3 text-slate-400" />
-                              До {new Date(task.deadline).toLocaleDateString("ru-RU")}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -987,7 +1112,7 @@ export function TasksClient({
         onError={(msg) => showToast(msg, "error")}
       />
 
-      {/* Модалка просмотра деталей задачи */}
+      {/* Модалка деталей задачи */}
       {activeTask && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-200 flex flex-col h-[85vh] overflow-hidden">
@@ -1023,13 +1148,18 @@ export function TasksClient({
                       Срочно
                     </span>
                   )}
+                  {activeTask.isRecurring && (
+                    <span className="text-[10px] bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-0.5 rounded-full font-black uppercase flex items-center gap-1">
+                      <Repeat className="h-3 w-3 text-purple-600" />
+                      {activeTask.recurringDayOfWeek ? DAY_OF_WEEK_NAMES[activeTask.recurringDayOfWeek] : "Регулярная"}
+                    </span>
+                  )}
                   {activeTask.intermediateControl && (
                     <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
                       Контроль / Требуется отчет
                     </span>
                   )}
 
-                  {/* ⚡ Кнопка «Назначить повторно» в шапке карточки для просроченной задачи */}
                   {isAdmin && activeTask.deadline && new Date(activeTask.deadline) < startOfToday && (
                     <button
                       onClick={() => handleOpenReassignModal(activeTask)}
@@ -1040,7 +1170,6 @@ export function TasksClient({
                   )}
                 </div>
 
-                {/* ⚡ ПЕРЕКРЕСТНЫЕ ССЫЛКИ РОДИТЕЛЬСКОЙ И ПОВТОРНОЙ ЗАДАЧ (ПУНКТ 7) */}
                 {activeTask.parentTask && (
                   <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl flex items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 text-orange-900">
@@ -1148,7 +1277,7 @@ export function TasksClient({
                   </div>
                 )}
 
-                {/* Персональные задания исполнителям в задаче */}
+                {/* Персональные задания исполнителям */}
                 <div className="border-t border-slate-100 pt-4 space-y-2">
                   <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Исполнители и подзадачи</h5>
                   <div className="space-y-2">
@@ -1211,7 +1340,7 @@ export function TasksClient({
                   </div>
                 </div>
 
-                {/* Статус задачи сотрудника, форма отчета и кнопка продления срока */}
+                {/* Статус задачи сотрудника */}
                 {!isAdmin && (
                   <div className="border-t border-slate-100 pt-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -1287,7 +1416,6 @@ export function TasksClient({
                             </p>
                           )}
 
-                          {/* Поле ввода отчета / обратной связи */}
                           <div className={`p-3.5 rounded-xl space-y-2 border ${
                             activeTask.intermediateControl && !myAs.reportText
                               ? "bg-amber-50/60 border-amber-300"
@@ -1376,7 +1504,7 @@ export function TasksClient({
         </div>
       )}
 
-      {/* МОДАЛЬНОЕ ОКНО ЗАПРОСА НА ПРОДЛЕНИЕ ДЕДЛАЙНА (ДЛЯ СОТРУДНИКА) */}
+      {/* МОДАЛЬНЫЕ ОКНА ПЕРЕНОСОВ */}
       {isExtensionModalOpen && activeTask && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
@@ -1453,7 +1581,6 @@ export function TasksClient({
         </div>
       )}
 
-      {/* МОДАЛЬНОЕ ОКНО ВСЕХ ЗАПРОСОВ НА ПЕРЕНОС (ДЛЯ РУКОВОДИТЕЛЯ) */}
       {isAllExtensionsModalOpen && isAdmin && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
