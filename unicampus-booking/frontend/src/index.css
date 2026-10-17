@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #1E3A8A;
+  --brand-accent: #10B981;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.font-heading {
+  font-family: 'Montserrat Alternates', sans-serif;
+}
