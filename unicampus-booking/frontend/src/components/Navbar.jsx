@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useBrand } from '../context/BrandContext';
-import { Building2, TreePine, Phone, Mail } from 'lucide-react';
+import { Building2, TreePine, Phone } from 'lucide-react';
 
 export default function Navbar() {
   const { brand } = useBrand();
@@ -33,7 +33,7 @@ export default function Navbar() {
         </Link>
 
         {/* Навигационные ссылки */}
-        <nav className="hidden md:flex items-center gap-2">
+        <nav className="flex items-center gap-2">
           <Link
             to="/spaces"
             className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
@@ -43,7 +43,8 @@ export default function Navbar() {
             }`}
           >
             <Building2 className="w-4 h-4" />
-            Аудитории и пространства
+            <span className="hidden sm:inline">Аудитории и пространства</span>
+            <span className="sm:hidden">Аудитории</span>
           </Link>
           <Link
             to="/recreation"
@@ -54,26 +55,19 @@ export default function Navbar() {
             }`}
           >
             <TreePine className="w-4 h-4" />
-            Базы отдыха и кампус
+            <span className="hidden sm:inline">Базы отдыха и кампус</span>
+            <span className="sm:hidden">Базы отдыха</span>
           </Link>
         </nav>
 
-        {/* Контакты вуза */}
+        {/* Контакты вуза (кнопка модератора полностью убрана) */}
         <div className="flex items-center gap-3">
           {brand.contact_phone && (
-            <a href={`tel:${brand.contact_phone}`} className="hidden lg:flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-primary font-medium">
+            <a href={`tel:${brand.contact_phone}`} className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-primary font-semibold">
               <Phone className="w-3.5 h-3.5 text-brand-primary" />
-              {brand.contact_phone}
+              <span className="hidden lg:inline">{brand.contact_phone}</span>
             </a>
           )}
-          <a
-            href="/admin/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium transition"
-          >
-            Кабинет модератора
-          </a>
         </div>
 
       </div>

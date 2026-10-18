@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
+import { formatRussianPhone, isPhoneValid } from '../../utils/phoneMask';
+import { ArrowLeft } from 'lucide-react';
 
 export default function SpaceApplyForm() {
   const location = useLocation();
@@ -18,17 +20,29 @@ export default function SpaceApplyForm() {
 
   if (!state.roomId) {
     return (
-      <div className="max-w-md mx-auto my-12 text-center">
-        <p className="text-sm text-gray-500">Сначала выберите время в расписании.</p>
-        <button onClick={() => navigate('/spaces')} className="mt-4 text-xs font-bold text-brand-primary underline">
-          Вернуться в каталог
+      <div className="max-w-md mx-auto my-12 text-center space-y-4">
+        <p className="text-sm text-gray-500">Сначала выберите интервал времени в расписании.</p>
+        <button 
+          onClick={() => navigate('/spaces')} 
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold"
+        >
+          <ArrowLeft className="w-4 h-4" /> Вернуться в каталог
         </button>
       </div>
     );
   }
 
+  const handlePhoneChange = (e) => {
+    setPhone(formatRussianPhone(e.target.value, phone));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isPhoneValid(phone)) {
+      setError('Укажите полный номер телефона в формате +7 (9XX) XXX-XX-XX');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -46,8 +60,8 @@ export default function SpaceApplyForm() {
 
     try {
       await api.post('/api/spaces/applications/', payload);
-      alert('Ваша заявка успешно отправлена! Ожидайте уведомления на Email.');
-      navigate('/spaces');
+      alert('Ваша заявка успешно отправлена! Ожидайте подтверждения на Email.');
+      navigate(`/spaces/${state.roomId}/schedule`);
     } catch (err) {
       setError(err.response?.data ? JSON.stringify(err.response.data) : 'Ошибка отправки заявки.');
     } finally {
@@ -56,16 +70,27 @@ export default function SpaceApplyForm() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      
+      {/* Кнопка НАЗАД */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-brand-primary transition cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-2xs"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Назад к расписанию
+      </button>
+
       <div>
-        <h1 className="text-2xl font-black font-heading text-gray-900">Оставить заявку на бронирование</h1>
+        <h1 className="text-2xl font-black font-heading text-gray-900">Заполните карточку заявки</h1>
         <p className="text-xs text-gray-500 mt-1">
           Помещение: <b className="text-gray-800">{state.roomName}</b> | Время: {new Date(state.startTime).toLocaleString('ru-RU')} — {new Date(state.endTime).toLocaleTimeString('ru-RU')}
         </p>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border-l-4 border-red-500 text-xs text-red-700">
+        <div className="p-3 bg-red-50 border-l-4 border-red-500 text-xs text-red-700 font-semibold rounded-md">
           {error}
         </div>
       )}
@@ -96,7 +121,7 @@ export default function SpaceApplyForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Должность / Структурное подразделение</label>
+          <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Должность / Подразделение</label>
           <input
             type="text"
             required
@@ -125,8 +150,8 @@ export default function SpaceApplyForm() {
               type="tel"
               required
               value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="+7 (999) 000-00-00"
+              onChange={handlePhoneChange}
+              placeholder="+7 (9XX) XXX-XX-XX"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-brand-primary"
             />
           </div>

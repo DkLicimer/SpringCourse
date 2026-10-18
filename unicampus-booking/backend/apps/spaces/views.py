@@ -1,5 +1,7 @@
 from datetime import datetime
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,15 +12,13 @@ from apps.notifications.services import NotificationService
 class RoomListView(generics.ListAPIView):
     queryset = Room.objects.filter(is_active=True)
     serializer_class = RoomSerializer
-
+    pagination_class = None  # Отключаем пагинацию, чтобы фронтенд получал прямой массив [...]
 
 class RoomDetailView(generics.RetrieveAPIView):
     queryset = Room.objects.filter(is_active=True)
     serializer_class = RoomSerializer
 
-
 class RoomScheduleView(APIView):
-    """Расписание одобренных броней помещения на диапазон дат"""
     def get(self, request, pk):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -34,10 +34,11 @@ class RoomScheduleView(APIView):
         serializer = SpaceScheduleItemSerializer(bookings, many=True)
         return Response(serializer.data)
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class SpaceBookingCreateView(generics.CreateAPIView):
     queryset = SpaceBooking.objects.all()
     serializer_class = SpaceBookingCreateSerializer
+    authentication_classes = []  # Отключаем сессионную CSRF-авторизацию для открытой формы
 
     def perform_create(self, serializer):
         booking = serializer.save()

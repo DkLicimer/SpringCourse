@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
 import Home from './pages/Home';
+import Analytics from './pages/Analytics';
 import SpacesCatalog from './pages/spaces/SpacesCatalog';
 import SpaceSchedule from './pages/spaces/SpaceSchedule';
 import SpaceApplyForm from './pages/spaces/SpaceApplyForm';
@@ -20,6 +21,7 @@ export default function App() {
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/spaces" element={<SpacesCatalog />} />
               <Route path="/spaces/:id/schedule" element={<SpaceSchedule />} />
               <Route path="/spaces/:id/apply" element={<SpaceApplyForm />} />

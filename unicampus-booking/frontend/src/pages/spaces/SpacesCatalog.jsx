@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import { Building2, Users } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
 export default function SpacesCatalog() {
   const [rooms, setRooms] = useState([]);
@@ -9,7 +9,11 @@ export default function SpacesCatalog() {
 
   useEffect(() => {
     api.get('/api/spaces/rooms/')
-      .then(res => setRooms(res.data))
+      .then(res => {
+        // Поддерживаем как прямой массив [...], так и пагинацию { results: [...] }
+        const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+        setRooms(data);
+      })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
@@ -23,6 +27,10 @@ export default function SpacesCatalog() {
 
       {loading ? (
         <div className="text-center py-12 text-sm text-gray-500">Загрузка доступных пространств...</div>
+      ) : rooms.length === 0 ? (
+        <div className="text-center py-12 text-sm text-gray-500 bg-white rounded-2xl border border-gray-200">
+          Пока нет доступных помещений.
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map(room => (
@@ -42,7 +50,7 @@ export default function SpacesCatalog() {
                   <p className="text-xs text-gray-500">{room.address}</p>
                   
                   <div className="pt-2 text-xs text-gray-600 space-y-1">
-                    {room.capacity.split('|').map((item, idx) => (
+                    {(room.capacity || '').split('|').map((item, idx) => (
                       <div key={idx} className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
                         <span>{item.trim()}</span>
