@@ -8,7 +8,8 @@ from apps.notifications.services import NotificationService
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ['name', 'address', 'capacity', 'is_active', 'image_preview']
+    # ЗАМЕНЕНО: capacity -> capacity_seats
+    list_display = ['name', 'address', 'capacity_seats', 'is_active', 'image_preview']
     list_editable = ['is_active']
     search_fields = ['name', 'address']
 
@@ -17,7 +18,6 @@ class RoomAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" style="max-height: 40px; border-radius: 4px;" />', obj.image.url)
         return "-"
     image_preview.short_description = "Превью"
-
 
 @admin.register(SpaceBooking)
 class SpaceBookingAdmin(admin.ModelAdmin):

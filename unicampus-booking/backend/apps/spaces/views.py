@@ -1,5 +1,3 @@
-from datetime import datetime
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
@@ -7,16 +5,19 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Room, SpaceBooking
 from .serializers import RoomSerializer, SpaceScheduleItemSerializer, SpaceBookingCreateSerializer
-from apps.notifications.services import NotificationService
+from .services import SpaceBookingService
+
 
 class RoomListView(generics.ListAPIView):
     queryset = Room.objects.filter(is_active=True)
     serializer_class = RoomSerializer
-    pagination_class = None  # Отключаем пагинацию, чтобы фронтенд получал прямой массив [...]
+    pagination_class = None
+
 
 class RoomDetailView(generics.RetrieveAPIView):
     queryset = Room.objects.filter(is_active=True)
     serializer_class = RoomSerializer
+
 
 class RoomScheduleView(APIView):
     def get(self, request, pk):
@@ -34,20 +35,15 @@ class RoomScheduleView(APIView):
         serializer = SpaceScheduleItemSerializer(bookings, many=True)
         return Response(serializer.data)
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class SpaceBookingCreateView(generics.CreateAPIView):
     queryset = SpaceBooking.objects.all()
     serializer_class = SpaceBookingCreateSerializer
-    authentication_classes = []  # Отключаем сессионную CSRF-авторизацию для открытой формы
+    authentication_classes = []
 
-    def perform_create(self, serializer):
-        booking = serializer.save()
-        NotificationService.send_email(
-            subject=f"Заявка #{booking.id} принята в обработку",
-            body=(
-                f"Здравствуйте, {booking.applicant_full_name}!\n\n"
-                f"Ваша заявка на мероприятие '{booking.event_name}' в помещении '{booking.room.name}' принята.\n"
-                f"Ожидайте подтверждения администратора."
-            ),
-            to_email=booking.applicant_email
-        )
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        booking = SpaceBookingService.create_booking(serializer.validated_data)
+        return Response(self.get_serializer(booking).data, status=status.HTTP_201_CREATED)

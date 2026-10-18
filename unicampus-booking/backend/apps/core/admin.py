@@ -4,7 +4,10 @@ from .models import OrganizationSettings
 @admin.register(OrganizationSettings)
 class OrganizationSettingsAdmin(admin.ModelAdmin):
     fieldsets = (
-        ("Брендинг и внешний вид", {
+        ("Локализация и регион", {
+            "fields": ("timezone",)
+        }),
+        ("Брендинг и наименования", {
             "fields": (
                 "university_name", "university_short_name", "logo", 
                 "primary_color", "accent_color"
@@ -22,7 +25,6 @@ class OrganizationSettingsAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        # Запрещаем создание дубликатов, если запись уже существует
         return not OrganizationSettings.objects.exists()
 
     def has_delete_permission(self, request, obj=None):

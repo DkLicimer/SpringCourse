@@ -7,6 +7,7 @@ export function BrandProvider({ children }) {
   const [brand, setBrand] = useState({
     university_name: 'Университет',
     university_short_name: 'ВУЗ',
+    timezone: 'Asia/Chita',
     primary_color: '#1E3A8A',
     accent_color: '#10B981',
     contact_phone: '',

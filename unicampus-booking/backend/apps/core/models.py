@@ -1,9 +1,24 @@
 from django.db import models
+import zoneinfo
+
+RUSSIAN_TIMEZONES = [
+    ('Europe/Kaliningrad', 'Калининград (UTC+2)'),
+    ('Europe/Moscow', 'Москва, СПб (UTC+3)'),
+    ('Europe/Samara', 'Самара (UTC+4)'),
+    ('Asia/Yekaterinburg', 'Екатеринбург (UTC+5)'),
+    ('Asia/Omsk', 'Омск (UTC+6)'),
+    ('Asia/Krasnoyarsk', 'Красноярск (UTC+7)'),
+    ('Asia/Irkutsk', 'Иркутск (UTC+8)'),
+    ('Asia/Chita', 'Чита, Забайкалье (UTC+9)'),
+    ('Asia/Vladivostok', 'Владивосток (UTC+10)'),
+    ('Asia/Magadan', 'Магадан (UTC+11)'),
+    ('Asia/Kamchatka', 'Камчатка (UTC+12)'),
+]
 
 class OrganizationSettings(models.Model):
     """
     Синглтон настроек университета (всегда одна запись).
-    Позволяет настраивать бренд и реквизиты из админки.
+    Позволяет настраивать брендинг, реквизиты и часовой пояс вуза из админки.
     """
     university_name = models.CharField(
         max_length=255, 
@@ -14,6 +29,13 @@ class OrganizationSettings(models.Model):
         max_length=50, 
         default="ЗабГУ", 
         verbose_name="Краткое наименование"
+    )
+    timezone = models.CharField(
+        max_length=50,
+        choices=RUSSIAN_TIMEZONES,
+        default='Asia/Chita',
+        verbose_name="Часовой пояс кампуса",
+        help_text="Определяет время работы аудиторий и отображение заявок"
     )
     logo = models.ImageField(
         upload_to="branding/", 
@@ -48,7 +70,7 @@ class OrganizationSettings(models.Model):
         verbose_name="Юридический адрес"
     )
     
-    # Реквизиты для оплаты путевок
+    # Банковские реквизиты для оплаты путевок
     recipient_name = models.TextField(
         default="УФК по Приморскому краю (ФГБОУ ВО «ЗабГУ» л/с 20916X16810)",
         verbose_name="Получатель платежа"
@@ -76,9 +98,8 @@ class OrganizationSettings(models.Model):
         verbose_name_plural = "Настройки организации и брендинг"
 
     def save(self, *args, **kwargs):
-        # Паттерн Singleton: не даём создать вторую запись
         self.pk = 1
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Настройки: {self.university_name}"
+        return f"Настройки: {self.university_name} ({self.get_timezone_display()})"
