@@ -1,29 +1,42 @@
 import uuid
+import re
 from datetime import timedelta
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+
+
+def validate_phone(value):
+    digits = re.sub(r'\D', '', value)
+    if not (len(digits) == 11 and digits.startswith(('7', '8'))):
+        raise ValidationError('Укажите корректный номер телефона РФ (+7 (9XX) XXX-XX-XX).')
+
 
 class CabinCategory(models.TextChoices):
     STANDARD = 'STANDARD', 'Стандарт'
     COMFORT = 'COMFORT', 'Повышенный комфорт'
     VIP = 'VIP', 'Благоустроенный VIP'
 
+
 class Cabin(models.Model):
-    """Гостевой дом / Корпус базы отдыха"""
-    number = models.PositiveSmallIntegerField(unique=True, verbose_name="Номер объекта/домика")
-    title = models.CharField(max_length=100, blank=True, verbose_name="Название/метка")
-    category = models.CharField(max_length=20, choices=CabinCategory.choices, default=CabinCategory.STANDARD, verbose_name="Категория")
+    number = models.PositiveSmallIntegerField(unique=True, verbose_name="Номер домика")
+    title = models.CharField(max_length=100, blank=True, verbose_name="Метка на схеме")
+    category = models.CharField(max_length=20, choices=CabinCategory.choices, default=CabinCategory.STANDARD)
     capacity = models.PositiveSmallIntegerField(default=4, verbose_name="Вместимость (койко-мест)")
     
-    price_staff_full_cabin = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена/сутки (Сотрудник)")
-    price_student_bed = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Цена койки/сутки (Студент, 0=закрыто)")
+    price_staff_full_cabin = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена/сут (Сотрудник)")
+    price_student_bed = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Цена койки/сут (Студент)")
+    
+    # Динамические координаты на интерактивной векторной карте
+    map_x = models.FloatField(default=0.0, verbose_name="Координата X на карте (px)")
+    map_y = models.FloatField(default=0.0, verbose_name="Координата Y на карте (px)")
     
     description = models.TextField(blank=True, verbose_name="Описание и комплектация")
-    is_active = models.BooleanField(default=True, verbose_name="Доступен для бронирования")
+    is_active = models.BooleanField(default=True, verbose_name="Доступен")
 
     class Meta:
-        verbose_name = "Домик / Объект базы"
-        verbose_name_plural = "Домики / Объекты базы"
+        verbose_name = "Домик базы отдыха"
+        verbose_name_plural = "Домики базы отдыха"
         ordering = ['number']
 
     def __str__(self):
@@ -31,7 +44,6 @@ class Cabin(models.Model):
 
 
 class RecreationBooking(models.Model):
-    """Бронирование базы отдыха"""
     class UserRole(models.TextChoices):
         STAFF = 'STAFF', 'Сотрудник'
         STUDENT = 'STUDENT', 'Студент'
@@ -44,51 +56,46 @@ class RecreationBooking(models.Model):
         REJECTED = 'REJECTED', 'Оплата отклонена'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    booking_number = models.CharField(max_length=24, unique=True, db_index=True, verbose_name="Номер брони")
+    booking_number = models.CharField(max_length=24, unique=True, db_index=True)
     
-    cabin = models.ForeignKey(Cabin, on_delete=models.PROTECT, related_name='primary_bookings', verbose_name="Основной домик")
-    second_cabin = models.ForeignKey(Cabin, on_delete=models.PROTECT, null=True, blank=True, related_name='secondary_bookings', verbose_name="Второй домик")
+    cabin = models.ForeignKey(Cabin, on_delete=models.PROTECT, related_name='primary_bookings')
+    second_cabin = models.ForeignKey(Cabin, on_delete=models.PROTECT, null=True, blank=True, related_name='secondary_bookings')
     
-    user_role = models.CharField(max_length=10, choices=UserRole.choices, verbose_name="Категория отдыхающего")
-    num_beds_booked = models.PositiveSmallIntegerField(default=1, verbose_name="Забронировано мест")
+    user_role = models.CharField(max_length=10, choices=UserRole.choices)
+    num_beds_booked = models.PositiveSmallIntegerField(default=1)
     
     start_date = models.DateField(verbose_name="Дата заезда")
     end_date = models.DateField(verbose_name="Дата выезда")
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Итоговая сумма")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
     
-    contact_name = models.CharField(max_length=255, verbose_name="ФИО контактного лица")
-    contact_phone = models.CharField(max_length=30, verbose_name="Телефон")
-    contact_email = models.EmailField(verbose_name="E-mail")
+    contact_name = models.CharField(max_length=255)
+    contact_phone = models.CharField(max_length=30, validators=[validate_phone])
+    contact_email = models.EmailField(db_index=True)
     
-    department = models.CharField(max_length=255, blank=True, null=True, verbose_name="Подразделение (Сотрудник)")
-    position = models.CharField(max_length=255, blank=True, null=True, verbose_name="Должность (Сотрудник)")
-    faculty = models.CharField(max_length=255, blank=True, null=True, verbose_name="Факультет (Студент)")
-    academic_group = models.CharField(max_length=50, blank=True, null=True, verbose_name="Группа (Студент)")
+    department = models.CharField(max_length=255, blank=True, null=True)
+    position = models.CharField(max_length=255, blank=True, null=True)
+    faculty = models.CharField(max_length=255, blank=True, null=True)
+    academic_group = models.CharField(max_length=50, blank=True, null=True)
     
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, verbose_name="Статус")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
-    expires_at = models.DateTimeField(verbose_name="Оплатить до")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
 
     class Meta:
-        verbose_name = "Бронирование базы отдыха"
-        verbose_name_plural = "Бронирования базы отдыха"
+        verbose_name = "Бронирование базы"
+        verbose_name_plural = "Бронирования базы"
         ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
         if not self.booking_number:
             date_part = timezone.now().strftime("%y%m%d")
-            suffix = str(uuid.uuid4().hex[:4]).upper()
-            self.booking_number = f"UB-{date_part}-{suffix}"
+            self.booking_number = f"UB-{date_part}-{uuid.uuid4().hex[:4].upper()}"
         if not self.expires_at:
             self.expires_at = timezone.now() + timedelta(hours=1)
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return f"{self.booking_number} ({self.contact_name})"
-
 
 class Guest(models.Model):
-    """Отдыхающие по путевке"""
     class Category(models.TextChoices):
         ADULT = 'ADULT', 'Взрослый'
         CHILD_FREE = 'CHILD_FREE', 'Ребенок до 10 лет (бесплатно)'
@@ -96,16 +103,15 @@ class Guest(models.Model):
         CHILD_TEEN = 'CHILD_TEEN', 'Ребенок 10-17 лет'
 
     booking = models.ForeignKey(RecreationBooking, on_delete=models.CASCADE, related_name='guests')
-    full_name = models.CharField(max_length=255, verbose_name="ФИО")
+    full_name = models.CharField(max_length=255)
     category = models.CharField(max_length=20, choices=Category.choices, default=Category.ADULT)
-    document_info = models.CharField(max_length=100, blank=True, verbose_name="Паспорт / Свидетельство")
-    birth_date = models.DateField(null=True, blank=True, verbose_name="Дата рождения")
+    document_info = models.CharField(max_length=100, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
 
 
 class PaymentReceipt(models.Model):
-    """Скан или скриншот банковского чека"""
     booking = models.OneToOneField(RecreationBooking, on_delete=models.CASCADE, related_name='receipt')
-    file = models.FileField(upload_to="receipts/%Y/%m/", verbose_name="Файл чека")
+    file = models.FileField(upload_to="receipts/%Y/%m/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    user_comment = models.TextField(blank=True, verbose_name="Комментарий плательщика")
-    admin_comment = models.TextField(blank=True, verbose_name="Причина отказа")
+    user_comment = models.TextField(blank=True)
+    admin_comment = models.TextField(blank=True)
