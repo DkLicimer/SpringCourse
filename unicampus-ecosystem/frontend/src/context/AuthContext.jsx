@@ -28,20 +28,20 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (usernameOrEmail, password) => {
-    // Авторизация через стандартный OAuth2 password form
-    const formData = new FormData();
-    formData.append('username', usernameOrEmail.trim());
-    formData.append('password', password);
+    // Стандартное кодирование формы для FastAPI OAuth2
+    const params = new URLSearchParams();
+    params.append('username', usernameOrEmail.trim());
+    params.append('password', password);
 
-    const res = await api.post('/auth/login', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const res = await api.post('/auth/login', params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
     const accessToken = res.data.access_token;
     localStorage.setItem('unicampus_token', accessToken);
     setToken(accessToken);
 
-    // Получаем полный профиль
+    // Загружаем профиль пользователя
     const profileRes = await api.get('/auth/me', {
       headers: { Authorization: `Bearer ${accessToken}` }
     });

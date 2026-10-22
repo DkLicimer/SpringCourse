@@ -113,7 +113,7 @@ class RecreationBooking(Base):
     booking_number = Column(String(32), unique=True, nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
-    cabin_id = Column(Integer, ForeignKey("cabins.id", ondelete="PROTECT"), nullable=False)
+    cabin_id = Column(Integer, ForeignKey("cabins.id", ondelete="RESTRICT"), nullable=False)
     user_role = Column(Enum(RecreationUserRole), nullable=False)
     num_beds_booked = Column(Integer, default=1, nullable=False)
     

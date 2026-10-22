@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Navbar from './components/layout/Navbar';
 
 // Модули экосистемы
+import ProfileView from './pages/profile/ProfileView';
 import CalendarView from './pages/calendar/CalendarView';
 import SpacesView from './pages/booking/SpacesView';
 import RecreationView from './pages/booking/RecreationView';
@@ -16,7 +17,8 @@ import LearningView from './pages/learning/LearningView';
 
 function MainDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('calendar');
+  // При входе открывается Личный кабинет
+  const [activeTab, setActiveTab] = useState('profile');
 
   if (loading) {
     return (
@@ -32,11 +34,12 @@ function MainDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Единая шапка с ролевой навигацией */}
+      {/* Единая шапка со строгой ролевой фильтрацией */}
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       {/* Контейнер текущего модуля */}
       <main className="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+        {activeTab === 'profile' && <ProfileView setActiveTab={setActiveTab} />}
         {activeTab === 'calendar' && <CalendarView />}
         {activeTab === 'spaces' && <SpacesView />}
         {activeTab === 'recreation' && <RecreationView />}

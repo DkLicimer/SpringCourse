@@ -12,7 +12,7 @@ class UserRole(str, enum.Enum):
     HEAD_CURATOR = "HEAD_CURATOR"            # Старший куратор института
     MODERATOR_SPACES = "MODERATOR_SPACES"    # Диспетчер бронирования залов
     MODERATOR_RATING = "MODERATOR_RATING"    # Проверяющий стипендиального рейтинга
-    OFFICER_DDM = "OFFICER_DDM"              # Доступ к закрытому контуру ДДМ
+    MODERATOR_DDM = "MODERATOR_DDM"          # Служебный модератор контура ДДМ
     ADMIN = "ADMIN"                          # Главный администратор платформы
 
 class User(Base):
@@ -31,7 +31,7 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.STUDENT, nullable=False, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
     
-    # Спец-доступ к закрытому контуру ДДМ (льготники/ветераны по 152-ФЗ)
+    # Флаг доступа к закрытому контуру ДДМ (152-ФЗ)
     is_ddm_officer = Column(Boolean, default=False, nullable=False)
     
     # Идентификатор для последующей интеграции с 1С («1С:Университет» / «1С:ЗУП»)

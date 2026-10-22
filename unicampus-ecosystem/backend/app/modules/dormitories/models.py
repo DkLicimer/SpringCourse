@@ -112,7 +112,7 @@ class DormStay(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_number = Column(String(50), unique=True, nullable=False, index=True)
     student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
-    bed_id = Column(Integer, ForeignKey("dorm_beds.id", ondelete="PROTECT"), nullable=False)
+    bed_id = Column(Integer, ForeignKey("dorm_beds.id", ondelete="RESTRICT"), nullable=False)
     
     check_in_date = Column(Date, nullable=False)
     check_out_date = Column(Date, nullable=True)

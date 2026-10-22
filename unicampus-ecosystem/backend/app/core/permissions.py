@@ -49,10 +49,15 @@ def require_roles(allowed_roles: List[UserRole]):
     return role_checker
 
 def require_ddm_access(current_user: User = Depends(get_current_user)) -> User:
-    """Специальный допуск в изолированный контур ДДМ (только офицеры ДДМ или спец-админ)"""
-    if not (current_user.is_ddm_officer or current_user.role == UserRole.OFFICER_DDM):
+    """
+    Специальный допуск в изолированный контур ДДМ.
+    Доступ разрешен ТОЛЬКО администраторам и модераторам ДДМ.
+    Сами льготники доступа в систему не имеют.
+    """
+    allowed_roles = [UserRole.ADMIN, UserRole.MODERATOR_DDM]
+    if not (current_user.is_ddm_officer or current_user.role in allowed_roles):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Доступ к закрытому реестру персональных данных ДДМ запрещен"
+            detail="Доступ к закрытому реестру персональных данных ДДМ разрешен только уполномоченным модераторам и администраторам"
         )
     return current_user

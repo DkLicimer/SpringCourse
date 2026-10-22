@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, KeyRound, User, Lock, AlertCircle, Building2 } from 'lucide-react';
+import { Building2, User, Lock, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('student_smirnov');
+  const [password, setPassword] = useState('student123');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +17,9 @@ export default function Login() {
     try {
       await login(username, password);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Неверный логин или пароль. Попробуйте снова.');
+      const serverDetail = err.response?.data?.detail;
+      const netError = err.message === 'Network Error' ? 'Нет связи с сервером бэкенда (Network Error)' : null;
+      setError(serverDetail || netError || 'Неверный логин или пароль. Попробуйте снова.');
     } finally {
       setLoading(false);
     }
@@ -31,13 +33,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 font-sans text-slate-800 relative overflow-hidden">
-      {/* Фоновые декоративные сферы */}
       <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
 
       <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl max-w-md w-full border-t-8 border-t-blue-600 z-10 space-y-6">
-        
-        {/* Заголовок */}
         <div className="text-center space-y-2">
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto font-black shadow-inner">
             <Building2 className="w-8 h-8" />
@@ -99,7 +98,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Быстрые аккаунты для демонстрации */}
         <div className="pt-4 border-t border-slate-100 text-[11px] space-y-2">
           <span className="font-bold text-slate-400 uppercase tracking-wider block text-center">
             Быстрый вход для демо-показа:
@@ -134,15 +132,14 @@ export default function Login() {
 
             <button
               type="button"
-              onClick={() => fillQuickAccount('officer_ddm', 'ddm123')}
+              onClick={() => fillQuickAccount('moderator_ddm', 'ddm123')}
               className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-left cursor-pointer transition-colors"
             >
-              <span className="font-bold text-purple-600 block">Офицер ДДМ</span>
+              <span className="font-bold text-purple-600 block">Модератор ДДМ</span>
               <span className="text-[10px] text-slate-400 font-mono">ddm123</span>
             </button>
           </div>
         </div>
-
       </div>
 
       <span className="text-slate-500 text-xs mt-6 font-medium">
