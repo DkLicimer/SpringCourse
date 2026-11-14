@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { Flame, Clock, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { formatChitaDate } from "@/lib/date";
 
 type UrgentTask = {
   id: string;
@@ -87,7 +88,7 @@ export function UrgentTasksWidget() {
                   <h5 className="font-bold text-slate-800 leading-snug line-clamp-2">{task.title}</h5>
                   {task.deadline && (
                     <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> Дедлайн: {new Date(task.deadline).toLocaleDateString("ru-RU")}
+                      <Clock className="h-3 w-3" /> Дедлайн: {formatChitaDate(task.deadline)}
                     </div>
                   )}
                 </div>

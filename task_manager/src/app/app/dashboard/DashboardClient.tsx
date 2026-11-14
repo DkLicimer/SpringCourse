@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { deleteYearArchiveData } from "@/server/actions/archive";
 import { useRouter } from "next/navigation";
+import { formatChitaDate, getChitaStartOfDay } from "@/lib/date";
 
 type Goal = { title: string; color: string };
 
@@ -97,8 +98,8 @@ function getEmployeePeriodDates(
     typeName = "Ежемесячный период";
   }
 
-  const startFormatted = start.toLocaleDateString("ru-RU");
-  const endFormatted = end.toLocaleDateString("ru-RU");
+  const startFormatted = formatChitaDate(start);
+  const endFormatted = formatChitaDate(end);
   const label = `${typeName} (${startFormatted} – ${endFormatted})`;
 
   const msRemaining = end.getTime() - now.getTime();
@@ -118,11 +119,9 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     setTimeout(() => setToast(null), 5000);
   };
   
-  // Режимы периода
   const [periodMode, setPeriodMode] = useState<"employee_period" | "all" | "month" | "quarter">("employee_period");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("all");
 
-  // Блок резервного копирования
   const currentYear = new Date().getFullYear();
   const [archiveYear, setArchiveYear] = useState<number>(currentYear - 1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -130,12 +129,8 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
   const [isExportingZip, setIsExportingZip] = useState(false);
 
   const now = new Date();
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const endOfThreeDays = new Date(startOfToday);
-  endOfThreeDays.setDate(startOfToday.getDate() + 3);
-  endOfThreeDays.setHours(23, 59, 59, 999);
+  const startOfToday = getChitaStartOfDay();
+  const endOfThreeDays = new Date(startOfToday.getTime() + 4 * 24 * 60 * 60 * 1000 - 1);
 
   const currentEmployee = useMemo(() => {
     return selectedEmployeeId !== "all" 
@@ -336,17 +331,13 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     };
   });
 
-  const lowLoadCount = employeeStats.filter(emp => emp.active <= 2).length;
-  const normalLoadCount = employeeStats.filter(emp => emp.active >= 3 && emp.active <= 5).length;
-  const highLoadCount = employeeStats.filter(emp => emp.active >= 6).length;
-
   const handleExportCSV = () => {
     startTransition(() => {
       let headers: string[] = [];
       let csvRows: any[][] = [];
       let filename = "";
 
-      const dateStr = new Date().toLocaleDateString("ru-RU").replace(/\./g, "-");
+      const dateStr = formatChitaDate(new Date()).replace(/\./g, "-");
 
       if (currentEmployee) {
         const periodTitle = employeePeriodData ? employeePeriodData.typeName.replace(/\s+/g, "_") : "Period";
@@ -356,8 +347,8 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         csvRows = personalTasksList.map(task => [
           task.taskNumber ? `№${task.taskNumber}` : `№${task.id.slice(0, 4)}`,
           `"${task.title}"`,
-          task.createdAt ? new Date(task.createdAt).toLocaleDateString("ru-RU") : "—",
-          task.deadline ? new Date(task.deadline).toLocaleDateString("ru-RU") : "Нет срока",
+          task.createdAt ? formatChitaDate(task.createdAt) : "—",
+          task.deadline ? formatChitaDate(task.deadline) : "Нет срока",
           task.statusName,
           task.isOverdue ? "Да" : "Нет",
           task.isBlocked ? "Да" : "Нет"
@@ -405,12 +396,10 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     });
   };
 
-  // Скачивание ZIP-архива
   const handleDownloadZipArchive = () => {
     setIsExportingZip(true);
     const downloadUrl = `/api/archive/export?year=${archiveYear}`;
     
-    // Создаем невидимую ссылку для запуска загрузки файла браузером
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = `TaskManager_Archive_${archiveYear}.zip`;
@@ -424,7 +413,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
     }, 1500);
   };
 
-  // Удаление архива за выбранный год
   const handleExecuteDeleteArchive = async (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
@@ -446,7 +434,6 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
       {toast && (
         <div className={`fixed bottom-6 left-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-xs font-semibold animate-slide-up ${
           toast.type === "success" 
@@ -476,7 +463,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
           </p>
         )}
         <p className="text-xs text-slate-500 mt-1">
-          Дата формирования отчета: {new Date().toLocaleDateString("ru-RU")}
+          Дата формирования отчета: {formatChitaDate(new Date())}
         </p>
       </div>
 
@@ -644,7 +631,7 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* 📦 НОВЫЙ БЛОК: ГОДОВОЙ АРХИВ И РЕЗЕРВНОЕ КОПИРОВАНИЕ ДАННЫХ */}
+      {/* БЛОК: ГОДОВОЙ АРХИВ И РЕЗЕРВНОЕ КОПИРОВАНИЕ ДАННЫХ */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 border border-slate-800 shadow-md space-y-4 print:hidden">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
@@ -787,10 +774,10 @@ export function DashboardClient({ tasks, employees }: DashboardClientProps) {
                           {task.title}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                          {task.createdAt ? new Date(task.createdAt).toLocaleDateString("ru-RU") : "—"}
+                          {task.createdAt ? formatChitaDate(task.createdAt) : "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-slate-700">
-                          {task.deadline ? new Date(task.deadline).toLocaleDateString("ru-RU") : "—"}
+                          {task.deadline ? formatChitaDate(task.deadline) : "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span 

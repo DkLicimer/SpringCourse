@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { TasksClient } from "./TasksClient";
 import { activeChats } from "@/lib/presence";
+import { getChitaStartOfDay } from "@/lib/date";
 
 interface PageProps {
   searchParams: Promise<{
@@ -62,7 +63,6 @@ export default async function TasksPage(props: PageProps) {
 
   const taskId = searchParams.taskId;
   
-  // Вкладки: active (по умолчанию) | archive | perspective
   const currentTab = (searchParams.tab === "archive" || searchParams.tab === "perspective") 
     ? searchParams.tab 
     : "active";
@@ -122,7 +122,6 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // Загрузка блока фокуса
   const globalFocus = await prisma.globalFocus.findUnique({
     where: { id: "current_focus" },
     include: {
@@ -130,7 +129,6 @@ export default async function TasksPage(props: PageProps) {
     },
   });
 
-  // Расчет успеваемости сотрудника
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -183,7 +181,6 @@ export default async function TasksPage(props: PageProps) {
     orderBy: { createdAt: "desc" },
   });
 
-  // ⚡ В пул назначения задач включаем только сотрудников с isAssignable: true
   const users = await prisma.user.findMany({
     where: { 
       role: "EMPLOYEE",
@@ -208,13 +205,9 @@ export default async function TasksPage(props: PageProps) {
     });
   }
 
-  // --- ФОРМИРОВАНИЕ УСЛОВИЙ ВЫБОРКИ (WHERE) ---
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const endOfThreeDays = new Date(startOfToday);
-  endOfThreeDays.setDate(startOfToday.getDate() + 3);
-  endOfThreeDays.setHours(23, 59, 59, 999);
+  // --- ФОРМИРОВАНИЕ УСЛОВИЙ ВЫБОРКИ (WHERE) строго по Чите ---
+  const startOfToday = getChitaStartOfDay();
+  const endOfThreeDays = new Date(startOfToday.getTime() + 4 * 24 * 60 * 60 * 1000 - 1);
 
   const whereCondition: any = {
     isPerspective: currentTab === "perspective",
@@ -242,7 +235,6 @@ export default async function TasksPage(props: PageProps) {
     }
   }
 
-  // Быстрые пресеты фильтрации
   if (filterPreset === "urgent") {
     whereCondition.deadline = {
       gte: startOfToday,
@@ -303,7 +295,6 @@ export default async function TasksPage(props: PageProps) {
     };
   }
 
-  // Связи
   const includeRelations = {
     goal: true,
     parentTask: {

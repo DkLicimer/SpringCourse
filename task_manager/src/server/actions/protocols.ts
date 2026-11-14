@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "./notifications";
+import { formatChitaDate, parseChitaEndOfDay } from "@/lib/date";
 
 export async function generateProtocolNumber(): Promise<string> {
   const now = new Date();
@@ -80,7 +81,6 @@ export async function saveMeetingProtocol(input: SaveProtocolInput) {
   const sTime = startTime ? new Date(startTime) : new Date();
   const eTime = endTime ? new Date(endTime) : new Date();
 
-  // Создание протокола и задач в единой транзакции
   const createdProtocol = await prisma.$transaction(async (tx) => {
     const protocol = await tx.meetingProtocol.create({
       data: {
@@ -103,15 +103,14 @@ export async function saveMeetingProtocol(input: SaveProtocolInput) {
       },
     });
 
-    // Создаем поручения с обязательным дедлайном
     for (const draft of tasksToCreate) {
       if (!draft.title || !draft.goalId || !draft.assigneeIds || draft.assigneeIds.length === 0) {
         continue;
       }
 
-      // ⚡ Если срок в драфте не был указан, выставляем минимум завтрашний день (Пункт 9)
-      const taskDeadline = draft.deadline ? new Date(draft.deadline) : new Date(Date.now() + 24 * 60 * 60 * 1000);
-      taskDeadline.setHours(23, 59, 59, 999);
+      const taskDeadline = draft.deadline
+        ? parseChitaEndOfDay(draft.deadline)
+        : parseChitaEndOfDay(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
       const newTask = await tx.task.create({
         data: {
@@ -208,7 +207,7 @@ export async function sendProtocolEmailBlast(protocolId: string) {
       <div style="font-family: Arial, sans-serif; padding: 24px; color: #1e293b; max-width: 650px; border: 1px solid #e2e8f0; border-radius: 12px;">
         <h2 style="color: #2563eb; margin-bottom: 8px;">Протокол совещания ${protocol.protocolNumber}</h2>
         <p style="font-size: 15px; font-weight: bold; margin-top: 0;">Тема: ${protocol.title}</p>
-        <p style="font-size: 13px; color: #64748b;">Дата проведения: ${new Date(protocol.meetingDate).toLocaleDateString("ru-RU")}</p>
+        <p style="font-size: 13px; color: #64748b;">Дата проведения: ${formatChitaDate(protocol.meetingDate)}</p>
         
         <div style="margin: 20px 0; padding: 15px; background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 6px;">
           <h4 style="margin: 0 0 8px 0; color: #0f172a;">Решения / Постановили:</h4>

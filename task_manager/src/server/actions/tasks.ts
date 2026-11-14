@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "./notifications";
+import {
+  formatChitaDate,
+  getChitaStartOfDay,
+  getNextDayOfWeekChita,
+  parseChitaEndOfDay,
+} from "@/lib/date";
 
 interface CreateTaskInput {
   title: string;
@@ -17,27 +23,13 @@ interface CreateTaskInput {
   goalId: string;
   assigneeIds: string[];
   isPriority: boolean;
-  isRecurring?: boolean; 
+  isRecurring?: boolean;
   recurringDayOfWeek?: number | null; // 1 = ПН, 2 = ВТ, 3 = СР, 4 = ЧТ, 5 = ПТ, 6 = СБ, 7 = ВС
-  isPerspective?: boolean; 
-  reminderDate?: string;    
+  isPerspective?: boolean;
+  reminderDate?: string;
   stepInstructions?: string[];
   createSeparateCopies?: boolean;
   parentTaskId?: string;
-}
-
-// Расчет даты ближайшего дня недели (1 = ПН ... 7 = ВС)
-function getNextDayOfWeekDate(dayOfWeek: number): Date {
-  const now = new Date();
-  const currentDay = now.getDay() === 0 ? 7 : now.getDay(); // Приводим ВС к 7
-  let daysUntil = dayOfWeek - currentDay;
-  if (daysUntil <= 0) {
-    daysUntil += 7; // Следующая неделя
-  }
-  const targetDate = new Date(now);
-  targetDate.setDate(now.getDate() + daysUntil);
-  targetDate.setHours(23, 59, 59, 999);
-  return targetDate;
 }
 
 export async function createGoal(title: string, color: string) {
@@ -90,19 +82,17 @@ export async function createTask(input: CreateTaskInput) {
     throw new Error("Заполните обязательные поля и выберите исполнителей");
   }
 
-  // Расчет дедлайна
+  // Расчет дедлайна строго по часовому поясу Читы (UTC+9)
   let deadlineDate: Date;
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = getChitaStartOfDay();
 
   if (isRecurring && recurringDayOfWeek && (!deadline || !deadline.trim())) {
-    deadlineDate = getNextDayOfWeekDate(recurringDayOfWeek);
+    deadlineDate = getNextDayOfWeekChita(recurringDayOfWeek);
   } else {
     if (!deadline || !deadline.trim()) {
       throw new Error("У каждой задачи должен быть обязательно указан срок выполнения (дедлайн)!");
     }
-    deadlineDate = new Date(deadline);
-    deadlineDate.setHours(23, 59, 59, 999);
+    deadlineDate = parseChitaEndOfDay(deadline);
     if (deadlineDate < startOfToday) {
       throw new Error("Дедлайн задачи не может быть в прошлом");
     }
@@ -118,6 +108,8 @@ export async function createTask(input: CreateTaskInput) {
       parentTaskNumber = parentTask.taskNumber;
     }
   }
+
+  const parsedReminderDate = reminderDate ? getChitaStartOfDay(reminderDate) : null;
 
   // Режим «Задача для всех» (создание персональной копии каждому)
   if (assignmentType === "INDIVIDUAL" && createSeparateCopies && assigneeIds.length > 1) {
@@ -138,7 +130,7 @@ export async function createTask(input: CreateTaskInput) {
             isRecurring: isRecurring || false,
             recurringDayOfWeek: isRecurring ? recurringDayOfWeek || null : null,
             isPerspective: isPerspective || false,
-            reminderDate: reminderDate ? new Date(reminderDate) : null,
+            reminderDate: parsedReminderDate,
             goalId,
             createdById: session.user.id,
             parentTaskId: parentTaskId || null,
@@ -188,7 +180,7 @@ export async function createTask(input: CreateTaskInput) {
         isRecurring: isRecurring || false,
         recurringDayOfWeek: isRecurring ? recurringDayOfWeek || null : null,
         isPerspective: isPerspective || false,
-        reminderDate: reminderDate ? new Date(reminderDate) : null,
+        reminderDate: parsedReminderDate,
         goalId,
         createdById: session.user.id,
         parentTaskId: parentTaskId || null,
@@ -477,8 +469,7 @@ export async function createExtensionRequest(input: {
     throw new Error("У вас уже есть отправленный запрос на продление этой задачи, ожидающий решения руководителя.");
   }
 
-  const newDeadlineDate = new Date(requestedDeadline);
-  newDeadlineDate.setHours(23, 59, 59, 999);
+  const newDeadlineDate = parseChitaEndOfDay(requestedDeadline);
 
   const request = await prisma.extensionRequest.create({
     data: {
@@ -496,7 +487,7 @@ export async function createExtensionRequest(input: {
       select: { id: true },
     });
 
-    const formattedDate = newDeadlineDate.toLocaleDateString("ru-RU");
+    const formattedDate = formatChitaDate(newDeadlineDate);
 
     for (const admin of admins) {
       await createNotification(
@@ -539,10 +530,10 @@ export async function approveExtensionRequest(input: {
   }
 
   const targetDate = input.approvedDeadline
-    ? new Date(input.approvedDeadline)
-    : request.requestedDeadline || new Date();
-
-  targetDate.setHours(23, 59, 59, 999);
+    ? parseChitaEndOfDay(input.approvedDeadline)
+    : request.requestedDeadline
+    ? parseChitaEndOfDay(request.requestedDeadline)
+    : parseChitaEndOfDay(new Date());
 
   await prisma.$transaction(async (tx) => {
     await tx.extensionRequest.update({
@@ -556,7 +547,7 @@ export async function approveExtensionRequest(input: {
     });
   });
 
-  const formattedDate = targetDate.toLocaleDateString("ru-RU");
+  const formattedDate = formatChitaDate(targetDate);
 
   try {
     await createNotification(
@@ -803,14 +794,13 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
     throw new Error("У каждой задачи должен быть обязательно указан срок выполнения (дедлайн)!");
   }
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const deadlineDate = new Date(deadline);
-  deadlineDate.setHours(23, 59, 59, 999);
+  const startOfToday = getChitaStartOfDay();
+  const deadlineDate = parseChitaEndOfDay(deadline);
   if (deadlineDate < startOfToday) {
     throw new Error("Дедлайн задачи не может быть в прошлом");
   }
+
+  const parsedReminderDate = reminderDate ? getChitaStartOfDay(reminderDate) : null;
 
   await prisma.$transaction(async (tx) => {
     await tx.task.update({
@@ -826,7 +816,7 @@ export async function updateTask(taskId: string, input: CreateTaskInput) {
         isRecurring: isRecurring || false,
         recurringDayOfWeek: isRecurring ? recurringDayOfWeek || null : null,
         isPerspective: isPerspective || false,
-        reminderDate: reminderDate ? new Date(reminderDate) : null,
+        reminderDate: parsedReminderDate,
         goalId,
       },
     });

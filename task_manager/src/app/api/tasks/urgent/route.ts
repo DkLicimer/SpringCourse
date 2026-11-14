@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getChitaStartOfDay } from "@/lib/date";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -10,18 +11,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = new Date();
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const endOfThreeDays = new Date();
-  endOfThreeDays.setDate(startOfToday.getDate() + 3);
-  endOfThreeDays.setHours(23, 59, 59, 999);
+  const startOfToday = getChitaStartOfDay();
+  const endOfThreeDays = new Date(startOfToday.getTime() + 4 * 24 * 60 * 60 * 1000 - 1);
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // Базовые условия поиска: задачи, дедлайн которых прошел ИЛИ наступит в ближайшие 3 дня
-  // И которые не переведены в статус "Исполнено" (status-done)
   const whereCondition: any = {
     deadline: {
       lte: endOfThreeDays,
@@ -33,7 +27,6 @@ export async function GET() {
     },
   };
 
-  // Если это обычный сотрудник, показываем только ЕГО срочные задачи
   if (!isAdmin) {
     whereCondition.assignments.some.userId = session.user.id;
   }
@@ -42,10 +35,10 @@ export async function GET() {
     const tasks = await prisma.task.findMany({
       where: whereCondition,
       orderBy: [
-        { isPriority: "desc" }, // Сначала приоритетные
-        { deadline: "asc" },    // По времени дедлайна
+        { isPriority: "desc" },
+        { deadline: "asc" },
       ],
-      take: 5, // Не перегружаем виджет, максимум 5 задач
+      take: 5,
       include: {
         goal: true,
       },

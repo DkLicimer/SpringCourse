@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect } from "react";
 import { createTask, updateTask } from "@/server/actions/tasks";
-import { X, ListOrdered, Users, CheckSquare, Sparkles, RotateCcw, AlertTriangle, Clock, CalendarDays } from "lucide-react";
+import { getNextDayOfWeekChita, getTodayChitaDateStr, toChitaDateInputValue } from "@/lib/date";
+import { X, Users, Sparkles, RotateCcw, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -28,15 +29,7 @@ const DAYS_OF_WEEK = [
 ];
 
 function calculateNextDayOfWeek(dayId: number): string {
-  const now = new Date();
-  const currentDay = now.getDay() === 0 ? 7 : now.getDay();
-  let daysUntil = dayId - currentDay;
-  if (daysUntil <= 0) {
-    daysUntil += 7;
-  }
-  const target = new Date(now);
-  target.setDate(now.getDate() + daysUntil);
-  return target.toISOString().split("T")[0];
+  return toChitaDateInputValue(getNextDayOfWeekChita(dayId));
 }
 
 export function TaskModal({
@@ -64,7 +57,6 @@ export function TaskModal({
   const [isPriority, setIsPriority] = useState(sourceTask ? sourceTask.isPriority : false);
   const [isRecurring, setIsRecurring] = useState(sourceTask ? sourceTask.isRecurring : false);
   
-  // Регулярный день недели (1..7 или null)
   const [recurringDayOfWeek, setRecurringDayOfWeek] = useState<number | null>(
     sourceTask?.recurringDayOfWeek ?? null
   );
@@ -72,13 +64,12 @@ export function TaskModal({
   const [isPerspective, setIsPerspective] = useState(sourceTask ? sourceTask.isPerspective : false);
   const [createSeparateCopies, setCreateSeparateCopies] = useState(false);
 
-  // Умные даты: Дедлайн и Напоминание
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getTodayChitaDateStr();
   const [reminderDateVal, setReminderDateVal] = useState<string>(
-    editingTask?.reminderDate ? editingTask.reminderDate.split("T")[0] : ""
+    toChitaDateInputValue(editingTask?.reminderDate)
   );
   const [deadlineVal, setDeadlineVal] = useState<string>(
-    editingTask?.deadline ? editingTask.deadline.split("T")[0] : ""
+    toChitaDateInputValue(editingTask?.deadline)
   );
 
   const [stepInstructions, setStepInstructions] = useState<Record<string, string>>(() => {
@@ -103,7 +94,6 @@ export function TaskModal({
       setRecurringDayOfWeek(null);
     } else {
       setRecurringDayOfWeek(dayId);
-      // Автоматически выставляем дедлайн на ближайший такой день
       const nextDate = calculateNextDayOfWeek(dayId);
       setDeadlineVal(nextDate);
     }
@@ -199,7 +189,6 @@ export function TaskModal({
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4" autoComplete="off">
-          {/* Предупреждение о фиксации исходной просрочки в отчетах */}
           {isReassign && (
             <div className="p-3.5 bg-orange-50 border border-orange-200 rounded-2xl text-xs text-orange-950 flex items-start gap-2.5">
               <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
@@ -212,7 +201,6 @@ export function TaskModal({
             </div>
           )}
 
-          {/* Чекбоксы: Срочная / Регулярная */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center justify-between p-3 bg-red-50/50 border border-red-100 rounded-xl">
               <div className="space-y-0.5">
@@ -244,7 +232,6 @@ export function TaskModal({
             </div>
           </div>
 
-          {/* ⚡ ВЫБОР ДНЯ НЕДЕЛИ ДЛЯ РЕГУЛЯРНОЙ ЗАДАЧИ (ПУНКТ 5) */}
           {isRecurring && (
             <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl space-y-2 animate-fade-in">
               <div className="flex justify-between items-center">
@@ -282,7 +269,6 @@ export function TaskModal({
             </div>
           )}
 
-          {/* Перспективная задача */}
           <div className="grid grid-cols-1 gap-3">
             <div className="flex items-center justify-between p-3 bg-blue-50/30 border border-blue-100 rounded-xl">
               <div className="space-y-0.5">
@@ -315,7 +301,6 @@ export function TaskModal({
             )}
           </div>
 
-          {/* Тема / Направление */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Тема (Направление)</label>
             <select
@@ -355,7 +340,6 @@ export function TaskModal({
             />
           </div>
 
-          {/* СРОК СДАЧИ (ДЕЙДЛАЙН) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1">
@@ -400,7 +384,6 @@ export function TaskModal({
             />
           </div>
 
-          {/* Тип назначения */}
           <div className="border-t border-slate-200 pt-4 space-y-3">
             <label className="block text-xs font-semibold text-slate-700 mb-1">Тип назначения</label>
             <div className="grid grid-cols-3 gap-2">
@@ -450,7 +433,6 @@ export function TaskModal({
             )}
           </div>
 
-          {/* Список сотрудников */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="text-xs font-semibold text-slate-700">Выберите исполнителей</label>

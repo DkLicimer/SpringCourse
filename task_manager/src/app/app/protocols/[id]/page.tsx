@@ -7,6 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PrintProtocolButton } from "./PrintProtocolButton";
+import { formatChitaDate } from "@/lib/date";
 
 export default async function ProtocolDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -61,7 +62,7 @@ export default async function ProtocolDetailPage({ params }: { params: Promise<{
 
         {/* Дата, время и место */}
         <div className="flex justify-between text-xs font-sans border-b pb-3 text-slate-700">
-          <div><strong>Дата:</strong> {new Date(protocol.meetingDate).toLocaleDateString("ru-RU")}</div>
+          <div><strong>Дата:</strong> {formatChitaDate(protocol.meetingDate)}</div>
           <div><strong>Место:</strong> {protocol.location || "Онлайн-аудиокомната"}</div>
         </div>
 
@@ -141,7 +142,7 @@ export default async function ProtocolDetailPage({ params }: { params: Promise<{
                       {task.assignments.map((as) => as.user.name).join(", ")}
                     </td>
                     <td className="border border-slate-300 p-2 font-bold">
-                      {task.deadline ? new Date(task.deadline).toLocaleDateString("ru-RU") : "Не установлен"}
+                      {task.deadline ? formatChitaDate(task.deadline) : "Не установлен"}
                     </td>
                   </tr>
                 ))}

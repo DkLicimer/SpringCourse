@@ -1,7 +1,7 @@
 // src/app/app/daily-report/DailyReportClient.tsx
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition } from "react";
 import { 
   CalendarCheck, 
   Calendar, 
@@ -25,6 +25,7 @@ import {
   getPreviousDayReport,
   TaskReportEntry 
 } from "@/server/actions/dailyReports";
+import { APP_TIMEZONE, formatChitaDate } from "@/lib/date";
 
 interface ActiveTaskItem {
   taskId: string;
@@ -246,7 +247,7 @@ export function DailyReportClient({
         </div>
       </div>
 
-      {/* ⚡ 1. ОКНО С ОТЧЕТОМ ЗА ПРОШЕДШИЙ ДЕНЬ (ПУНКТ 10) */}
+      {/* 1. ОКНО С ОТЧЕТОМ ЗА ПРОШЕДШИЙ ДЕНЬ */}
       <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl border border-slate-800 shadow-sm overflow-hidden transition-all">
         <div className="px-6 py-4 flex items-center justify-between border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-2">
@@ -256,7 +257,7 @@ export function DailyReportClient({
             </span>
             {previousReport && (
               <span className="text-[11px] font-bold text-blue-400 bg-white/10 px-2.5 py-0.5 rounded-full">
-                {new Date(previousReport.reportDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} ({previousReport.dateStr})
+                {new Date(previousReport.reportDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long", timeZone: APP_TIMEZONE })} ({previousReport.dateStr})
               </span>
             )}
           </div>
@@ -321,7 +322,7 @@ export function DailyReportClient({
         )}
       </div>
 
-      {/* ⚡ 2. ФОРМА ОТЧЕТА ЗА ТЕКУЩИЙ ВЫБРАННЫЙ ДЕНЬ */}
+      {/* 2. ФОРМА ОТЧЕТА ЗА ТЕКУЩИЙ ВЫБРАННЫЙ ДЕНЬ */}
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
           <div>
@@ -341,7 +342,7 @@ export function DailyReportClient({
 
           {currentReport && (
             <span className="text-[11px] text-slate-400 font-medium">
-              Обновлено: {new Date(currentReport.updatedAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+              Обновлено: {new Date(currentReport.updatedAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE })}
             </span>
           )}
         </div>
@@ -405,7 +406,7 @@ export function DailyReportClient({
 
                       {task.deadline && (
                         <span className="text-[10px] text-slate-400 whitespace-nowrap flex items-center gap-1 font-medium">
-                          <Clock className="h-3 w-3" /> Срок: {new Date(task.deadline).toLocaleDateString("ru-RU")}
+                          <Clock className="h-3 w-3" /> Срок: {formatChitaDate(task.deadline)}
                         </span>
                       )}
                     </label>

@@ -6,20 +6,13 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { DailyReportClient } from "./DailyReportClient";
 import { getDailyReportByDate, getPreviousDayReport } from "@/server/actions/dailyReports";
-
-function getTodayDateStr(): string {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+import { getTodayChitaDateStr } from "@/lib/date";
 
 export default async function DailyReportPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const todayStr = getTodayDateStr();
+  const todayStr = getTodayChitaDateStr();
   const isAdmin = session.user.role === "ADMIN";
 
   // Активные задачи текущего пользователя

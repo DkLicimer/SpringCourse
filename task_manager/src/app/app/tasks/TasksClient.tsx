@@ -14,6 +14,13 @@ import {
   approveExtensionRequest,
   rejectExtensionRequest
 } from "@/server/actions/tasks";
+import {
+  APP_TIMEZONE,
+  formatChitaDate,
+  getChitaStartOfDay,
+  getTodayChitaDateStr,
+  toChitaDateInputValue,
+} from "@/lib/date";
 import { 
   Plus, 
   Settings, 
@@ -141,8 +148,7 @@ export function TasksClient({
 
   const [searchQuery, setSearchQuery] = useState(currentFilters.search);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = getChitaStartOfDay();
 
   useEffect(() => {
     if (taskToOpen) {
@@ -772,7 +778,6 @@ export function TasksClient({
                   const hasReports = task.assignments.some((as: any) => !!as.reportText);
                   const hasPendingExtension = task.extensionRequests?.some((r: any) => r.status === "PENDING");
 
-                  // ⚡ Подпись дня недели для регулярной задачи
                   const recurringLabel = task.recurringDayOfWeek 
                     ? DAY_OF_WEEK_NAMES[task.recurringDayOfWeek] 
                     : "Регулярная";
@@ -831,7 +836,7 @@ export function TasksClient({
                       <td className="px-4 py-3.5 whitespace-nowrap text-slate-600">
                         <div className="flex items-center gap-1.5 font-medium">
                           <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span>{new Date(task.createdAt).toLocaleDateString("ru-RU")}</span>
+                          <span>{formatChitaDate(task.createdAt)}</span>
                         </div>
                       </td>
 
@@ -839,12 +844,12 @@ export function TasksClient({
                         {task.isPerspective && task.reminderDate ? (
                           <span className="font-bold flex items-center gap-1 text-purple-600">
                             <History className="h-3.5 w-3.5 shrink-0" />
-                            Напомнить: {new Date(task.reminderDate).toLocaleDateString("ru-RU")}
+                            Напомнить: {formatChitaDate(task.reminderDate)}
                           </span>
                         ) : task.deadline ? (
                           <span className={`font-bold flex items-center gap-1 ${isOverdue ? "text-red-500" : isCompleted ? "text-slate-400" : "text-slate-600"}`}>
                             <Clock className="h-3.5 w-3.5 shrink-0" />
-                            {new Date(task.deadline).toLocaleDateString("ru-RU")}
+                            {formatChitaDate(task.deadline)}
                             {isOverdue && <span className="text-[9px] font-black text-red-500 uppercase tracking-wide">(Просрочена)</span>}
                           </span>
                         ) : (
@@ -852,7 +857,6 @@ export function TasksClient({
                         )}
                       </td>
 
-                      {/* Приоритет и Регулярность (с днем недели) */}
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <div className="flex flex-col gap-1 items-start">
                           {task.isPriority && (
@@ -1047,12 +1051,12 @@ export function TasksClient({
                           <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
                             <span className="flex items-center gap-1" title="Дата постановки">
                               <Calendar className="h-3 w-3 text-slate-400" />
-                              {new Date(task.createdAt).toLocaleDateString("ru-RU")}
+                              {formatChitaDate(task.createdAt)}
                             </span>
                             {task.deadline && (
                               <span className="flex items-center gap-1 font-semibold text-slate-600" title="Срок сдачи">
                                 <Clock className="h-3 w-3 text-slate-400" />
-                                До {new Date(task.deadline).toLocaleDateString("ru-RU")}
+                                До {formatChitaDate(task.deadline)}
                               </span>
                             )}
                           </div>
@@ -1220,7 +1224,7 @@ export function TasksClient({
                         <div className="flex justify-between font-bold">
                           <span>👤 {req.user?.name || "Сотрудник"}</span>
                           <span className="text-blue-700">
-                            Желаемый срок: {req.requestedDeadline ? new Date(req.requestedDeadline).toLocaleDateString("ru-RU") : "Не указан"}
+                            Желаемый срок: {req.requestedDeadline ? formatChitaDate(req.requestedDeadline) : "Не указан"}
                           </span>
                         </div>
                         <p className="text-slate-600 italic">«{req.reason}»</p>
@@ -1254,12 +1258,12 @@ export function TasksClient({
                   <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1.5 font-medium">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                      <span>Поставлена: <strong>{new Date(activeTask.createdAt).toLocaleDateString("ru-RU")}</strong></span>
+                      <span>Поставлена: <strong>{formatChitaDate(activeTask.createdAt)}</strong></span>
                     </div>
                     {activeTask.deadline && (
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        <span>Срок сдачи: <strong>{new Date(activeTask.deadline).toLocaleDateString("ru-RU")}</strong></span>
+                        <span>Срок сдачи: <strong>{formatChitaDate(activeTask.deadline)}</strong></span>
                       </div>
                     )}
                   </div>
@@ -1357,7 +1361,7 @@ export function TasksClient({
                           return (
                             <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-1 rounded-lg font-bold flex items-center gap-1 animate-pulse">
                               <History className="h-3 w-3 text-amber-600" />
-                              Запрос на продление до {myPendingReq.requestedDeadline ? new Date(myPendingReq.requestedDeadline).toLocaleDateString("ru-RU") : "..."} на рассмотрении
+                              Запрос на продление до {myPendingReq.requestedDeadline ? formatChitaDate(myPendingReq.requestedDeadline) : "..."} на рассмотрении
                             </span>
                           );
                         }
@@ -1366,7 +1370,7 @@ export function TasksClient({
                           <button
                             type="button"
                             onClick={() => {
-                              setExtensionDeadlineInput(activeTask.deadline ? activeTask.deadline.split("T")[0] : "");
+                              setExtensionDeadlineInput(toChitaDateInputValue(activeTask.deadline));
                               setIsExtensionModalOpen(true);
                             }}
                             className="flex items-center gap-1 px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
@@ -1472,7 +1476,7 @@ export function TasksClient({
                       <div key={comment.id} className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs space-y-1 text-xs">
                         <div className="flex justify-between items-center text-[10px] text-slate-400">
                           <span className="font-bold text-slate-700">{comment.user?.name || "Пользователь"}</span>
-                          <span>{new Date(comment.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span>{new Date(comment.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE })}</span>
                         </div>
                         <p className="text-slate-800 whitespace-pre-line">{comment.text}</p>
                       </div>
@@ -1527,7 +1531,7 @@ export function TasksClient({
                 </p>
                 {activeTask.deadline && (
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Текущий дедлайн: {new Date(activeTask.deadline).toLocaleDateString("ru-RU")}
+                    Текущий дедлайн: {formatChitaDate(activeTask.deadline)}
                   </p>
                 )}
               </div>
@@ -1539,7 +1543,7 @@ export function TasksClient({
                 <input
                   type="date"
                   required
-                  min={new Date().toISOString().split("T")[0]}
+                  min={getTodayChitaDateStr()}
                   value={extensionDeadlineInput}
                   onChange={(e) => setExtensionDeadlineInput(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-amber-500 text-slate-800 bg-white"
@@ -1616,10 +1620,10 @@ export function TasksClient({
                       </div>
                       <div className="text-right">
                         <span className="text-slate-400 block text-[10px]">
-                          Текущий срок: {req.task?.deadline ? new Date(req.task.deadline).toLocaleDateString("ru-RU") : "Не установлен"}
+                          Текущий срок: {req.task?.deadline ? formatChitaDate(req.task.deadline) : "Не установлен"}
                         </span>
                         <span className="font-extrabold text-blue-700 text-xs block">
-                          Новый срок: {req.requestedDeadline ? new Date(req.requestedDeadline).toLocaleDateString("ru-RU") : "—"}
+                          Новый срок: {req.requestedDeadline ? formatChitaDate(req.requestedDeadline) : "—"}
                         </span>
                       </div>
                     </div>

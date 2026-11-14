@@ -33,6 +33,7 @@ import {
 import { saveMeetingProtocol, ProtocolDraftTask } from "@/server/actions/protocols";
 import { checkMeetingRoomStatus, startMeetingRoom, closeMeetingRoom } from "@/server/actions/meetings";
 import { useRouter } from "next/navigation";
+import { APP_TIMEZONE, formatChitaDate } from "@/lib/date";
 
 interface AudioConferenceModalProps {
   roomName: string;
@@ -146,7 +147,6 @@ function RoomControlsAndDrafting({
     }
   };
 
-  // ⚡ Валидация дедлайна при создании поручения с совещания (Пункт 9)
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskTitle.trim() || !taskAssigneeId || !taskGoalId) {
@@ -391,7 +391,7 @@ function RoomControlsAndDrafting({
                     <div key={m.timestamp} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5 px-1">
                         <span className="font-bold text-slate-700">{isMe ? "Вы" : senderName}</span>
-                        <span>• {new Date(m.timestamp).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span>• {new Date(m.timestamp).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE })}</span>
                       </div>
                       <div
                         className={`p-2.5 rounded-2xl text-xs max-w-[85%] whitespace-pre-line leading-relaxed shadow-xs ${
@@ -507,7 +507,7 @@ function RoomControlsAndDrafting({
                     </select>
                   </div>
 
-                  {/* ⚡ Обязательный дедлайн для поручения */}
+                  {/* Обязательный дедлайн для поручения */}
                   <div className="flex gap-2 items-center">
                     <input
                       type="date"
@@ -534,7 +534,7 @@ function RoomControlsAndDrafting({
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-slate-900 truncate">{t.title}</div>
                         <div className="text-[10px] text-slate-500">
-                          👤 {assignee?.name || "Сотрудник"} • До {new Date(t.deadline || "").toLocaleDateString("ru-RU")}
+                          👤 {assignee?.name || "Сотрудник"} • До {formatChitaDate(t.deadline)}
                         </div>
                       </div>
                       <button type="button" onClick={() => handleRemoveTask(idx)} className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer">
