@@ -7,7 +7,24 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { activeChats } from "@/lib/presence";
 
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function createNotification(userId: string, text: string, link?: string) {
+  // Экспортируемые функции "use server" доступны как HTTP-endpoint,
+  // поэтому без авторизованной сессии уведомления создавать нельзя.
+  const session = await getServerSession(authOptions);
+  if (!session) return;
+
+  // Ссылка только внутри портала (защита от фишинговых ссылок в письмах)
+  if (link && !link.startsWith("/")) link = undefined;
+
   try {
     let linkTaskId: string | null = null;
     
@@ -73,9 +90,9 @@ export async function createNotification(userId: string, text: string, link?: st
                   <!-- Тело письма -->
                   <tr>
                     <td style="padding: 30px;">
-                      <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">Здравствуйте, ${user.name}!</h2>
+                      <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">Здравствуйте, ${escapeHtml(user.name)}!</h2>
                       <div style="background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;">
-                        <p style="font-size: 15px; line-height: 1.6; margin: 0; color: #334155;">${text}</p>
+                        <p style="font-size: 15px; line-height: 1.6; margin: 0; color: #334155;">${escapeHtml(text)}</p>
                       </div>
                       
                       ${link ? `

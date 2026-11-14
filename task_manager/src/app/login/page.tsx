@@ -49,7 +49,8 @@ export default function LoginPage() {
             Корпоративный таск-менеджер
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {/* method="post": если JavaScript не загрузился, браузер не положит логин и пароль в адресную строку (GET) */}
+        <form className="mt-8 space-y-6" method="post" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4 text-sm text-red-600 border border-red-100">
               {error}

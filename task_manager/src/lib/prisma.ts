@@ -1,7 +1,7 @@
 // src/lib/prisma.ts
 import "dotenv/config";
 
-// Принудительно очищаем глобальные переменные Windows, чтобы они не перебивали наш .env
+// Принудительно очищаем системные переменные PG*, чтобы они не перебивали наш .env
 delete process.env.PGUSER;
 delete process.env.PGPASSWORD;
 delete process.env.PGHOST;
@@ -16,15 +16,17 @@ const prismaClientSingleton = () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not defined in environment variables");
   }
-  
-  console.log("🔌 Prisma пытается подключиться к:", process.env.DATABASE_URL);
-  
-  const pool = new pg.Pool({ 
-    connectionString: process.env.DATABASE_URL 
+
+  // ВАЖНО: DATABASE_URL (с паролем) нигде не логируем.
+  const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
   });
-  
+
   const adapter = new PrismaPg(pool);
-  
+
   return new PrismaClient({ adapter });
 };
 
@@ -36,4 +38,4 @@ const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 export default prisma;
 
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma;
+if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
